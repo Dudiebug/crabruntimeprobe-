@@ -28,7 +28,7 @@ if (logPath && fs.existsSync(logPath)) {
 
 const docs = path.join(process.cwd(), 'docs');
 let probeResults = '# Probe Results\n\n';
-probeResults += 'Observe mode rows use `probeId = "Observe.Context"` and `category = "observe"`. They are passive context snapshots only: no curated registry probes, direct field reads, inventory array reads, health reads, RPCs, or gameplay state writes.\n\n';
+probeResults += 'Observe mode rows use `probeId = "Observe.Context"` and `category = "observe"`. They are passive context snapshots only: no curated registry probes, direct field reads, inventory array reads, health reads, RPCs, or gameplay state writes. Observe mode waits for `startupWarmupTicks`, then writes every `observeIntervalTicks`.\n\n';
 probeResults += 'Active mode rows come from the curated probe registry after warmup, context stability, interval pacing, and safety gates.\n\n';
 let matrix = '# Safe Access Matrix\n\n| Probe | Status |\n|---|---|\n';
 for (const probe of Object.keys(byProbe).sort()) {

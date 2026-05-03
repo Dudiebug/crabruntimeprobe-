@@ -3,8 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const idxPath = path.join(process.cwd(), 'objectdump', 'objectdump_index.json');
 if (!fs.existsSync(idxPath)) {
-  console.error('Missing objectdump_index.json; run parse_objectdump first');
-  process.exit(1);
+  console.log('No object dump index found. Skipping probe candidate generation.');
+  process.exit(0);
 }
 const idx = JSON.parse(fs.readFileSync(idxPath, 'utf8'));
 const classes = Object.keys(idx.classes || {}).sort();

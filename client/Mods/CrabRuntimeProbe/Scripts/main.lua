@@ -11,6 +11,7 @@ local DEFAULT_CONFIG = {
   debugBreadcrumbs = true,
   writeJsonlResults = true,
   writeMarkdownSnapshots = false,
+  observeIntervalTicks = 10,
   probeIntervalTicks = 10,
   startupWarmupTicks = 60,
   contextStableTicksRequired = 10,

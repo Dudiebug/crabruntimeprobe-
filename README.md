@@ -27,6 +27,7 @@ UE4SS object dumps show what symbols exist, but not when/where access is safe. T
 Use:
 
 - `mode = observe`
+- `observeIntervalTicks = 10`
 - `probeSet = shallow-core`
 - `allowDeepArrayProbes = false`
 - `allowInventoryInfoProbes = false`
@@ -37,10 +38,10 @@ Use:
 Then:
 
 1. Launch game.
-2. Sit in menu 30 seconds.
+2. Sit in menu long enough to clear `startupWarmupTicks`.
 3. Enter lobby.
 4. Start solo island.
-5. Pick up one item if convenient.
+5. Do not enable active mode for the first in-game test.
 6. Quit.
 7. Collect UE4SS.log and probe JSONL.
 8. Run summarizer.
@@ -53,6 +54,8 @@ Then:
 Observe mode does not run the curated probe registry. It writes `Observe.Context`
 rows only, containing timestamp/session/tick/mode, context and role guesses,
 lifecycle state, and safe `CrabPC`/`PlayerState` existence and validity checks.
+It waits for `startupWarmupTicks`, then writes only every
+`observeIntervalTicks`.
 
 Active mode waits for startup warmup and context stability, runs at most one
 registry probe per interval, emits before/after breadcrumbs, respects safety

@@ -8,6 +8,8 @@ end
 
 function safe.isValidObject(obj)
   if obj == nil then return false end
+  local method, methodErr = try(function() return obj.IsValid end)
+  if methodErr or type(method) ~= 'function' then return false end
   local isValid, err = try(function() return obj:IsValid() end)
   if err then return false end
   return isValid == true
@@ -22,18 +24,22 @@ function safe.findAll(className)
 end
 
 function safe.getProperty(obj, propName)
+  if not safe.isValidObject(obj) then return nil, 'invalid_object' end
   return try(function() return obj:GetPropertyValue(propName) end)
 end
 
 function safe.getDirectField(obj, fieldName)
+  if not safe.isValidObject(obj) then return nil, 'invalid_object' end
   return try(function() return obj[fieldName] end)
 end
 
 function safe.getFullName(obj)
+  if not safe.isValidObject(obj) then return nil, 'invalid_object' end
   return try(function() return obj:GetFullName() end)
 end
 
 function safe.getName(obj)
+  if not safe.isValidObject(obj) then return nil, 'invalid_object' end
   return try(function() return obj:GetName() end)
 end
 
@@ -42,6 +48,7 @@ function safe.getArray(obj, propName)
 end
 
 function safe.getArrayElement(elem)
+  -- Risky: only use from gated active probes with strict limits.
   return try(function() return elem:get() end)
 end
 

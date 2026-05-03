@@ -34,6 +34,11 @@ function runner.new(config, safe, writer)
     end
   end
 
+  local function positiveNumber(value, fallback)
+    if type(value) == 'number' and value > 0 then return value end
+    return fallback
+  end
+
   local function emit(probe, result, kind, summary, err)
     writer:write({
       tick = state.tick,
@@ -116,6 +121,9 @@ function runner.new(config, safe, writer)
     self.tick = self.tick + 1
 
     if config.mode == 'observe' then
+      if self.tick <= config.startupWarmupTicks then return end
+      local observeInterval = positiveNumber(config.observeIntervalTicks, positiveNumber(config.probeIntervalTicks, 10))
+      if (self.tick % observeInterval) ~= 0 then return end
       local facts = updateContext()
       observe(facts)
       return
@@ -129,7 +137,8 @@ function runner.new(config, safe, writer)
     updateContext()
     if self.stableTicks < config.contextStableTicksRequired then return end
     if self.probesRun >= config.maxProbesPerSession then return end
-    if (self.tick % config.probeIntervalTicks) ~= 0 then return end
+    local probeInterval = positiveNumber(config.probeIntervalTicks, 10)
+    if (self.tick % probeInterval) ~= 0 then return end
 
     local probe = probes[idx]
     if not probe then return end

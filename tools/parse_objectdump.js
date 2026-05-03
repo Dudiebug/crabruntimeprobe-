@@ -7,7 +7,13 @@ const dir = path.join(root, 'objectdump');
 const outJson = path.join(dir, 'objectdump_index.json');
 const outMd = path.join(root, 'docs', 'OBJECTDUMP_INDEX.md');
 
-const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => /\.(txt|md)$/.test(f) || /\.part/.test(f)) : [];
+const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => f !== 'README.md' && (/\.(txt|md)$/.test(f) || /\.part/.test(f))) : [];
+
+if (files.length === 0) {
+  console.log('No object dump files found. Skipping object dump index generation.');
+  process.exit(0);
+}
+
 const idx = { files: [], classes: {}, structs: {} };
 
 for (const file of files) {
