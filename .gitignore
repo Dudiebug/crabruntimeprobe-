@@ -1,0 +1,8 @@
+node_modules/
+*.log
+*.tmp
+*.bak
+objectdump/objectdump_index.json
+client/Mods/CrabRuntimeProbe/Scripts/results/*.jsonl
+client/Mods/CrabRuntimeProbe/Scripts/results/*.md
+client/Mods/CrabRuntimeProbe/Scripts/probe_results_*.jsonl
