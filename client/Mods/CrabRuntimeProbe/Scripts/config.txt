@@ -1,0 +1,29 @@
+enabled = true
+
+# Mode:
+# observe = passive low-risk collection while playing
+# active = controlled one-probe-at-a-time testing
+mode = observe
+
+# Logging
+debugBreadcrumbs = true
+writeJsonlResults = true
+writeMarkdownSnapshots = false
+
+# Probe pacing
+probeIntervalTicks = 10
+startupWarmupTicks = 60
+contextStableTicksRequired = 10
+maxProbesPerSession = 100
+
+# Safety gates
+allowUnknownRoleProbes = false
+allowJoinedClientDeepProbes = false
+allowDeepArrayProbes = false
+allowInventoryInfoProbes = false
+allowHealthProbes = false
+allowWriteProbes = false
+allowRpcProbes = false
+
+# Probe selection
+probeSet = shallow-core
