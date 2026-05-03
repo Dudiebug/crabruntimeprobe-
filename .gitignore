@@ -1,0 +1,8 @@
+# Runtime outputs
+client/Mods/CrabRuntimeProbe/Scripts/results/*.jsonl
+client/Mods/CrabRuntimeProbe/Scripts/results/*.md
+results/*.jsonl
+results/*.md
+
+# Node
+node_modules/
