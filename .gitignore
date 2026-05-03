@@ -1,0 +1,13 @@
+# Runtime logs and generated probe output
+client/Mods/CrabRuntimeProbe/Scripts/results/*.jsonl
+client/Mods/CrabRuntimeProbe/Scripts/results/*.md
+results/*.jsonl
+results/*.md
+
+# Generated docs and indexes
+docs/PROBE_CANDIDATES.md
+objectdump/objectdump_index.json
+client/Mods/CrabRuntimeProbe/Scripts/generated_probe_candidates.lua
+
+# Node artifacts
+node_modules/
