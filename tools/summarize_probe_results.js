@@ -13,7 +13,10 @@ if (!resultsPath || !fs.existsSync(resultsPath)) {
 }
 const rows = fs.readFileSync(resultsPath, 'utf8').split(/\r?\n/).filter(Boolean).map(l => JSON.parse(l));
 const byProbe = {};
-for (const r of rows) byProbe[r.probeId] = byProbe[r.probeId] || [] , byProbe[r.probeId].push(r.result || 'unknown');
+for (const r of rows) {
+  byProbe[r.probeId] = byProbe[r.probeId] || [];
+  byProbe[r.probeId].push(r.result || 'unknown');
+}
 const classify = (vals) => vals.includes('ok') ? 'SAFE' : (vals[vals.length - 1] || 'UNKNOWN').toUpperCase();
 let crashSuspect = null;
 if (logPath && fs.existsSync(logPath)) {
@@ -25,6 +28,8 @@ if (logPath && fs.existsSync(logPath)) {
 
 const docs = path.join(process.cwd(), 'docs');
 let probeResults = '# Probe Results\n\n';
+probeResults += 'Observe mode rows use `probeId = "Observe.Context"` and `category = "observe"`. They are passive context snapshots only: no curated registry probes, direct field reads, inventory array reads, health reads, RPCs, or gameplay state writes.\n\n';
+probeResults += 'Active mode rows come from the curated probe registry after warmup, context stability, interval pacing, and safety gates.\n\n';
 let matrix = '# Safe Access Matrix\n\n| Probe | Status |\n|---|---|\n';
 for (const probe of Object.keys(byProbe).sort()) {
   const status = (crashSuspect === probe) ? 'CRASH_SUSPECT' : classify(byProbe[probe]);

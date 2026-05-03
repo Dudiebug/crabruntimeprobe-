@@ -11,8 +11,9 @@ UE4SS object dumps show what symbols exist, but not when/where access is safe. T
 
 - NOT CrabInvSync.
 - No inventory sync/shared inventory.
-- No gameplay state writes by default.
-- No mutating RPC calls by default.
+- No gameplay state writes.
+- No mutating RPC calls.
+- No deep inventory probes in the default foundation.
 - No packaged UE4SS or game binaries.
 
 ## Install
@@ -46,8 +47,16 @@ Then:
 
 ## Modes
 
-- `observe`: passive low-risk collection while playing.
+- `observe`: passive low-risk context sampling while playing.
 - `active`: controlled one-probe-at-a-time execution with pacing and gates.
+
+Observe mode does not run the curated probe registry. It writes `Observe.Context`
+rows only, containing timestamp/session/tick/mode, context and role guesses,
+lifecycle state, and safe `CrabPC`/`PlayerState` existence and validity checks.
+
+Active mode waits for startup warmup and context stability, runs at most one
+registry probe per interval, emits before/after breadcrumbs, respects safety
+gates, and writes JSONL results.
 
 ## Result files
 

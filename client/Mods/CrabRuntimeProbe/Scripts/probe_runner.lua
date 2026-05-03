@@ -1,5 +1,4 @@
 local runtimeContext = require('runtime_context')
-local probeRegistry = require('probe_registry')
 
 local runner = {}
 
@@ -22,7 +21,11 @@ function runner.new(config, safe, writer)
     unstableTicks = 0
   }
 
-  local probes = probeRegistry.build(safe)
+  local probes = {}
+  if config.mode == 'active' then
+    local probeRegistry = require('probe_registry')
+    probes = probeRegistry.build(safe)
+  end
   local idx = 1
 
   local function breadcrumb(msg)
@@ -40,7 +43,7 @@ function runner.new(config, safe, writer)
       category = probe.category,
       context = state.lastContext,
       role = state.role,
-      lifecycleState = state.stableTicks >= config.contextStableTicksRequired and 'stable' or 'warming',
+      lifecycleState = state.lifecycleState,
       step = probe.step,
       result = result or 'unknown',
       valueKind = kind or '',
@@ -55,18 +58,75 @@ function runner.new(config, safe, writer)
     if probe.set == 'inventory-info' and not config.allowInventoryInfoProbes then return false, 'unsafe_disabled' end
     if probe.set == 'health-read' and not config.allowHealthProbes then return false, 'unsafe_disabled' end
     if probe.set == 'rpc-dryrun' and not config.allowRpcProbes then return false, 'unsafe_disabled' end
+    if probe.set == 'write' and not config.allowWriteProbes then return false, 'unsafe_disabled' end
+    if state.role == 'unknown' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
+    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
     if probe.set ~= config.probeSet and config.probeSet ~= 'all-readonly' then return false, 'skipped_by_config' end
     return true
+  end
+
+  local function updateContext()
+    local facts = runtimeContext.snapshot(safe, state)
+    state.lastContext = facts.context
+    state.role = facts.role
+    state.lifecycleState = 'warming'
+
+    local stableContext = facts.context ~= 'unknown'
+      and facts.context ~= 'unstable'
+      and facts.context ~= 'traveling'
+      and facts.context ~= 'dead-or-respawning'
+
+    if stableContext and facts.context == state.previousContext then
+      state.stableTicks = state.stableTicks + 1
+    elseif stableContext then
+      state.stableTicks = 1
+    else
+      state.stableTicks = 0
+    end
+
+    state.previousContext = facts.context
+    if state.stableTicks >= config.contextStableTicksRequired then
+      state.lifecycleState = 'stable'
+    end
+
+    return facts
+  end
+
+  local function observe(facts)
+    writer:write({
+      tick = state.tick,
+      mode = 'observe',
+      probeId = 'Observe.Context',
+      probeName = 'Observe.Context',
+      category = 'observe',
+      context = facts.context,
+      role = facts.role,
+      lifecycleState = state.lifecycleState,
+      result = facts.result,
+      crabPcExists = facts.crabPcExists,
+      crabPcValid = facts.crabPcValid,
+      playerStateExists = facts.playerStateExists,
+      playerStateValid = facts.playerStateValid,
+      error = facts.error
+    })
   end
 
   function state:onTick()
     if not config.enabled then return end
     self.tick = self.tick + 1
-    self.lastContext = runtimeContext.detect(safe, self)
-    self.role = runtimeContext.detectRole(self)
-    if self.lastContext ~= 'unstable' and self.lastContext ~= 'unknown' then self.stableTicks = self.stableTicks + 1 end
+
+    if config.mode == 'observe' then
+      local facts = updateContext()
+      observe(facts)
+      return
+    end
+
+    if config.mode ~= 'active' then
+      return
+    end
 
     if self.tick <= config.startupWarmupTicks then return end
+    updateContext()
     if self.stableTicks < config.contextStableTicksRequired then return end
     if self.probesRun >= config.maxProbesPerSession then return end
     if (self.tick % config.probeIntervalTicks) ~= 0 then return end
@@ -82,7 +142,13 @@ function runner.new(config, safe, writer)
     end
 
     breadcrumb(probe.id .. ' enter')
-    local result, kind, summary, err = probe.run(self)
+    local ok, result, kind, summary, err = pcall(probe.run, self)
+    if not ok then
+      err = tostring(result)
+      result = 'lua_error'
+      kind = nil
+      summary = nil
+    end
     breadcrumb(probe.id .. ' exit')
     emit(probe, result, kind, summary, err)
     self.probesRun = self.probesRun + 1

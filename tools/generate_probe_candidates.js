@@ -9,11 +9,9 @@ if (!fs.existsSync(idxPath)) {
 const idx = JSON.parse(fs.readFileSync(idxPath, 'utf8'));
 const classes = Object.keys(idx.classes || {}).sort();
 const mdPath = path.join(process.cwd(), 'docs', 'PROBE_CANDIDATES.md');
-const luaPath = path.join(process.cwd(), 'client/Mods/CrabRuntimeProbe/Scripts/generated_probe_candidates.lua');
 let md = '# Probe Candidates (Generated)\n\n';
-md += 'Derived from object dump presence only; runtime safety unknown.\n\n';
+md += 'Derived from object dump presence only; runtime safety unknown.\n';
+md += 'This tool does not generate runtime Lua probes.\n\n';
 classes.forEach(c => { md += `- ${c}\n`; });
 fs.writeFileSync(mdPath, md);
-const lua = 'return ' + JSON.stringify(classes, null, 2).replace(/"/g, "'") + '\n';
-fs.writeFileSync(luaPath, lua);
-console.log('Wrote', mdPath, 'and', luaPath);
+console.log('Wrote', mdPath);

@@ -2,12 +2,8 @@
 
 Conservative context labels used by probe results:
 
-- menu
-- lobby
-- solo
-- host
-- joined-client
-- traveling
-- dead-or-respawning
-- unknown
-- unstable
+- `menu`: no valid `CrabPC` during early ticks.
+- `lobby`: valid `CrabPC`, no valid `PlayerState`.
+- `solo`: valid `CrabPC` and valid `PlayerState`; role is `solo-or-host`.
+- `unknown`: insufficient passive evidence.
+- `traveling`, `unstable`, `dead-or-respawning`: lifecycle guard states.
