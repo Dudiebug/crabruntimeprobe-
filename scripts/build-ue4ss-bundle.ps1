@@ -187,18 +187,39 @@ try {
   New-Item -ItemType Directory -Force -Path $BundleRoot | Out-Null
 
   $TemplateClient = Join-Path $TemplateRoot "client"
+  $SourceClient = Join-Path $RepoRoot "client"
   $BundleMods = Join-Path $BundleRoot "Mods"
 
-  Copy-RequiredFile -Source (Join-Path $TemplateClient "UE4SS.dll") -Destination (Join-Path $BundleRoot "UE4SS.dll")
-  Copy-RequiredFile -Source (Join-Path $TemplateClient "dwmapi.dll") -Destination (Join-Path $BundleRoot "dwmapi.dll")
-  Copy-RequiredFile -Source (Join-Path $TemplateClient "UE4SS-settings.ini") -Destination (Join-Path $BundleRoot "UE4SS-settings.ini")
-  Copy-OptionalFile -Source (Join-Path $TemplateClient "imgui.ini") -Destination (Join-Path $BundleRoot "imgui.ini")
-  Copy-RequiredFile -Source (Join-Path $TemplateRoot "UE4SS-LICENSE.txt") -Destination (Join-Path $BundleRoot "UE4SS-LICENSE.txt")
+  foreach ($file in @("UE4SS.dll", "dwmapi.dll", "UE4SS-settings.ini")) {
+    $localSource = Join-Path $SourceClient $file
+    $templateSource = Join-Path $TemplateClient $file
+    if (Test-Path -LiteralPath $localSource -PathType Leaf) {
+      Copy-RequiredFile -Source $localSource -Destination (Join-Path $BundleRoot $file)
+    } else {
+      Copy-RequiredFile -Source $templateSource -Destination (Join-Path $BundleRoot $file)
+    }
+  }
+  if (Test-Path -LiteralPath (Join-Path $SourceClient "imgui.ini") -PathType Leaf) {
+    Copy-OptionalFile -Source (Join-Path $SourceClient "imgui.ini") -Destination (Join-Path $BundleRoot "imgui.ini")
+  } else {
+    Copy-OptionalFile -Source (Join-Path $TemplateClient "imgui.ini") -Destination (Join-Path $BundleRoot "imgui.ini")
+  }
+
+  if (Test-Path -LiteralPath (Join-Path $RepoRoot "UE4SS-LICENSE.txt") -PathType Leaf) {
+    Copy-RequiredFile -Source (Join-Path $RepoRoot "UE4SS-LICENSE.txt") -Destination (Join-Path $BundleRoot "UE4SS-LICENSE.txt")
+  } else {
+    Copy-RequiredFile -Source (Join-Path $TemplateRoot "UE4SS-LICENSE.txt") -Destination (Join-Path $BundleRoot "UE4SS-LICENSE.txt")
+  }
   Copy-RequiredFile -Source (Join-Path $RepoRoot "LICENSE") -Destination (Join-Path $BundleRoot "CrabRuntimeProbe-LICENSE.txt")
   Copy-RequiredFile -Source (Join-Path $RepoRoot "README.md") -Destination (Join-Path $BundleRoot "CrabRuntimeProbe-README.md")
 
   foreach ($supportMod in @("BPML_GenericFunctions", "BPModLoaderMod", "Keybinds", "shared")) {
-    Copy-CleanDirectory -Source (Join-Path $TemplateClient "Mods\$supportMod") -Destination (Join-Path $BundleMods $supportMod)
+    $localSupport = Join-Path $SourceClient "Mods\$supportMod"
+    if (Test-Path -LiteralPath $localSupport -PathType Container) {
+      Copy-CleanDirectory -Source $localSupport -Destination (Join-Path $BundleMods $supportMod)
+    } else {
+      Copy-CleanDirectory -Source (Join-Path $TemplateClient "Mods\$supportMod") -Destination (Join-Path $BundleMods $supportMod)
+    }
   }
 
   Copy-CleanDirectory -Source (Join-Path $RepoRoot "client\Mods\CrabRuntimeProbe") -Destination (Join-Path $BundleMods "CrabRuntimeProbe")

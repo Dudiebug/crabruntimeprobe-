@@ -68,9 +68,10 @@ gates, and writes JSONL results.
 
 ## Release packaging
 
-CrabRuntimeProbe can build a UE4SS-bundled release from a local CrabInvSync
-checkout or ZIP used only as a template for UE4SS runtime files, UE4SS
-settings, UE4SS support mods, and UE4SS license handling.
+CrabRuntimeProbe includes a source-visible UE4SS bundle template under
+`client/`. The UE4SS runtime files, UE4SS settings, UE4SS support mods, and
+UE4SS license were copied from a local CrabInvSync checkout/ZIP and are kept in
+source so reviewers can inspect the exact support files used by packaging.
 
 The packager does not copy CrabInvSync gameplay code, server files, objectdump
 files, runtime logs/output, `.git`, or `node_modules`. The bundle is meant to be
@@ -107,12 +108,16 @@ node tools/package_release.js --template C:\Users\dudie\Downloads\CrabInvSync-ma
 The bundle root contains UE4SS runtime files, `INSTALL.txt`, the
 CrabRuntimeProbe README/license, and `Mods/`. The copied UE4SS support mods are:
 
+- `client/UE4SS.dll`
+- `client/dwmapi.dll`
+- `client/UE4SS-settings.ini`
+- `client/imgui.ini`
 - `Mods/BPML_GenericFunctions`
 - `Mods/BPModLoaderMod`
 - `Mods/Keybinds`
 - `Mods/shared`
 
-These are UE4SS support files from the CrabInvSync template, not
+These are UE4SS support files sourced from the CrabInvSync template, not
 CrabRuntimeProbe gameplay code. The generated `Mods/mods.txt` enables only
 these support mods and `CrabRuntimeProbe`. CrabRuntimeProbe remains observe-mode
 by default; generated objectdump candidates are documentation only and do not

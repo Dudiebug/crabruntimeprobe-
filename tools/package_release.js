@@ -189,18 +189,23 @@ function main() {
 
   const templateRoot = extractTemplateIfNeeded(template, workDir);
   const templateClient = path.join(templateRoot, 'client');
+  const sourceClient = path.join(root, 'client');
   const stagingMods = path.join(stagingDir, 'Mods');
 
   for (const file of rootRuntimeFiles) {
-    copyFileIfExists(path.join(templateClient, file), path.join(stagingDir, file), file !== 'imgui.ini');
+    const localSource = path.join(sourceClient, file);
+    const templateSource = path.join(templateClient, file);
+    copyFileIfExists(fs.existsSync(localSource) ? localSource : templateSource, path.join(stagingDir, file), file !== 'imgui.ini');
   }
 
-  copyFileIfExists(path.join(templateRoot, 'UE4SS-LICENSE.txt'), path.join(stagingDir, 'UE4SS-LICENSE.txt'), true);
+  const localUe4ssLicense = path.join(root, 'UE4SS-LICENSE.txt');
+  copyFileIfExists(fs.existsSync(localUe4ssLicense) ? localUe4ssLicense : path.join(templateRoot, 'UE4SS-LICENSE.txt'), path.join(stagingDir, 'UE4SS-LICENSE.txt'), true);
   copyFileIfExists(path.join(root, 'LICENSE'), path.join(stagingDir, 'CrabRuntimeProbe-LICENSE.txt'), true);
   copyFileIfExists(path.join(root, 'README.md'), path.join(stagingDir, 'CrabRuntimeProbe-README.md'), true);
 
   for (const modName of supportMods) {
-    copyDir(path.join(templateClient, 'Mods', modName), path.join(stagingMods, modName));
+    const localSupport = path.join(sourceClient, 'Mods', modName);
+    copyDir(fs.existsSync(localSupport) ? localSupport : path.join(templateClient, 'Mods', modName), path.join(stagingMods, modName));
   }
 
   copyDir(path.join(root, 'client', 'Mods', 'CrabRuntimeProbe'), path.join(stagingMods, 'CrabRuntimeProbe'));
