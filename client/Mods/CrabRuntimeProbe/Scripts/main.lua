@@ -3,6 +3,7 @@ package.path = package.path .. ';' .. SCRIPT_DIR .. '?.lua'
 
 local crpLog = require('crp_log')
 local writerFactory = require('result_writer')
+local evidenceWriterFactory = require('evidence_writer')
 
 local DEFAULT_CONFIG = {
   enabled = true,
@@ -114,6 +115,7 @@ end
 
 local sessionId = os.date('!%Y%m%dT%H%M%SZ')
 local writer = writerFactory.new(sessionId, cfg)
+local evidenceWriter = evidenceWriterFactory.new(sessionId, cfg)
 log('[CrabRuntimeProbe] boot phase: writer initialized')
 
 log('[CrabRuntimeProbe] started session=' .. sessionId .. ' mode=' .. tostring(cfg.mode))
@@ -128,6 +130,7 @@ else
     log('[CrabRuntimeProbe] build ' .. tostring(line))
   end
 end
+evidenceWriter:writeSessionManifest(buildInfoLines)
 log('[CrabRuntimeProbe] safety allowHudTickHook=' .. tostring(cfg.allowHudTickHook)
   .. ' allowDeepArrayProbes=' .. tostring(cfg.allowDeepArrayProbes)
   .. ' allowInventoryInfoProbes=' .. tostring(cfg.allowInventoryInfoProbes)
@@ -136,6 +139,8 @@ log('[CrabRuntimeProbe] safety allowHudTickHook=' .. tostring(cfg.allowHudTickHo
   .. ' allowRpcProbes=' .. tostring(cfg.allowRpcProbes))
 log('[CrabRuntimeProbe] results primary=' .. tostring(writer.resultPath))
 log('[CrabRuntimeProbe] results fallback=' .. tostring(writer.fallbackPath))
+log('[CrabRuntimeProbe] evidence primary=' .. tostring(evidenceWriter.evidencePath))
+log('[CrabRuntimeProbe] evidence fallback=' .. tostring(evidenceWriter.fallbackEvidencePath))
 
 log('[CrabRuntimeProbe] boot phase: startup smoke write begin')
 writeStartupRecord(writer, cfg, 'Debug.StartupSmoke', 'startup smoke')
@@ -156,7 +161,7 @@ end
 
 local safe = require('safe_access')
 local runner = require('probe_runner')
-local state = runner.new(cfg, safe, writer)
+local state = runner.new(cfg, safe, writer, evidenceWriter)
 
 local function tickOnce()
   local ok, err = pcall(function()

@@ -121,6 +121,29 @@ read item arrays, does not read `InventoryInfo`, does not read health, does not
 write anything, and does not run RPC probes. Direct field equipment probes are
 intentionally separate in `equipment-direct-field-read`.
 
+## Evidence-driven documentation pipeline
+
+RuntimeProbe writes three compact runtime artifacts during tests:
+
+- `probe_results_<session>.jsonl`
+- `access_evidence_<session>.jsonl`
+- `session_manifest_<session>.json`
+
+The UE4SS Lua mod only writes append-only evidence and session context. It does
+not generate the full GitHub Wiki in-game. Repo tools import copied game
+evidence, update docs under `docs/`, and stage wiki pages under `dist/wiki/`.
+GitHub Wiki publishing comes later.
+
+After a play/test pass, run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\import-latest-runtime-evidence.ps1
+```
+
+This imports the latest game evidence into `evidence/runtime/`, regenerates the
+safe access docs, and stages generated wiki Markdown. Repo docs remain the source
+of truth; staged wiki files are derived output.
+
 The quick scripts use the default Steam path:
 
 ```text

@@ -170,6 +170,8 @@ $summaryPath = Join-Path $scriptsRoot "diagnostic_summary.txt"
 $summary = Get-Content -Raw -LiteralPath $summaryPath
 foreach ($required in @(
   "jsonl_event_count = 4",
+  "access_evidence_file_count = 0",
+  "session_manifest_file_count = 0",
   "observe_context_count = 2",
   "debug_startup_smoke_count = 1",
   "debug_writer_self_test_count = 1",

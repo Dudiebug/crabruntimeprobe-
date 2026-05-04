@@ -43,7 +43,16 @@ function Set-CrabRuntimeProbeConfigValue {
     [Parameter(Mandatory = $true)][string]$Value
   )
 
-  $lines = @(Get-Content -LiteralPath $ConfigPath)
+  $lines = $null
+  for ($attempt = 1; $attempt -le 50; $attempt++) {
+    try {
+      $lines = @(Get-Content -LiteralPath $ConfigPath -ErrorAction Stop)
+      break
+    } catch {
+      if ($attempt -eq 50) { throw }
+      Start-Sleep -Milliseconds 200
+    }
+  }
   $pattern = "^\s*$([regex]::Escape($Key))\s*="
   $found = $false
   $updated = foreach ($line in $lines) {
@@ -59,7 +68,15 @@ function Set-CrabRuntimeProbeConfigValue {
     throw "Cannot set missing config key '$Key' in $ConfigPath"
   }
 
-  Set-Content -LiteralPath $ConfigPath -Value $updated -Encoding ASCII
+  for ($attempt = 1; $attempt -le 50; $attempt++) {
+    try {
+      Set-Content -LiteralPath $ConfigPath -Value $updated -Encoding ASCII -ErrorAction Stop
+      break
+    } catch {
+      if ($attempt -eq 50) { throw }
+      Start-Sleep -Milliseconds 200
+    }
+  }
 }
 
 function Get-CrabRuntimeProbeConfigValueOrMissing {
@@ -157,7 +174,7 @@ function Clear-CrabRuntimeProbeRuntimeFiles {
   }
   if (Test-Path -LiteralPath $ScriptsRoot -PathType Container) {
     $candidateFiles += @(Get-ChildItem -LiteralPath $ScriptsRoot -File -Force -ErrorAction SilentlyContinue | Where-Object {
-      $_.Name -match '\.jsonl$' -or $_.Name -match '^(push|recv).*\.json$'
+      $_.Name -match '\.jsonl$' -or $_.Name -match '^session_manifest_.*\.json$' -or $_.Name -match '^(push|recv).*\.json$'
     })
   }
 
@@ -177,10 +194,44 @@ function Get-CrabRuntimeProbeJsonlFiles {
   $files = @()
   $resultsDir = Join-Path $ScriptsRoot "results"
   if (Test-Path -LiteralPath $resultsDir -PathType Container) {
-    $files += @(Get-ChildItem -LiteralPath $resultsDir -Filter "*.jsonl" -File -Force -ErrorAction SilentlyContinue)
+    $files += @(Get-ChildItem -LiteralPath $resultsDir -Filter "probe_results_*.jsonl" -File -Force -ErrorAction SilentlyContinue)
   }
   if (Test-Path -LiteralPath $ScriptsRoot -PathType Container) {
-    $files += @(Get-ChildItem -LiteralPath $ScriptsRoot -Filter "*.jsonl" -File -Force -ErrorAction SilentlyContinue)
+    $files += @(Get-ChildItem -LiteralPath $ScriptsRoot -Filter "probe_results_*.jsonl" -File -Force -ErrorAction SilentlyContinue)
+  }
+
+  return @($files | Sort-Object FullName -Unique)
+}
+
+function Get-CrabRuntimeProbeAccessEvidenceFiles {
+  param(
+    [Parameter(Mandatory = $true)][string]$ScriptsRoot
+  )
+
+  $files = @()
+  $resultsDir = Join-Path $ScriptsRoot "results"
+  if (Test-Path -LiteralPath $resultsDir -PathType Container) {
+    $files += @(Get-ChildItem -LiteralPath $resultsDir -Filter "access_evidence_*.jsonl" -File -Force -ErrorAction SilentlyContinue)
+  }
+  if (Test-Path -LiteralPath $ScriptsRoot -PathType Container) {
+    $files += @(Get-ChildItem -LiteralPath $ScriptsRoot -Filter "access_evidence_*.jsonl" -File -Force -ErrorAction SilentlyContinue)
+  }
+
+  return @($files | Sort-Object FullName -Unique)
+}
+
+function Get-CrabRuntimeProbeSessionManifestFiles {
+  param(
+    [Parameter(Mandatory = $true)][string]$ScriptsRoot
+  )
+
+  $files = @()
+  $resultsDir = Join-Path $ScriptsRoot "results"
+  if (Test-Path -LiteralPath $resultsDir -PathType Container) {
+    $files += @(Get-ChildItem -LiteralPath $resultsDir -Filter "session_manifest_*.json" -File -Force -ErrorAction SilentlyContinue)
+  }
+  if (Test-Path -LiteralPath $ScriptsRoot -PathType Container) {
+    $files += @(Get-ChildItem -LiteralPath $ScriptsRoot -Filter "session_manifest_*.json" -File -Force -ErrorAction SilentlyContinue)
   }
 
   return @($files | Sort-Object FullName -Unique)
@@ -278,6 +329,28 @@ function Format-JsonlEventSummary {
   if ($tick) { $parts += "tick=$tick" }
   $parts += "event=$eventName"
   if ($result) { $parts += "result=$result" }
+  if ($context) { $parts += "context=$context" }
+  if ($role) { $parts += "role=$role" }
+  if ($summary) { $parts += "summary=$summary" }
+  return ($parts -join " ")
+}
+
+function Format-EvidenceSummary {
+  param([object]$Record)
+
+  $timestamp = Get-RecordValue -Record $Record -Names @("timestamp")
+  $symbol = Get-RecordValue -Record $Record -Names @("symbol")
+  $accessMethod = Get-RecordValue -Record $Record -Names @("accessMethod")
+  $status = Get-RecordValue -Record $Record -Names @("runtimeStatus", "result")
+  $context = Get-RecordValue -Record $Record -Names @("context")
+  $role = Get-RecordValue -Record $Record -Names @("role")
+  $summary = Get-RecordValue -Record $Record -Names @("valueSummary", "error")
+
+  $parts = @()
+  if ($timestamp) { $parts += "ts=$timestamp" }
+  if ($symbol) { $parts += "symbol=$symbol" }
+  if ($accessMethod) { $parts += "accessMethod=$accessMethod" }
+  if ($status) { $parts += "status=$status" }
   if ($context) { $parts += "context=$context" }
   if ($role) { $parts += "role=$role" }
   if ($summary) { $parts += "summary=$summary" }
@@ -464,6 +537,16 @@ foreach ($file in $jsonlFiles) {
   $jsonlText += Get-Content -Raw -LiteralPath $file.FullName
 }
 $jsonlRecords = @(Convert-CrabRuntimeProbeJsonlRecords -JsonlFiles $jsonlFiles)
+$accessEvidenceFiles = @(Get-CrabRuntimeProbeAccessEvidenceFiles -ScriptsRoot $InstallScriptsRoot)
+$sessionManifestFiles = @(Get-CrabRuntimeProbeSessionManifestFiles -ScriptsRoot $InstallScriptsRoot | Where-Object { $_.Length -gt 0 })
+$accessEvidenceRecords = @(Convert-CrabRuntimeProbeJsonlRecords -JsonlFiles $accessEvidenceFiles)
+$evidenceSymbolMethodGroups = @($accessEvidenceRecords | ForEach-Object {
+  $symbol = Get-RecordValue -Record $_ -Names @("symbol")
+  $accessMethod = Get-RecordValue -Record $_ -Names @("accessMethod")
+  if ([string]::IsNullOrWhiteSpace($symbol)) { $symbol = "Unknown" }
+  if ([string]::IsNullOrWhiteSpace($accessMethod)) { $accessMethod = "Unknown" }
+  "$symbol / $accessMethod"
+} | Group-Object | Sort-Object Name)
 $eventGroups = @($jsonlRecords | ForEach-Object { Get-RecordEventName -Record $_ } | Group-Object | Sort-Object Name)
 $probeGroups = @($jsonlRecords | Where-Object { $_.PSObject.Properties.Name -contains "probeName" -and -not [string]::IsNullOrWhiteSpace([string]$_.probeName) } | Group-Object -Property probeName | Sort-Object Name)
 $timestampValues = @($jsonlRecords | ForEach-Object { Get-RecordValue -Record $_ -Names @("timestamp") } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
@@ -587,6 +670,9 @@ $summaryLines = @(
   "ue4ss_log_path = $Ue4ssLogPath",
   "jsonl_file_count = $($jsonlFiles.Count)",
   "jsonl_event_count = $($jsonlRecords.Count)",
+  "access_evidence_file_count = $($accessEvidenceFiles.Count)",
+  "access_evidence_event_count = $($accessEvidenceRecords.Count)",
+  "session_manifest_file_count = $($sessionManifestFiles.Count)",
   "jsonl_first_timestamp = $firstJsonlTimestamp",
   "jsonl_last_timestamp = $lastJsonlTimestamp",
   "observe_context_count = $observeContextCount",
@@ -644,6 +730,7 @@ if ([string]::IsNullOrWhiteSpace($buildInfo)) {
 
 $summaryLines = Add-CountLines -Lines $summaryLines -Header "jsonl_event_type_counts:" -Groups $eventGroups
 $summaryLines = Add-CountLines -Lines $summaryLines -Header "probe_result_counts_by_probe_name:" -Groups $probeGroups
+$summaryLines = Add-CountLines -Lines $summaryLines -Header "access_evidence_counts_by_symbol_accessMethod:" -Groups $evidenceSymbolMethodGroups
 
 $summaryLines += ""
 $summaryLines += "jsonl_files:"
@@ -651,6 +738,26 @@ if ($jsonlFiles.Count -eq 0) {
   $summaryLines += " - none"
 } else {
   foreach ($file in $jsonlFiles) {
+    $summaryLines += " - $($file.FullName) ($($file.Length) bytes)"
+  }
+}
+
+$summaryLines += ""
+$summaryLines += "access_evidence_files:"
+if ($accessEvidenceFiles.Count -eq 0) {
+  $summaryLines += " - none"
+} else {
+  foreach ($file in $accessEvidenceFiles) {
+    $summaryLines += " - $($file.FullName) ($($file.Length) bytes)"
+  }
+}
+
+$summaryLines += ""
+$summaryLines += "session_manifest_files:"
+if ($sessionManifestFiles.Count -eq 0) {
+  $summaryLines += " - none"
+} else {
+  foreach ($file in $sessionManifestFiles) {
     $summaryLines += " - $($file.FullName) ($($file.Length) bytes)"
   }
 }
@@ -674,6 +781,17 @@ if ($lastFiveJsonl.Count -eq 0) {
 } else {
   foreach ($record in $lastFiveJsonl) {
     $summaryLines += " - $(Format-JsonlEventSummary -Record $record)"
+  }
+}
+
+$summaryLines += ""
+$summaryLines += "latest_5_access_evidence_rows:"
+$lastFiveEvidence = @($accessEvidenceRecords | Select-Object -Last 5)
+if ($lastFiveEvidence.Count -eq 0) {
+  $summaryLines += " - none"
+} else {
+  foreach ($record in $lastFiveEvidence) {
+    $summaryLines += " - $(Format-EvidenceSummary -Record $record)"
   }
 }
 

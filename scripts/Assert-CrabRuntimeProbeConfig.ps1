@@ -8,6 +8,7 @@ $script:CrabRuntimeProbeRequiredModFiles = @(
   "Scripts\safe_access.lua",
   "Scripts\probe_registry.lua",
   "Scripts\probe_runner.lua",
+  "Scripts\evidence_writer.lua",
   "Scripts\result_writer.lua"
 )
 

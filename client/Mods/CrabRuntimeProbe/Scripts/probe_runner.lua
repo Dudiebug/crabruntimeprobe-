@@ -3,7 +3,7 @@ local runtimeContext = require('runtime_context')
 
 local runner = {}
 
-function runner.new(config, safe, writer)
+function runner.new(config, safe, writer, evidenceWriter)
   local state = {
     tick = 0,
     started = false,
@@ -45,6 +45,42 @@ function runner.new(config, safe, writer)
     return fallback
   end
 
+  local function runtimeStatus(result)
+    if result == 'ok' then return 'SAFE' end
+    if result == 'nil' then return 'RETURNS_NIL' end
+    if result == 'lua_error' then return 'LUA_ERROR' end
+    if result == 'skipped_context' then return 'SKIPPED_CONTEXT' end
+    if result == 'skipped_by_config' then return 'SKIPPED_BY_CONFIG' end
+    if result == 'unsafe_disabled' then return 'UNSAFE_DISABLED' end
+    return 'UNTESTED'
+  end
+
+  local function writeEvidence(probe, result, kind, summary, err)
+    if not evidenceWriter then return end
+    evidenceWriter:writeEvidence({
+      probeId = probe.id,
+      probeName = probe.id,
+      probeSet = probe.set or '',
+      category = probe.category or '',
+      symbol = probe.symbol or probe.id,
+      owner = probe.owner or '',
+      member = probe.member or '',
+      accessMethod = probe.accessMethod or '',
+      accessKind = probe.accessKind or '',
+      mode = config.mode,
+      tickDriver = tostring(config.tickDriver),
+      tick = state.tick,
+      context = state.lastContext,
+      role = state.role,
+      lifecycleState = state.lifecycleState,
+      result = result or 'unknown',
+      runtimeStatus = runtimeStatus(result),
+      valueKind = kind or '',
+      valueSummary = summary or '',
+      error = err or ''
+    })
+  end
+
   local function emit(probe, result, kind, summary, err)
     writer:write({
       tick = state.tick,
@@ -62,6 +98,7 @@ function runner.new(config, safe, writer)
       error = err or '',
       durationMs = 0
     })
+    writeEvidence(probe, result, kind, summary, err)
   end
 
   local function allowedByConfig(probe)
@@ -120,6 +157,31 @@ function runner.new(config, safe, writer)
       playerStateValid = facts.playerStateValid,
       error = facts.error
     })
+    if evidenceWriter then
+      evidenceWriter:writeEvidence({
+        probeId = 'Observe.Context',
+        probeName = 'Observe.Context',
+        probeSet = tostring(config.probeSet),
+        category = 'observe',
+        symbol = 'Runtime.Context',
+        owner = 'Runtime',
+        member = 'Context',
+        accessMethod = 'observe',
+        accessKind = 'context',
+        mode = 'observe',
+        tickDriver = tostring(config.tickDriver),
+        tick = state.tick,
+        context = facts.context,
+        role = facts.role,
+        lifecycleState = state.lifecycleState,
+        result = facts.result,
+        runtimeStatus = 'SAFE',
+        valueKind = 'context',
+        valueSummary = tostring(facts.context) .. ' role=' .. tostring(facts.role),
+        error = facts.error or '',
+        localNotes = 'context observation only; not arbitrary object access'
+      })
+    end
   end
 
   function state:onTick()
