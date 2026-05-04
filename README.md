@@ -49,6 +49,50 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-installed-cli
 `allowHudTickHook` must remain `false` unless you are intentionally testing the
 unsafe HUD fallback that crashed immediately in this Crab Champions/UE4SS setup.
 
+## Minimal user workflow
+
+1. Paste Codex prompts.
+2. Pull latest if Codex tells you a fix was committed:
+
+```powershell
+git checkout main
+git pull origin main
+```
+
+3. Run one quick prepare script:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-install-and-prepare.ps1
+```
+
+4. Launch Crab Champions, sit at the menu for 20 to 30 seconds, then quit.
+5. Run one quick collect script:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-collect-diagnostics.ps1
+```
+
+6. Paste
+`Mods\CrabRuntimeProbe\Scripts\diagnostic_summary.txt` back to ChatGPT/Codex.
+
+The quick scripts use the default Steam path:
+
+```text
+C:\Program Files (x86)\Steam\steamapps\common\Crab Champions\CrabChampions\Binaries\Win64
+```
+
+For a non-default install path, use the full diagnostic cycle script:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-local-diagnostic-cycle.ps1 -GameBin "C:\Program Files (x86)\Steam\steamapps\common\Crab Champions\CrabChampions\Binaries\Win64" -Prepare
+```
+
+After launching and quitting:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-local-diagnostic-cycle.ps1 -GameBin "C:\Program Files (x86)\Steam\steamapps\common\Crab Champions\CrabChampions\Binaries\Win64" -Collect
+```
+
 ## Quick local test install
 
 Install the latest client mod directly into a local Crab Champions UE4SS
