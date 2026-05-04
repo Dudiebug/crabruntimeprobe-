@@ -1,9 +1,29 @@
+[CmdletBinding()]
 param(
-  [Parameter(Mandatory = $true, Position = 0)]
+  [Parameter(Position = 0)]
   [string]$BundlePath
 )
 
 $ErrorActionPreference = "Stop"
+
+. (Join-Path $PSScriptRoot "Assert-CrabRuntimeProbeConfig.ps1")
+
+$RepoRoot = Resolve-CrabRuntimeProbeRepoRoot -StartPath $PSScriptRoot -RequireGit
+
+if ([string]::IsNullOrWhiteSpace($BundlePath)) {
+  $defaultBundle = Get-ChildItem -LiteralPath (Join-Path $RepoRoot "dist") -Directory -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -like "CrabRuntimeProbe-v*-UE4SS" } |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1
+
+  if ($null -eq $defaultBundle) {
+    Write-Host "No UE4SS bundle path supplied and no dist\CrabRuntimeProbe-v*-UE4SS bundle exists. Skipping bundle verification."
+    exit 0
+  }
+
+  $BundlePath = $defaultBundle.FullName
+}
+
 $BundleRoot = [System.IO.Path]::GetFullPath($BundlePath)
 $errors = New-Object System.Collections.Generic.List[string]
 
@@ -26,18 +46,6 @@ function Require-DirectoryAbsent {
   if (Test-Path -LiteralPath $full -PathType Container) {
     Add-Error "Forbidden directory present: $RelativePath"
   }
-}
-
-function Read-ConfigValue {
-  param(
-    [string]$ConfigPath,
-    [string]$Key
-  )
-  $line = Get-Content -LiteralPath $ConfigPath | Where-Object {
-    $_ -match "^\s*$([regex]::Escape($Key))\s*="
-  } | Select-Object -First 1
-  if ($null -eq $line) { return $null }
-  return ($line -replace '^\s*[^=]+\s*=\s*', '').Trim()
 }
 
 if (-not (Test-Path -LiteralPath $BundleRoot -PathType Container)) {
@@ -90,20 +98,10 @@ if (Test-Path -LiteralPath $modsTxt) {
 
 $configPath = Join-Path $BundleRoot "Mods\CrabRuntimeProbe\Scripts\config.txt"
 if (Test-Path -LiteralPath $configPath) {
-  $expected = @{
-    mode = "observe"
-    allowHudTickHook = "false"
-    allowDeepArrayProbes = "false"
-    allowInventoryInfoProbes = "false"
-    allowHealthProbes = "false"
-    allowWriteProbes = "false"
-    allowRpcProbes = "false"
-  }
-  foreach ($key in $expected.Keys) {
-    $actual = Read-ConfigValue -ConfigPath $configPath -Key $key
-    if ($actual -ne $expected[$key]) {
-      Add-Error "Unsafe config default: $key expected '$($expected[$key])' got '$actual'"
-    }
+  try {
+    Assert-CrabRuntimeProbeConfig -ConfigPath $configPath -Label "bundle config"
+  } catch {
+    Add-Error $_.Exception.Message
   }
 }
 

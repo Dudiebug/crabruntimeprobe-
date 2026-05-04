@@ -18,9 +18,36 @@ UE4SS object dumps show what symbols exist, but not when/where access is safe. T
 
 ## Install
 
-1. Copy `client/Mods/CrabRuntimeProbe` into your UE4SS mods directory.
-2. Ensure `enabled.txt` contains `1`.
-3. Edit `Scripts/config.txt` as needed.
+Use the install script from the real Git checkout. Do not drag a random local
+folder named `CrabRuntimeProbe` into the game; copied folders can be stale and
+may be missing safety defaults such as `allowHudTickHook = false`.
+
+The Crab Champions Win64 game bin path is usually:
+
+```text
+C:\Program Files (x86)\Steam\steamapps\common\Crab Champions\CrabChampions\Binaries\Win64
+```
+
+Preferred install:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-client-to-game.ps1 "C:\Program Files (x86)\Steam\steamapps\common\Crab Champions\CrabChampions\Binaries\Win64"
+```
+
+Preferred export for manual copying:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\export-client-folder.ps1
+```
+
+Verification:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-installed-client.ps1 "C:\Program Files (x86)\Steam\steamapps\common\Crab Champions\CrabChampions\Binaries\Win64"
+```
+
+`allowHudTickHook` must remain `false` unless you are intentionally testing the
+unsafe HUD fallback that crashed immediately in this Crab Champions/UE4SS setup.
 
 ## Quick local test install
 
@@ -28,13 +55,13 @@ Install the latest client mod directly into a local Crab Champions UE4SS
 installation:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-client-to-game.ps1 "C:\Path\To\Crab Champions\CrabChampions\Binaries\Win64"
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-client-to-game.ps1 "C:\Program Files (x86)\Steam\steamapps\common\Crab Champions\CrabChampions\Binaries\Win64"
 ```
 
 Verify the installed files, `Mods\mods.txt`, and safe observe defaults:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-installed-client.ps1 "C:\Path\To\Crab Champions\CrabChampions\Binaries\Win64"
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-installed-client.ps1 "C:\Program Files (x86)\Steam\steamapps\common\Crab Champions\CrabChampions\Binaries\Win64"
 ```
 
 During CrabRuntimeProbe testing, disable `CrabInventorySync` so the probe log is
@@ -170,20 +197,26 @@ node tools/package_release.js --template C:\Users\dudie\Downloads\CrabInvSync-ma
 To export only the latest CrabRuntimeProbe client/mod files for manual testing:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\export-client-folder.ps1 -Zip
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\export-client-folder.ps1
 ```
 
-For the simplest manual install, copy:
+The export script writes a clean copy of the current repo's `client` folder to:
 
 ```text
-dist\CrabRuntimeProbe-mod-only\CrabRuntimeProbe
+dist\CrabRuntimeProbe-client
 ```
 
-into:
+For a full manual UE4SS client copy, copy the contents of that folder into:
 
 ```text
-Crab Champions\CrabChampions\Binaries\Win64\Mods\CrabRuntimeProbe
+C:\Program Files (x86)\Steam\steamapps\common\Crab Champions\CrabChampions\Binaries\Win64
 ```
+
+For a mod-only manual copy, copy
+`dist\CrabRuntimeProbe-client\Mods\CrabRuntimeProbe` into the game folder's
+`Mods\CrabRuntimeProbe` path. Prefer the install script when possible because
+it validates the source config, writes `Scripts\build_info.txt`, and verifies
+the installed config after copying.
 
 The bundle root contains UE4SS runtime files, `INSTALL.txt`, the
 CrabRuntimeProbe README/license, and `Mods/`. The copied UE4SS support mods are:
