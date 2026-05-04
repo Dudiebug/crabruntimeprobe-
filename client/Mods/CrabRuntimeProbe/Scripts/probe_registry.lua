@@ -14,6 +14,15 @@ end
 function registry.build(safe)
   local probes = {}
 
+  local function getCrabPlayerState(ctx)
+    local crabPc, crabPcErr = safe.findFirst('CrabPC')
+    ctx.cache.CrabPC = crabPc
+    if crabPcErr then return nil, crabPcErr end
+    local crabPs, crabPsErr = safe.getProperty(crabPc, 'PlayerState')
+    ctx.cache.CrabPS = crabPs
+    return crabPs, crabPsErr
+  end
+
   probes[#probes + 1] = mk('FindFirstOf.CrabPC', 'core', 'shallow-core', 'findFirst', function(ctx)
     local obj, err = safe.findFirst('CrabPC')
     ctx.cache.CrabPC = obj
@@ -54,20 +63,26 @@ function registry.build(safe)
     return 'ok', 'string', v
   end)
 
-  local da = { WeaponDA = 'equipment-read', AbilityDA = 'equipment-read', MeleeDA = 'equipment-read' }
-  for field, setName in pairs(da) do
-    probes[#probes + 1] = mk('CrabPS.GetPropertyValue.' .. field, 'equipment', setName, 'property', function(ctx)
-      local v, err = safe.getProperty(ctx.cache.CrabPS, field)
+  local equipmentFields = { 'WeaponDA', 'AbilityDA', 'MeleeDA' }
+  for _, field in ipairs(equipmentFields) do
+    probes[#probes + 1] = mk('CrabPS.GetPropertyValue.' .. field, 'equipment', 'equipment-property-read', 'property', function(ctx)
+      local crabPs, crabPsErr = getCrabPlayerState(ctx)
+      if crabPsErr then return 'lua_error', nil, crabPsErr end
+      local v, err = safe.getProperty(crabPs, field)
       ctx.cache[field] = v
       if err then return 'lua_error', nil, err end
       if not v then return 'nil' end
-      return 'ok', 'object', field .. ' via property'
+      local summary, summaryErr = safe.summarizeObjectIdentity(v)
+      return 'ok', 'object', summary or (field .. ' via property'), summaryErr
     end)
-    probes[#probes + 1] = mk('CrabPS.DirectField.' .. field, 'equipment', setName, 'direct', function(ctx)
-      local v, err = safe.getDirectField(ctx.cache.CrabPS, field)
+    probes[#probes + 1] = mk('CrabPS.DirectField.' .. field, 'equipment', 'equipment-direct-field-read', 'direct', function(ctx)
+      local crabPs, crabPsErr = getCrabPlayerState(ctx)
+      if crabPsErr then return 'lua_error', nil, crabPsErr end
+      local v, err = safe.getDirectField(crabPs, field)
       if err then return 'lua_error', nil, err end
       if not v then return 'nil' end
-      return 'ok', 'object', field .. ' via direct field'
+      local summary, summaryErr = safe.summarizeObjectIdentity(v)
+      return 'ok', 'object', summary or (field .. ' via direct field'), summaryErr
     end)
   end
 

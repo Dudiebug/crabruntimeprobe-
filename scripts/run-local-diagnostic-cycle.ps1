@@ -7,7 +7,9 @@ param(
   [switch]$CollectSmoke,
   [ValidateSet("none", "registerTick", "executeDelay", "loopAsync", "hud")]
   [string]$PrepareTickDriver,
+  [switch]$PrepareEquipmentProperty,
   [switch]$Collect,
+  [switch]$CollectEquipmentProperty,
   [switch]$ExpectObserveContext,
   [switch]$NoDiagnosticDebug
 )
@@ -22,11 +24,13 @@ function Get-CycleMode {
   if ($PrepareSmoke) { $modes += "PrepareSmoke" }
   if ($CollectSmoke) { $modes += "CollectSmoke" }
   if (-not [string]::IsNullOrWhiteSpace($PrepareTickDriver)) { $modes += "PrepareTickDriver" }
+  if ($PrepareEquipmentProperty) { $modes += "PrepareEquipmentProperty" }
   if ($Collect) { $modes += "Collect" }
+  if ($CollectEquipmentProperty) { $modes += "CollectEquipmentProperty" }
 
   $unique = @($modes | Sort-Object -Unique)
   if ($unique.Count -ne 1) {
-    throw "Choose exactly one mode: -PrepareSmoke, -CollectSmoke, -PrepareTickDriver <driver>, or -Collect."
+    throw "Choose exactly one mode: -PrepareSmoke, -CollectSmoke, -PrepareTickDriver <driver>, -PrepareEquipmentProperty, -Collect, or -CollectEquipmentProperty."
   }
 
   return $unique[0]
@@ -93,6 +97,8 @@ function Test-CrabRuntimeProbeInstalledSafety {
 
   $requiredFalse = @(
     "allowHudTickHook",
+    "allowUnknownRoleProbes",
+    "allowJoinedClientDeepProbes",
     "allowDeepArrayProbes",
     "allowInventoryInfoProbes",
     "allowHealthProbes",
@@ -315,6 +321,8 @@ function Set-InstalledSmokeConfig {
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugWriterSelfTest" -Value "true"
   foreach ($key in @(
     "allowHudTickHook",
+    "allowUnknownRoleProbes",
+    "allowJoinedClientDeepProbes",
     "allowDeepArrayProbes",
     "allowInventoryInfoProbes",
     "allowHealthProbes",
@@ -343,6 +351,30 @@ function Set-InstalledTickDriverConfig {
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "probeSet" -Value "shallow-core"
   foreach ($key in @(
     "allowHudTickHook",
+    "allowUnknownRoleProbes",
+    "allowJoinedClientDeepProbes",
+    "allowDeepArrayProbes",
+    "allowInventoryInfoProbes",
+    "allowHealthProbes",
+    "allowWriteProbes",
+    "allowRpcProbes"
+  )) {
+    Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key $key -Value "false"
+  }
+}
+
+function Set-InstalledEquipmentPropertyConfig {
+  param([string]$ConfigPath)
+
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "tickDriver" -Value "executeDelay"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "mode" -Value "active"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "probeSet" -Value "equipment-property-read"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugTickHeartbeat" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugWriterSelfTest" -Value "true"
+  foreach ($key in @(
+    "allowHudTickHook",
+    "allowUnknownRoleProbes",
+    "allowJoinedClientDeepProbes",
     "allowDeepArrayProbes",
     "allowInventoryInfoProbes",
     "allowHealthProbes",
@@ -372,12 +404,14 @@ if (-not (Test-Path -LiteralPath $GameBinFull -PathType Container)) {
   throw "Game bin path does not exist: $GameBinFull"
 }
 
-if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver") {
+if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "PrepareEquipmentProperty") {
   & (Join-Path $PSScriptRoot "install-client-to-game.ps1") $GameBinFull
   & (Join-Path $PSScriptRoot "verify-installed-client.ps1") $GameBinFull
 
   if ($Mode -eq "PrepareSmoke") {
     Set-InstalledSmokeConfig -ConfigPath $InstalledConfigPath
+  } elseif ($Mode -eq "PrepareEquipmentProperty") {
+    Set-InstalledEquipmentPropertyConfig -ConfigPath $InstalledConfigPath
   } else {
     Set-InstalledTickDriverConfig -ConfigPath $InstalledConfigPath -TickDriver $PrepareTickDriver -NoDebug:$NoDiagnosticDebug
   }
@@ -390,7 +424,9 @@ if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver") {
   Write-Host "Source repo path: $RepoRoot"
   Write-Host "Game bin path: $GameBinFull"
   Write-Host "Installed config path: $InstalledConfigPath"
+  Write-Host "mode = $(Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "mode")"
   Write-Host "tickDriver = $(Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver")"
+  Write-Host "probeSet = $(Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet")"
   Write-Host "allowHudTickHook = $(Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowHudTickHook")"
   Write-Host "debugTickHeartbeat = $(Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "debugTickHeartbeat")"
   Write-Host "debugWriterSelfTest = $(Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "debugWriterSelfTest")"
@@ -398,11 +434,17 @@ if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver") {
   Write-Host ""
   Write-Host "Next human action:"
   Write-Host " 1. Launch Crab Champions."
-  Write-Host " 2. Sit at the menu for 20 to 30 seconds."
-  Write-Host " 3. Quit the game."
   if ($Mode -eq "PrepareSmoke") {
+    Write-Host " 2. Sit at the menu for 20 to 30 seconds."
+    Write-Host " 3. Quit the game."
     Write-Host " 4. Run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-smoke-collect.ps1"
+  } elseif ($Mode -eq "PrepareEquipmentProperty") {
+    Write-Host " 2. Start a solo run and stay alive/in world for 30 to 60 seconds."
+    Write-Host " 3. Quit the game."
+    Write-Host " 4. Run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-equipment-property-collect.ps1"
   } else {
+    Write-Host " 2. Sit at the menu for 20 to 30 seconds."
+    Write-Host " 3. Quit the game."
     Write-Host " 4. Run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-tickdriver-collect.ps1"
   }
   exit 0
@@ -432,6 +474,38 @@ $startupSmokeCount = @($jsonlRecords | Where-Object { (Get-RecordEventName -Reco
 $writerSelfTestCount = @($jsonlRecords | Where-Object { (Get-RecordEventName -Record $_) -eq "Debug.WriterSelfTest" }).Count
 $observeContextCount = $observeContextRecords.Count
 $lastObserveContext = if ($observeContextRecords.Count -gt 0) { $observeContextRecords[-1] } else { $null }
+$contextValues = @($jsonlRecords | ForEach-Object { Get-RecordValue -Record $_ -Names @("context") } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+$roleValues = @($jsonlRecords | ForEach-Object { Get-RecordValue -Record $_ -Names @("role") } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+$uniqueContexts = @($contextValues | Sort-Object -Unique)
+$uniqueRoles = @($roleValues | Sort-Object -Unique)
+$firstContext = if ($contextValues.Count -gt 0) { $contextValues[0] } else { "not found" }
+$lastContext = if ($contextValues.Count -gt 0) { $contextValues[-1] } else { "not found" }
+$activeContextStabilityRecords = @($jsonlRecords | Where-Object {
+  (Get-RecordValue -Record $_ -Names @("lifecycleState")) -eq "stable" -and
+  (Get-RecordValue -Record $_ -Names @("context")) -notin @("", "unknown", "startup", "unstable", "traveling", "dead-or-respawning")
+})
+$stableSoloOrHostRecords = @($activeContextStabilityRecords | Where-Object {
+  (Get-RecordValue -Record $_ -Names @("context")) -eq "solo" -or
+  (Get-RecordValue -Record $_ -Names @("role")) -in @("solo-or-host", "host")
+})
+$equipmentPropertyProbeNames = @(
+  "CrabPS.GetPropertyValue.WeaponDA",
+  "CrabPS.GetPropertyValue.AbilityDA",
+  "CrabPS.GetPropertyValue.MeleeDA"
+)
+$equipmentDirectFieldProbeNames = @(
+  "CrabPS.DirectField.WeaponDA",
+  "CrabPS.DirectField.AbilityDA",
+  "CrabPS.DirectField.MeleeDA"
+)
+$equipmentPropertyRecords = @($jsonlRecords | Where-Object { $equipmentPropertyProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) })
+$equipmentDirectFieldRecords = @($jsonlRecords | Where-Object { $equipmentDirectFieldProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) })
+$equipmentPropertyWeaponRecords = @($jsonlRecords | Where-Object { (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) -eq "CrabPS.GetPropertyValue.WeaponDA" })
+$equipmentPropertyAbilityRecords = @($jsonlRecords | Where-Object { (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) -eq "CrabPS.GetPropertyValue.AbilityDA" })
+$equipmentPropertyMeleeRecords = @($jsonlRecords | Where-Object { (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) -eq "CrabPS.GetPropertyValue.MeleeDA" })
+$latestWeaponSummary = if ($equipmentPropertyWeaponRecords.Count -gt 0) { Get-RecordValue -Record $equipmentPropertyWeaponRecords[-1] -Names @("valueSummary", "error", "result") } else { "not found" }
+$latestAbilitySummary = if ($equipmentPropertyAbilityRecords.Count -gt 0) { Get-RecordValue -Record $equipmentPropertyAbilityRecords[-1] -Names @("valueSummary", "error", "result") } else { "not found" }
+$latestMeleeSummary = if ($equipmentPropertyMeleeRecords.Count -gt 0) { Get-RecordValue -Record $equipmentPropertyMeleeRecords[-1] -Names @("valueSummary", "error", "result") } else { "not found" }
 
 $started = Get-TextPresence -Text $logText -Pattern '\[CrabRuntimeProbe\] started'
 $startupSmoke = Get-TextPresence -Text $jsonlText -Pattern 'Debug\.StartupSmoke'
@@ -451,6 +525,8 @@ if ($lastCrabRuntimeProbeLogLine.Count -eq 0) {
 }
 
 $tickDriver = Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "tickDriver"
+$installedMode = Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "mode"
+$probeSet = Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "probeSet"
 $debugWriterSelfTest = Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "debugWriterSelfTest"
 $buildInfo = Read-TextFileOrEmpty -Path $BuildInfoPath
 $failures = New-Object System.Collections.Generic.List[string]
@@ -474,6 +550,23 @@ if ($Mode -eq "CollectSmoke") {
   if ($crabInventorySync) { $failures.Add("CrabInventorySync appeared unexpectedly in UE4SS.log.") | Out-Null }
   if ($jsonlFiles.Count -eq 0) { $failures.Add("No CrabRuntimeProbe JSONL output exists after collection.") | Out-Null }
   if ($ExpectObserveContext -and -not $observeContext) { $failures.Add("Expected Observe.Context during gameplay observe collection, but it did not appear.") | Out-Null }
+}
+
+if ($Mode -eq "CollectEquipmentProperty") {
+  if ($installedMode -ne "active") { $failures.Add("Equipment property collect expected mode = active, got '$installedMode'.") | Out-Null }
+  if ($tickDriver -ne "executeDelay") { $failures.Add("Equipment property collect expected tickDriver = executeDelay, got '$tickDriver'.") | Out-Null }
+  if ($probeSet -ne "equipment-property-read") { $failures.Add("Equipment property collect expected probeSet = equipment-property-read, got '$probeSet'.") | Out-Null }
+  if (-not $observeContext -and $activeContextStabilityRecords.Count -eq 0) {
+    $failures.Add("Expected Observe.Context or active context stability evidence during equipment property collection.") | Out-Null
+  }
+  if ($equipmentDirectFieldRecords.Count -gt 0) {
+    $failures.Add("DirectField equipment probe appeared during property-only collection.") | Out-Null
+  }
+  if ($stableSoloOrHostRecords.Count -gt 0) {
+    if ($equipmentPropertyWeaponRecords.Count -eq 0) { $failures.Add("Stable solo/host context appeared, but CrabPS.GetPropertyValue.WeaponDA did not run.") | Out-Null }
+    if ($equipmentPropertyAbilityRecords.Count -eq 0) { $failures.Add("Stable solo/host context appeared, but CrabPS.GetPropertyValue.AbilityDA did not run.") | Out-Null }
+    if ($equipmentPropertyMeleeRecords.Count -eq 0) { $failures.Add("Stable solo/host context appeared, but CrabPS.GetPropertyValue.MeleeDA did not run.") | Out-Null }
+  }
 }
 
 $crashSuspicion = "none"
@@ -500,6 +593,20 @@ $summaryLines = @(
   "debug_startup_smoke_count = $startupSmokeCount",
   "debug_writer_self_test_count = $writerSelfTestCount",
   "tickDriver = $tickDriver",
+  "mode = $installedMode",
+  "probeSet = $probeSet",
+  "direct_field_probe_ran = $($equipmentDirectFieldRecords.Count -gt 0)",
+  "equipment_property_probe_ran = $($equipmentPropertyRecords.Count -gt 0)",
+  "equipment_property_weapon_count = $($equipmentPropertyWeaponRecords.Count)",
+  "equipment_property_ability_count = $($equipmentPropertyAbilityRecords.Count)",
+  "equipment_property_melee_count = $($equipmentPropertyMeleeRecords.Count)",
+  "latest_WeaponDA_value_summary = $latestWeaponSummary",
+  "latest_AbilityDA_value_summary = $latestAbilitySummary",
+  "latest_MeleeDA_value_summary = $latestMeleeSummary",
+  "unique_contexts_seen = $(if ($uniqueContexts.Count -gt 0) { $uniqueContexts -join ', ' } else { "none" })",
+  "unique_roles_seen = $(if ($uniqueRoles.Count -gt 0) { $uniqueRoles -join ', ' } else { "none" })",
+  "first_context = $firstContext",
+  "last_context = $lastContext",
   "crabruntimeprobe_started = $started",
   "startup_smoke_appeared = $startupSmoke",
   "writer_self_test_appeared = $writerSelfTest",
@@ -510,6 +617,8 @@ $summaryLines = @(
   "last_crabruntimeprobe_log_line = $($lastCrabRuntimeProbeLogLine[0])",
   "crash_suspicion = $crashSuspicion",
   "allowHudTickHook = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowHudTickHook")",
+  "allowUnknownRoleProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowUnknownRoleProbes")",
+  "allowJoinedClientDeepProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowJoinedClientDeepProbes")",
   "allowDeepArrayProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowDeepArrayProbes")",
   "allowInventoryInfoProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryInfoProbes")",
   "allowHealthProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowHealthProbes")",

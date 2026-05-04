@@ -25,6 +25,8 @@ function Assert-UnsafeGatesFalse {
 
   foreach ($key in @(
     "allowHudTickHook",
+    "allowUnknownRoleProbes",
+    "allowJoinedClientDeepProbes",
     "allowDeepArrayProbes",
     "allowInventoryInfoProbes",
     "allowHealthProbes",
@@ -51,6 +53,7 @@ $InstalledConfigPath = Join-Path $TestGameBin "Mods\CrabRuntimeProbe\Scripts\con
 Assert-CrabRuntimeProbeModLayout -ModRoot $SourceModRoot -Label "source CrabRuntimeProbe mod"
 Assert-CrabRuntimeProbeConfig -ConfigPath $SourceConfigPath -Label "source config"
 Assert-ConfigValue -ConfigPath $SourceConfigPath -Key "tickDriver" -Expected "none"
+Assert-ConfigValue -ConfigPath $SourceConfigPath -Key "probeSet" -Expected "shallow-core"
 Assert-UnsafeGatesFalse -ConfigPath $SourceConfigPath
 
 & (Join-Path $PSScriptRoot "export-client-folder.ps1") -OutputPath $ExportRoot
@@ -58,12 +61,14 @@ Assert-UnsafeGatesFalse -ConfigPath $SourceConfigPath
 Assert-CrabRuntimeProbeModLayout -ModRoot $ExportedModRoot -Label "exported CrabRuntimeProbe mod"
 Assert-CrabRuntimeProbeConfig -ConfigPath $ExportedConfigPath -Label "exported config"
 Assert-ConfigValue -ConfigPath $ExportedConfigPath -Key "tickDriver" -Expected "none"
+Assert-ConfigValue -ConfigPath $ExportedConfigPath -Key "probeSet" -Expected "shallow-core"
 Assert-UnsafeGatesFalse -ConfigPath $ExportedConfigPath
 
 New-Item -ItemType Directory -Force -Path $TestGameBin | Out-Null
 & (Join-Path $PSScriptRoot "install-client-to-game.ps1") $TestGameBin
 & (Join-Path $PSScriptRoot "verify-installed-client.ps1") $TestGameBin
 Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected "none"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "shallow-core"
 Assert-UnsafeGatesFalse -ConfigPath $InstalledConfigPath
 
 & (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareSmoke
@@ -74,11 +79,45 @@ Assert-UnsafeGatesFalse -ConfigPath $InstalledConfigPath
 
 & (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareTickDriver "executeDelay"
 Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected "executeDelay"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "observe"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "shallow-core"
+Assert-UnsafeGatesFalse -ConfigPath $InstalledConfigPath
+
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareEquipmentProperty
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected "executeDelay"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "active"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "equipment-property-read"
 Assert-UnsafeGatesFalse -ConfigPath $InstalledConfigPath
 
 $gameplayPrepareScript = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "quick-gameplay-observe-prepare.ps1")
 if ($gameplayPrepareScript -notmatch 'PrepareTickDriver executeDelay') {
   throw "quick-gameplay-observe-prepare.ps1 must prepare executeDelay explicitly."
+}
+if ($gameplayPrepareScript -match 'equipment-property-read') {
+  throw "quick-gameplay-observe-prepare.ps1 must stay on the shallow-core observe path."
+}
+
+$equipmentPropertyPrepareScript = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "quick-equipment-property-prepare.ps1")
+if ($equipmentPropertyPrepareScript -notmatch 'PrepareEquipmentProperty') {
+  throw "quick-equipment-property-prepare.ps1 must use the equipment property prepare path."
+}
+
+$probeRegistry = Get-Content -Raw -LiteralPath (Join-Path $SourceModRoot "Scripts\probe_registry.lua")
+foreach ($required in @(
+  "CrabPS.GetPropertyValue.",
+  "equipment-property-read",
+  "CrabPS.DirectField.",
+  "equipment-direct-field-read"
+)) {
+  if ($probeRegistry -notmatch [regex]::Escape($required)) {
+    throw "probe_registry.lua missing expected equipment probe registry content: $required"
+  }
+}
+if ($probeRegistry -match "CrabPS\.DirectField\.[\s\S]*equipment-property-read") {
+  throw "equipment-property-read must not include DirectField probes."
+}
+if ($equipmentPropertyPrepareScript -match "equipment-direct-field-read") {
+  throw "quick-equipment-property-prepare.ps1 must not select equipment-direct-field-read."
 }
 
 $hudFailed = $false
@@ -143,6 +182,55 @@ foreach ($required in @(
 )) {
   if ($summary -notmatch [regex]::Escape($required)) {
     throw "diagnostic_summary.txt missing expected content: $required"
+  }
+}
+
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareEquipmentProperty
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected "executeDelay"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "active"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "equipment-property-read"
+Assert-UnsafeGatesFalse -ConfigPath $InstalledConfigPath
+
+New-Item -ItemType Directory -Force -Path $resultsRoot | Out-Null
+Set-Content -LiteralPath (Join-Path $TestGameBin "UE4SS.log") -Encoding ASCII -Value @(
+  "[CrabRuntimeProbe] boot phase: config loaded",
+  "[CrabRuntimeProbe] started session=test mode=active",
+  "[CrabRuntimeProbe] tickDriver=executeDelay",
+  "[CrabRuntimeProbe] tick driver register begin: executeDelay",
+  "[CrabRuntimeProbe] tick source registered: executeDelay",
+  "[CrabRuntimeProbe] tick heartbeat tick=100 mode=active"
+)
+Set-Content -LiteralPath (Join-Path $resultsRoot "probe_results_property_directfield_fail.jsonl") -Encoding ASCII -Value @(
+  '{"timestamp":"2026-05-04T00:00:01Z","event":"Debug.StartupSmoke","probeId":"Debug.StartupSmoke","probeName":"Debug.StartupSmoke","result":"ok"}',
+  '{"timestamp":"2026-05-04T00:00:02Z","event":"Debug.WriterSelfTest","probeId":"Debug.WriterSelfTest","probeName":"Debug.WriterSelfTest","result":"ok"}',
+  '{"timestamp":"2026-05-04T00:00:03Z","probeId":"CrabPS.GetPropertyValue.WeaponDA","probeName":"CrabPS.GetPropertyValue.WeaponDA","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"exists=true isValid=true fullName=/Game/Test.WeaponDA name=WeaponDA"}',
+  '{"timestamp":"2026-05-04T00:00:04Z","probeId":"CrabPS.GetPropertyValue.AbilityDA","probeName":"CrabPS.GetPropertyValue.AbilityDA","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"exists=true isValid=true fullName=/Game/Test.AbilityDA name=AbilityDA"}',
+  '{"timestamp":"2026-05-04T00:00:05Z","probeId":"CrabPS.GetPropertyValue.MeleeDA","probeName":"CrabPS.GetPropertyValue.MeleeDA","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"exists=true isValid=true fullName=/Game/Test.MeleeDA name=MeleeDA"}',
+  '{"timestamp":"2026-05-04T00:00:06Z","probeId":"CrabPS.DirectField.WeaponDA","probeName":"CrabPS.DirectField.WeaponDA","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"direct field should fail property-only collection"}'
+)
+$powerShellExe = (Get-Process -Id $PID).Path
+& $powerShellExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -CollectEquipmentProperty | Out-Host
+if ($LASTEXITCODE -eq 0) {
+  throw "quick equipment property collection must fail when DirectField probe evidence appears."
+}
+
+$directFieldFailureSummary = Get-Content -Raw -LiteralPath $summaryPath
+foreach ($required in @(
+  "probeSet = equipment-property-read",
+  "mode = active",
+  "direct_field_probe_ran = True",
+  "equipment_property_probe_ran = True",
+  "equipment_property_weapon_count = 1",
+  "equipment_property_ability_count = 1",
+  "equipment_property_melee_count = 1",
+  "unique_contexts_seen = solo",
+  "unique_roles_seen = solo-or-host",
+  "first_context = solo",
+  "last_context = solo",
+  "DirectField equipment probe appeared during property-only collection."
+)) {
+  if ($directFieldFailureSummary -notmatch [regex]::Escape($required)) {
+    throw "direct-field failure diagnostic_summary.txt missing expected content: $required"
   }
 }
 

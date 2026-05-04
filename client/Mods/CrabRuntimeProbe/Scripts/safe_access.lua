@@ -43,6 +43,48 @@ function safe.getName(obj)
   return try(function() return obj:GetName() end)
 end
 
+function safe.summarizeObjectIdentity(obj)
+  if obj == nil then return 'exists=false', nil end
+
+  local parts = { 'exists=true' }
+  local errors = {}
+
+  local isValid, isValidErr = try(function()
+    if type(obj.IsValid) ~= 'function' then return false end
+    return obj:IsValid()
+  end)
+  if isValidErr then
+    parts[#parts + 1] = 'isValid=error'
+    errors[#errors + 1] = 'IsValid: ' .. tostring(isValidErr)
+    return table.concat(parts, ' '), table.concat(errors, '; ')
+  end
+
+  parts[#parts + 1] = 'isValid=' .. tostring(isValid == true)
+  if isValid ~= true then
+    return table.concat(parts, ' '), nil
+  end
+
+  local fullName, fullNameErr = safe.getFullName(obj)
+  if fullNameErr then
+    parts[#parts + 1] = 'fullName=error'
+    errors[#errors + 1] = 'GetFullName: ' .. tostring(fullNameErr)
+  elseif fullName ~= nil then
+    parts[#parts + 1] = 'fullName=' .. tostring(fullName)
+  end
+
+  local name, nameErr = safe.getName(obj)
+  if nameErr then
+    parts[#parts + 1] = 'name=error'
+    errors[#errors + 1] = 'GetName: ' .. tostring(nameErr)
+  elseif name ~= nil then
+    parts[#parts + 1] = 'name=' .. tostring(name)
+  end
+
+  local err = nil
+  if #errors > 0 then err = table.concat(errors, '; ') end
+  return table.concat(parts, ' '), err
+end
+
 function safe.getArray(obj, propName)
   return safe.getProperty(obj, propName)
 end

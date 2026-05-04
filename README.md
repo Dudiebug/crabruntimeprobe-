@@ -102,6 +102,25 @@ Launch Crab Champions, start a solo run or host lobby, stay alive/in world for
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-gameplay-observe-collect.ps1
 ```
 
+After gameplay observe passes, run the next read-only equipment property phase:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-equipment-property-prepare.ps1
+```
+
+Launch Crab Champions, start a solo run, stay in-world 30 to 60 seconds, quit,
+then collect:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-equipment-property-collect.ps1
+```
+
+`equipment-property-read` is still read-only. It reads only `WeaponDA`,
+`AbilityDA`, and `MeleeDA` from `CrabPS` using `GetPropertyValue`. It does not
+read item arrays, does not read `InventoryInfo`, does not read health, does not
+write anything, and does not run RPC probes. Direct field equipment probes are
+intentionally separate in `equipment-direct-field-read`.
+
 The quick scripts use the default Steam path:
 
 ```text

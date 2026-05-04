@@ -25,7 +25,12 @@ function runner.new(config, safe, writer)
   local probes = {}
   if config.mode == 'active' then
     local probeRegistry = require('probe_registry')
-    probes = probeRegistry.build(safe)
+    local registeredProbes = probeRegistry.build(safe)
+    for _, probe in ipairs(registeredProbes) do
+      if config.probeSet == 'all-readonly' or probe.set == config.probeSet then
+        probes[#probes + 1] = probe
+      end
+    end
   end
   local idx = 1
 
