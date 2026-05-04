@@ -645,11 +645,9 @@ if ($Mode -eq "CollectEquipmentProperty") {
   if ($equipmentDirectFieldRecords.Count -gt 0) {
     $failures.Add("DirectField equipment probe appeared during property-only collection.") | Out-Null
   }
-  if ($stableSoloOrHostRecords.Count -gt 0) {
-    if ($equipmentPropertyWeaponRecords.Count -eq 0) { $failures.Add("Stable solo/host context appeared, but CrabPS.GetPropertyValue.WeaponDA did not run.") | Out-Null }
-    if ($equipmentPropertyAbilityRecords.Count -eq 0) { $failures.Add("Stable solo/host context appeared, but CrabPS.GetPropertyValue.AbilityDA did not run.") | Out-Null }
-    if ($equipmentPropertyMeleeRecords.Count -eq 0) { $failures.Add("Stable solo/host context appeared, but CrabPS.GetPropertyValue.MeleeDA did not run.") | Out-Null }
-  }
+  if ($equipmentPropertyWeaponRecords.Count -eq 0) { $failures.Add("Expected CrabPS.GetPropertyValue.WeaponDA during equipment property collection, but it did not run.") | Out-Null }
+  if ($equipmentPropertyAbilityRecords.Count -eq 0) { $failures.Add("Expected CrabPS.GetPropertyValue.AbilityDA during equipment property collection, but it did not run.") | Out-Null }
+  if ($equipmentPropertyMeleeRecords.Count -eq 0) { $failures.Add("Expected CrabPS.GetPropertyValue.MeleeDA during equipment property collection, but it did not run.") | Out-Null }
 }
 
 $crashSuspicion = "none"
