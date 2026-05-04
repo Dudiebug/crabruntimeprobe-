@@ -48,6 +48,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-installed-cli
 
 `allowHudTickHook` must remain `false` unless you are intentionally testing the
 unsafe HUD fallback that crashed immediately in this Crab Champions/UE4SS setup.
+The source default remains `tickDriver = none`; the first confirmed safe
+diagnostic tick driver for this UE4SS/Crab Champions setup is `executeDelay`.
 
 ## Minimal user workflow
 
@@ -85,6 +87,19 @@ Launch Crab Champions, sit at the menu for 20 to 30 seconds, then quit:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-tickdriver-collect.ps1
+```
+
+For the next safe gameplay observe pass after `executeDelay` is confirmed:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-gameplay-observe-prepare.ps1
+```
+
+Launch Crab Champions, start a solo run or host lobby, stay alive/in world for
+30 to 60 seconds, quit, then collect:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-gameplay-observe-collect.ps1
 ```
 
 The quick scripts use the default Steam path:
@@ -212,8 +227,11 @@ confirm that the selected scheduler is actually firing.
 
 By default `tickDriver = none`, so the first smoke run should not register any
 tick source. Set exactly one tick driver only for an isolated follow-up run:
-`registerTick`, `executeDelay`, or `loopAsync`. The `hud` driver remains blocked
-by the local helper because `allowHudTickHook = false` is the safe default.
+`executeDelay` is the first confirmed safe diagnostic tick driver. Do not test
+`registerTick`, `loopAsync`, or `hud` by default. The `hud` driver remains
+blocked by the local helper because `allowHudTickHook = false` is the safe
+default, and HUD `ReceiveDrawHUD` must remain disabled unless intentionally
+testing that known-unsafe path.
 
 ## Release packaging
 

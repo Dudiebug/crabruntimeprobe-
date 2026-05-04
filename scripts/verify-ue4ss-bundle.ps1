@@ -61,6 +61,7 @@ foreach ($file in @(
   "Mods\mods.txt",
   "Mods\CrabRuntimeProbe\enabled.txt",
   "Mods\CrabRuntimeProbe\Scripts\config.txt",
+  "Mods\CrabRuntimeProbe\Scripts\crp_log.lua",
   "Mods\CrabRuntimeProbe\Scripts\json.lua",
   "Mods\CrabRuntimeProbe\Scripts\main.lua",
   "Mods\CrabRuntimeProbe\Scripts\probe_registry.lua",

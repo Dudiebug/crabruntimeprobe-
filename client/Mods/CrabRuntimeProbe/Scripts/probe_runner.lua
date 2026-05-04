@@ -1,3 +1,4 @@
+local crpLog = require('crp_log')
 local runtimeContext = require('runtime_context')
 
 local runner = {}
@@ -30,7 +31,7 @@ function runner.new(config, safe, writer)
 
   local function breadcrumb(msg)
     if config.debugBreadcrumbs then
-      print('[CrabRuntimeProbe][breadcrumb] ' .. msg)
+      crpLog.line('[CrabRuntimeProbe][breadcrumb] ' .. msg)
     end
   end
 
@@ -121,7 +122,7 @@ function runner.new(config, safe, writer)
     self.tick = self.tick + 1
 
     if config.debugTickHeartbeat == true and (self.tick % 100) == 0 then
-      print('[CrabRuntimeProbe] tick heartbeat tick=' .. tostring(self.tick) .. ' mode=' .. tostring(config.mode))
+      crpLog.line('[CrabRuntimeProbe] tick heartbeat tick=' .. tostring(self.tick) .. ' mode=' .. tostring(config.mode))
     end
 
     if config.mode == 'observe' then

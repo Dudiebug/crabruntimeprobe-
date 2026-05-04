@@ -76,6 +76,11 @@ Assert-UnsafeGatesFalse -ConfigPath $InstalledConfigPath
 Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected "executeDelay"
 Assert-UnsafeGatesFalse -ConfigPath $InstalledConfigPath
 
+$gameplayPrepareScript = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "quick-gameplay-observe-prepare.ps1")
+if ($gameplayPrepareScript -notmatch 'PrepareTickDriver executeDelay') {
+  throw "quick-gameplay-observe-prepare.ps1 must prepare executeDelay explicitly."
+}
+
 $hudFailed = $false
 try {
   & (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareTickDriver "hud"
@@ -84,6 +89,61 @@ try {
 }
 if (-not $hudFailed) {
   throw "Expected hud tick driver prepare to fail while allowHudTickHook is false."
+}
+
+$logModule = Get-Content -Raw -LiteralPath (Join-Path $SourceModRoot "Scripts\crp_log.lua")
+if ($logModule -notmatch [regex]::Escape("text:gsub('[\r\n]+$', '')")) {
+  throw "crp_log.lua must trim existing trailing newlines before logging."
+}
+if ($logModule -notmatch [regex]::Escape("print(normalize(message) .. '\n')")) {
+  throw "crp_log.lua must append exactly one newline to CrabRuntimeProbe log lines."
+}
+
+$rawCrabRuntimePrints = @(Select-String -Path (Join-Path $SourceModRoot "Scripts\*.lua") -Pattern "print\('\[CrabRuntimeProbe" | Where-Object {
+  $_.Path -notlike "*crp_log.lua"
+})
+if ($rawCrabRuntimePrints.Count -gt 0) {
+  throw "CrabRuntimeProbe logs must go through crp_log.lua; raw print found in $($rawCrabRuntimePrints[0].Path):$($rawCrabRuntimePrints[0].LineNumber)"
+}
+
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareTickDriver "executeDelay"
+$scriptsRoot = Join-Path $TestGameBin "Mods\CrabRuntimeProbe\Scripts"
+$resultsRoot = Join-Path $scriptsRoot "results"
+New-Item -ItemType Directory -Force -Path $resultsRoot | Out-Null
+Set-Content -LiteralPath (Join-Path $TestGameBin "UE4SS.log") -Encoding ASCII -Value @(
+  "[CrabRuntimeProbe] boot phase: config loaded",
+  "[CrabRuntimeProbe] started session=test mode=observe",
+  "[CrabRuntimeProbe] tickDriver=executeDelay",
+  "[CrabRuntimeProbe] tick driver register begin: executeDelay",
+  "[CrabRuntimeProbe] tick source registered: executeDelay",
+  "[CrabRuntimeProbe] tick heartbeat tick=100 mode=observe",
+  "[CrabRuntimeProbe] tick heartbeat tick=200 mode=observe"
+)
+Set-Content -LiteralPath (Join-Path $resultsRoot "probe_results_test.jsonl") -Encoding ASCII -Value @(
+  '{"timestamp":"2026-05-04T00:00:01Z","event":"Debug.StartupSmoke","probeId":"Debug.StartupSmoke","probeName":"Debug.StartupSmoke","result":"ok"}',
+  '{"timestamp":"2026-05-04T00:00:02Z","event":"Debug.WriterSelfTest","probeId":"Debug.WriterSelfTest","probeName":"Debug.WriterSelfTest","result":"ok"}',
+  '{"timestamp":"2026-05-04T00:00:03Z","probeId":"Observe.Context","probeName":"Observe.Context","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","crabPcExists":true,"playerStateExists":true}',
+  '{"timestamp":"2026-05-04T00:00:04Z","probeId":"Observe.Context","probeName":"Observe.Context","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","crabPcExists":true,"playerStateExists":true}'
+)
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -Collect -ExpectObserveContext
+
+$summaryPath = Join-Path $scriptsRoot "diagnostic_summary.txt"
+$summary = Get-Content -Raw -LiteralPath $summaryPath
+foreach ($required in @(
+  "jsonl_event_count = 4",
+  "observe_context_count = 2",
+  "debug_startup_smoke_count = 1",
+  "debug_writer_self_test_count = 1",
+  "jsonl_event_type_counts:",
+  " - Observe.Context: 2",
+  "last_5_crabruntimeprobe_log_lines:",
+  "last_5_jsonl_events:",
+  "observe_context_latest_context = solo",
+  "observe_context_latest_role = solo-or-host"
+)) {
+  if ($summary -notmatch [regex]::Escape($required)) {
+    throw "diagnostic_summary.txt missing expected content: $required"
+  }
 }
 
 Write-Host "CrabRuntimeProbe packaging checks passed."

@@ -8,6 +8,7 @@ param(
   [ValidateSet("none", "registerTick", "executeDelay", "loopAsync", "hud")]
   [string]$PrepareTickDriver,
   [switch]$Collect,
+  [switch]$ExpectObserveContext,
   [switch]$NoDiagnosticDebug
 )
 
@@ -197,6 +198,105 @@ function Read-TextFileOrEmpty {
   return ""
 }
 
+function Convert-CrabRuntimeProbeJsonlRecords {
+  param([object[]]$JsonlFiles)
+
+  $records = @()
+  foreach ($file in $JsonlFiles) {
+    $lineNumber = 0
+    foreach ($line in @(Get-Content -LiteralPath $file.FullName -ErrorAction SilentlyContinue)) {
+      $lineNumber += 1
+      if ([string]::IsNullOrWhiteSpace($line)) { continue }
+      try {
+        $record = $line | ConvertFrom-Json -ErrorAction Stop
+        $record | Add-Member -NotePropertyName "_sourceFile" -NotePropertyValue $file.FullName -Force
+        $record | Add-Member -NotePropertyName "_lineNumber" -NotePropertyValue $lineNumber -Force
+        $records += $record
+      } catch {
+        $bad = [pscustomobject]@{
+          event = "Invalid.Jsonl"
+          probeName = "Invalid.Jsonl"
+          probeId = "Invalid.Jsonl"
+          result = "parse_error"
+          error = $_.Exception.Message
+          _sourceFile = $file.FullName
+          _lineNumber = $lineNumber
+        }
+        $records += $bad
+      }
+    }
+  }
+  return @($records)
+}
+
+function Get-RecordEventName {
+  param([object]$Record)
+
+  foreach ($name in @("event", "probeName", "probeId")) {
+    if ($Record.PSObject.Properties.Name -contains $name) {
+      $value = [string]$Record.$name
+      if (-not [string]::IsNullOrWhiteSpace($value)) { return $value }
+    }
+  }
+  return "Unknown"
+}
+
+function Get-RecordValue {
+  param(
+    [object]$Record,
+    [string[]]$Names
+  )
+
+  foreach ($name in $Names) {
+    if ($Record.PSObject.Properties.Name -contains $name) {
+      $value = [string]$Record.$name
+      if (-not [string]::IsNullOrWhiteSpace($value)) { return $value }
+    }
+  }
+  return ""
+}
+
+function Format-JsonlEventSummary {
+  param([object]$Record)
+
+  $eventName = Get-RecordEventName -Record $Record
+  $timestamp = Get-RecordValue -Record $Record -Names @("timestamp")
+  $tick = Get-RecordValue -Record $Record -Names @("tick")
+  $result = Get-RecordValue -Record $Record -Names @("result")
+  $context = Get-RecordValue -Record $Record -Names @("context")
+  $role = Get-RecordValue -Record $Record -Names @("role")
+  $summary = Get-RecordValue -Record $Record -Names @("valueSummary", "error")
+
+  $parts = @()
+  if ($timestamp) { $parts += "ts=$timestamp" }
+  if ($tick) { $parts += "tick=$tick" }
+  $parts += "event=$eventName"
+  if ($result) { $parts += "result=$result" }
+  if ($context) { $parts += "context=$context" }
+  if ($role) { $parts += "role=$role" }
+  if ($summary) { $parts += "summary=$summary" }
+  return ($parts -join " ")
+}
+
+function Add-CountLines {
+  param(
+    [string[]]$Lines,
+    [string]$Header,
+    [object[]]$Groups
+  )
+
+  $Lines += ""
+  $Lines += $Header
+  if ($Groups.Count -eq 0) {
+    $Lines += " - none"
+  } else {
+    foreach ($group in $Groups) {
+      $Lines += " - $($group.Name): $($group.Count)"
+    }
+  }
+  return $Lines
+}
+
 function Write-DiagnosticSummary {
   param(
     [Parameter(Mandatory = $true)][string]$SummaryPath,
@@ -237,8 +337,10 @@ function Set-InstalledTickDriverConfig {
   }
 
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "tickDriver" -Value $TickDriver
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "mode" -Value "observe"
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugTickHeartbeat" -Value ($(if ($NoDebug) { "false" } else { "true" }))
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugWriterSelfTest" -Value ($(if ($NoDebug) { "false" } else { "true" }))
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "probeSet" -Value "shallow-core"
   foreach ($key in @(
     "allowHudTickHook",
     "allowDeepArrayProbes",
@@ -319,6 +421,17 @@ foreach ($file in $jsonlFiles) {
   $jsonlText += "`n# $($file.FullName)`n"
   $jsonlText += Get-Content -Raw -LiteralPath $file.FullName
 }
+$jsonlRecords = @(Convert-CrabRuntimeProbeJsonlRecords -JsonlFiles $jsonlFiles)
+$eventGroups = @($jsonlRecords | ForEach-Object { Get-RecordEventName -Record $_ } | Group-Object | Sort-Object Name)
+$probeGroups = @($jsonlRecords | Where-Object { $_.PSObject.Properties.Name -contains "probeName" -and -not [string]::IsNullOrWhiteSpace([string]$_.probeName) } | Group-Object -Property probeName | Sort-Object Name)
+$timestampValues = @($jsonlRecords | ForEach-Object { Get-RecordValue -Record $_ -Names @("timestamp") } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+$firstJsonlTimestamp = if ($timestampValues.Count -gt 0) { $timestampValues[0] } else { "not found" }
+$lastJsonlTimestamp = if ($timestampValues.Count -gt 0) { $timestampValues[-1] } else { "not found" }
+$observeContextRecords = @($jsonlRecords | Where-Object { (Get-RecordEventName -Record $_) -eq "Observe.Context" })
+$startupSmokeCount = @($jsonlRecords | Where-Object { (Get-RecordEventName -Record $_) -eq "Debug.StartupSmoke" }).Count
+$writerSelfTestCount = @($jsonlRecords | Where-Object { (Get-RecordEventName -Record $_) -eq "Debug.WriterSelfTest" }).Count
+$observeContextCount = $observeContextRecords.Count
+$lastObserveContext = if ($observeContextRecords.Count -gt 0) { $observeContextRecords[-1] } else { $null }
 
 $started = Get-TextPresence -Text $logText -Pattern '\[CrabRuntimeProbe\] started'
 $startupSmoke = Get-TextPresence -Text $jsonlText -Pattern 'Debug\.StartupSmoke'
@@ -360,6 +473,7 @@ if ($Mode -eq "CollectSmoke") {
   if ($hudUsed) { $failures.Add("HUD ReceiveDrawHUD was used; keep allowHudTickHook = false and do not test hud by default.") | Out-Null }
   if ($crabInventorySync) { $failures.Add("CrabInventorySync appeared unexpectedly in UE4SS.log.") | Out-Null }
   if ($jsonlFiles.Count -eq 0) { $failures.Add("No CrabRuntimeProbe JSONL output exists after collection.") | Out-Null }
+  if ($ExpectObserveContext -and -not $observeContext) { $failures.Add("Expected Observe.Context during gameplay observe collection, but it did not appear.") | Out-Null }
 }
 
 $crashSuspicion = "none"
@@ -379,6 +493,12 @@ $summaryLines = @(
   "installed_config_path = $InstalledConfigPath",
   "ue4ss_log_path = $Ue4ssLogPath",
   "jsonl_file_count = $($jsonlFiles.Count)",
+  "jsonl_event_count = $($jsonlRecords.Count)",
+  "jsonl_first_timestamp = $firstJsonlTimestamp",
+  "jsonl_last_timestamp = $lastJsonlTimestamp",
+  "observe_context_count = $observeContextCount",
+  "debug_startup_smoke_count = $startupSmokeCount",
+  "debug_writer_self_test_count = $writerSelfTestCount",
   "tickDriver = $tickDriver",
   "crabruntimeprobe_started = $started",
   "startup_smoke_appeared = $startupSmoke",
@@ -395,6 +515,12 @@ $summaryLines = @(
   "allowHealthProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowHealthProbes")",
   "allowWriteProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowWriteProbes")",
   "allowRpcProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowRpcProbes")",
+  "observe_context_latest_context = $(if ($null -ne $lastObserveContext) { Get-RecordValue -Record $lastObserveContext -Names @("context") } else { "not found" })",
+  "observe_context_latest_role = $(if ($null -ne $lastObserveContext) { Get-RecordValue -Record $lastObserveContext -Names @("role") } else { "not found" })",
+  "observe_context_latest_lifecycle = $(if ($null -ne $lastObserveContext) { Get-RecordValue -Record $lastObserveContext -Names @("lifecycleState") } else { "not found" })",
+  "observe_context_latest_world = $(if ($null -ne $lastObserveContext) { Get-RecordValue -Record $lastObserveContext -Names @("world", "worldName", "worldPath") } else { "not found" })",
+  "observe_context_latest_map = $(if ($null -ne $lastObserveContext) { Get-RecordValue -Record $lastObserveContext -Names @("map", "mapName", "levelName") } else { "not found" })",
+  "observe_context_latest_player = $(if ($null -ne $lastObserveContext) { Get-RecordValue -Record $lastObserveContext -Names @("player", "playerName", "playerStateExists", "crabPcExists") } else { "not found" })",
   "",
   "installed_build_info:"
 )
@@ -407,6 +533,9 @@ if ([string]::IsNullOrWhiteSpace($buildInfo)) {
   }
 }
 
+$summaryLines = Add-CountLines -Lines $summaryLines -Header "jsonl_event_type_counts:" -Groups $eventGroups
+$summaryLines = Add-CountLines -Lines $summaryLines -Header "probe_result_counts_by_probe_name:" -Groups $probeGroups
+
 $summaryLines += ""
 $summaryLines += "jsonl_files:"
 if ($jsonlFiles.Count -eq 0) {
@@ -414,6 +543,28 @@ if ($jsonlFiles.Count -eq 0) {
 } else {
   foreach ($file in $jsonlFiles) {
     $summaryLines += " - $($file.FullName) ($($file.Length) bytes)"
+  }
+}
+
+$summaryLines += ""
+$summaryLines += "last_5_crabruntimeprobe_log_lines:"
+$lastFiveLogLines = @($logLines | Where-Object { $_ -match 'CrabRuntimeProbe' } | Select-Object -Last 5)
+if ($lastFiveLogLines.Count -eq 0) {
+  $summaryLines += " - none"
+} else {
+  foreach ($line in $lastFiveLogLines) {
+    $summaryLines += " - $line"
+  }
+}
+
+$summaryLines += ""
+$summaryLines += "last_5_jsonl_events:"
+$lastFiveJsonl = @($jsonlRecords | Select-Object -Last 5)
+if ($lastFiveJsonl.Count -eq 0) {
+  $summaryLines += " - none"
+} else {
+  foreach ($record in $lastFiveJsonl) {
+    $summaryLines += " - $(Format-JsonlEventSummary -Record $record)"
   }
 }
 

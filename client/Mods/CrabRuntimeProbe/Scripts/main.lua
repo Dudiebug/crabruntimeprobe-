@@ -1,6 +1,7 @@
 local SCRIPT_DIR = 'Mods/CrabRuntimeProbe/Scripts/'
 package.path = package.path .. ';' .. SCRIPT_DIR .. '?.lua'
 
+local crpLog = require('crp_log')
 local writerFactory = require('result_writer')
 
 local DEFAULT_CONFIG = {
@@ -36,9 +37,7 @@ local ALLOWED_TICK_DRIVERS = {
   hud = true
 }
 
-local function log(message)
-  print(tostring(message) .. '\n')
-end
+local log = crpLog.line
 
 local function parseConfig(path)
   local config = {}

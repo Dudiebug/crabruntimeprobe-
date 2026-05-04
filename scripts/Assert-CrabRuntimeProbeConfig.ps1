@@ -1,6 +1,7 @@
 $script:CrabRuntimeProbeRequiredModFiles = @(
   "enabled.txt",
   "Scripts\config.txt",
+  "Scripts\crp_log.lua",
   "Scripts\main.lua",
   "Scripts\json.lua",
   "Scripts\runtime_context.lua",

@@ -1,3 +1,4 @@
+local crpLog = require('crp_log')
 local json = require('json')
 local writer = {}
 
@@ -46,13 +47,13 @@ function writer.new(sessionId, config)
     if not appendLine(self.resultPath, line) then
       if appendLine(self.fallbackPath, line) then
         if not self.warnedFallback then
-          print('[CrabRuntimeProbe] primary result path unavailable; using fallback')
+          crpLog.line('[CrabRuntimeProbe] primary result path unavailable; using fallback')
           self.warnedFallback = true
         end
         return true
       end
       if not self.warnedFailure then
-        print('[CrabRuntimeProbe] ERROR: result write failed for primary and fallback')
+        crpLog.line('[CrabRuntimeProbe] ERROR: result write failed for primary and fallback')
         self.warnedFailure = true
       end
       return false
