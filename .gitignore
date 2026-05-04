@@ -5,9 +5,14 @@ results/*.jsonl
 results/*.md
 
 # Generated docs and indexes
-docs/PROBE_CANDIDATES.md
 objectdump/objectdump_index.json
 client/Mods/CrabRuntimeProbe/Scripts/generated_probe_candidates.lua
+
+# Local object dump inputs
+objectdump/*.txt
+objectdump/*.part*
+objectdump/*.md
+!objectdump/README.md
 
 # Node artifacts
 node_modules/

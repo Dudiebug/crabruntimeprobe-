@@ -68,10 +68,33 @@ gates, and writes JSONL results.
 
 ## Docs generation
 
-- `node tools/parse_objectdump.js`
-- `node tools/generate_probe_candidates.js`
-- `node tools/summarize_probe_results.js --results <path> [--ue4ss-log <path>]`
-- `node tools/generate_docs.js`
+The object dump only proves a symbol exists. It does not prove that reading or
+writing it is safe at runtime.
+
+Place Crab Champions UE4SS object dump files under `objectdump/`. The dump may
+be split across many files; include every part before generating docs. Supported
+input names are `*.txt`, `*.part*`, and `*.md`. The parser intentionally ignores
+only `objectdump/README.md` and the generated `objectdump/objectdump_index.json`.
+
+Objectdump workflow:
+
+1. Copy every objectdump part into `objectdump/`.
+2. Run `node tools/parse_objectdump.js`.
+3. Open `docs/OBJECTDUMP_INDEX.md` and verify `All discovered dump parts scanned: yes`.
+4. Run `node tools/generate_probe_candidates.js`.
+5. Review `docs/PROBE_CANDIDATES.md`; generated candidates are documentation only.
+6. Run `node tools/generate_docs.js` to regenerate both objectdump docs and candidate docs.
+
+Runtime result workflow:
+
+- `node tools/summarize_probe_results.js --results <path> [--results <another.jsonl>] [--ue4ss-log <path>]`
+- The summarizer writes `docs/PROBE_RESULTS.md`, `docs/SAFE_ACCESS_MATRIX.md`, and `docs/CRASH_PHASE_SUMMARY.md`.
+
+Interpretation rules:
+
+- `objectdump discovered` means the symbol exists in static dump data.
+- `runtime confirmed` remains false until ProbeRunner results prove a specific access path.
+- Deep inventory, InventoryInfo, health, write, and RPC candidates stay disabled unless a later explicit runtime research pass enables the relevant safety gate.
 
 ## Crash collection
 
