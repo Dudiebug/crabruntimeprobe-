@@ -66,6 +66,40 @@ gates, and writes JSONL results.
 - Primary: `client/Mods/CrabRuntimeProbe/Scripts/results/*.jsonl`
 - Fallback: `client/Mods/CrabRuntimeProbe/Scripts/*.jsonl`
 
+## Release packaging
+
+CrabRuntimeProbe can build a UE4SS-bundled release ZIP from a local
+CrabInvSync checkout or ZIP used only as a template for UE4SS runtime files,
+UE4SS settings, support mods, and UE4SS license handling.
+
+The packager does not copy CrabInvSync gameplay code, server files, objectdump
+files, runtime logs/output, `.git`, or `node_modules`. It creates a ZIP meant to
+be extracted into:
+
+```text
+Crab Champions\CrabChampions\Binaries\Win64\
+```
+
+Build from the provided local ZIP:
+
+```powershell
+node tools/package_release.js --template C:\Users\dudie\Downloads\CrabInvSync-master.zip
+```
+
+The packager uses the local `tar` command to extract and create ZIP files, so
+`tar` must be available on PATH.
+
+Optional output path:
+
+```powershell
+node tools/package_release.js --template C:\Users\dudie\Downloads\CrabInvSync-master.zip --out dist\CrabRuntimeProbe-ue4ss.zip
+```
+
+The ZIP root contains UE4SS runtime files and `Mods/`. The generated
+`Mods/mods.txt` enables only UE4SS support mods and `CrabRuntimeProbe`.
+CrabRuntimeProbe remains observe-mode by default; generated objectdump
+candidates are documentation only and do not run automatically.
+
 ## Docs generation
 
 The object dump only proves a symbol exists. It does not prove that reading or

@@ -16,3 +16,6 @@ objectdump/*.md
 
 # Node artifacts
 node_modules/
+
+# Release packaging output
+dist/
