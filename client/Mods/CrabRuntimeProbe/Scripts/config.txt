@@ -5,6 +5,7 @@ mode = observe
 debugBreadcrumbs = true
 debugTickHeartbeat = false
 debugWriterSelfTest = false
+allowHudTickHook = false
 writeJsonlResults = true
 writeMarkdownSnapshots = false
 

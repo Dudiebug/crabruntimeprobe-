@@ -45,7 +45,9 @@ If no JSONL appears, check `UE4SS.log` for `CrabRuntimeProbe`, confirm it has
 `debugWriterSelfTest = true`. Confirm `Mods\mods.txt` has
 `CrabRuntimeProbe : 1`, check
 `Mods\CrabRuntimeProbe\Scripts\results\`, and then check the fallback
-`Mods\CrabRuntimeProbe\Scripts\`.
+`Mods\CrabRuntimeProbe\Scripts\`. If the log says
+`tick source registered: HUD ReceiveDrawHUD`, the config is unsafe for normal
+Crab Champions testing; set `allowHudTickHook = false`.
 
 ## First safe run
 
@@ -53,6 +55,7 @@ Use:
 
 - `mode = observe`
 - `observeIntervalTicks = 10`
+- `allowHudTickHook = false`
 - `probeSet = shallow-core`
 - `allowDeepArrayProbes = false`
 - `allowInventoryInfoProbes = false`
@@ -95,7 +98,9 @@ gates, and writes JSONL results.
 
 Check `UE4SS.log` for `tick source registered`. A normal startup should print
 the config path, mode, primary result path, fallback result path, and selected
-tick source.
+tick source. The HUD `ReceiveDrawHUD` hook is disabled by default because it
+caused immediate startup crashes in Crab Champions. Leave
+`allowHudTickHook = false` unless you are intentionally debugging that hook.
 
 For a diagnostic observe-mode run, temporarily set:
 
@@ -103,6 +108,7 @@ For a diagnostic observe-mode run, temporarily set:
 - `writeJsonlResults = true`
 - `debugTickHeartbeat = true`
 - `debugWriterSelfTest = true`
+- `allowHudTickHook = false`
 
 Then launch the game and check for `tick heartbeat` lines every 100 ticks. The
 writer self-test should create one `Debug.WriterSelfTest` JSONL row without
@@ -117,6 +123,8 @@ If the primary directory is unavailable, `UE4SS.log` should include
 `primary result path unavailable; using fallback`. If neither path can be
 written, it should include `ERROR: result write failed for primary and fallback`.
 Keep `mode = observe` for this diagnostic pass so active probes stay disabled.
+If no JSONL appears, check the tick source line in `UE4SS.log`; heartbeat lines
+confirm that the selected scheduler is actually firing.
 
 ## Release packaging
 

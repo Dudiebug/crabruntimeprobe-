@@ -148,6 +148,7 @@ function Verify-Export {
   if (Test-Path -LiteralPath $configPath -PathType Leaf) {
     $expected = @{
       mode = "observe"
+      allowHudTickHook = "false"
       allowDeepArrayProbes = "false"
       allowInventoryInfoProbes = "false"
       allowHealthProbes = "false"

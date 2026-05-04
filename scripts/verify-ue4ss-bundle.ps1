@@ -92,6 +92,7 @@ $configPath = Join-Path $BundleRoot "Mods\CrabRuntimeProbe\Scripts\config.txt"
 if (Test-Path -LiteralPath $configPath) {
   $expected = @{
     mode = "observe"
+    allowHudTickHook = "false"
     allowDeepArrayProbes = "false"
     allowInventoryInfoProbes = "false"
     allowHealthProbes = "false"

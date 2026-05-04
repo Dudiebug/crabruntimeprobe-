@@ -15,12 +15,21 @@ local function appendLine(path, line)
   return false
 end
 
+local function tryCreateDirectory(path)
+  if type(os.execute) ~= 'function' then return end
+  pcall(function()
+    os.execute('if not exist "' .. path .. '" mkdir "' .. path .. '"')
+  end)
+end
+
 function writer.new(sessionId, config)
   local o = {
     sessionId = sessionId,
     config = config,
+    resultDir = 'Mods/CrabRuntimeProbe/Scripts/results',
     resultPath = 'Mods/CrabRuntimeProbe/Scripts/results/probe_results_' .. sessionId .. '.jsonl',
     fallbackPath = 'Mods/CrabRuntimeProbe/Scripts/probe_results_' .. sessionId .. '.jsonl',
+    triedCreateResultDir = false,
     warnedFallback = false,
     warnedFailure = false
   }
@@ -30,6 +39,10 @@ function writer.new(sessionId, config)
     record.timestamp = record.timestamp or utcNow()
     record.sessionId = self.sessionId
     local line = json.encode(record)
+    if not self.triedCreateResultDir then
+      tryCreateDirectory(self.resultDir)
+      self.triedCreateResultDir = true
+    end
     if not appendLine(self.resultPath, line) then
       if appendLine(self.fallbackPath, line) then
         if not self.warnedFallback then

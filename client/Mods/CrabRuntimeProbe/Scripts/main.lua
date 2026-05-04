@@ -11,6 +11,7 @@ local DEFAULT_CONFIG = {
   debugBreadcrumbs = true,
   debugTickHeartbeat = false,
   debugWriterSelfTest = false,
+  allowHudTickHook = false,
   writeJsonlResults = true,
   writeMarkdownSnapshots = false,
   observeIntervalTicks = 10,
@@ -107,20 +108,7 @@ end
 
 local tickRegistered = false
 
-if type(RegisterHook) == 'function' then
-  local okHud = pcall(function()
-    RegisterHook('/Script/Engine.HUD:ReceiveDrawHUD', function()
-      tickOnce()
-    end)
-  end)
-
-  if okHud then
-    tickRegistered = true
-    print('[CrabRuntimeProbe] tick source registered: HUD ReceiveDrawHUD')
-  end
-end
-
-if not tickRegistered and type(RegisterTick) == 'function' then
+if type(RegisterTick) == 'function' then
   local okTick = pcall(function()
     RegisterTick(function()
       tickOnce()
@@ -130,6 +118,28 @@ if not tickRegistered and type(RegisterTick) == 'function' then
   if okTick then
     tickRegistered = true
     print('[CrabRuntimeProbe] tick source registered: RegisterTick')
+  end
+end
+
+if not tickRegistered and type(ExecuteWithDelay) == 'function' then
+  local function scheduleDelayedTick()
+    local ok, err = pcall(function()
+      ExecuteWithDelay(100, function()
+        tickOnce()
+        scheduleDelayedTick()
+      end)
+    end)
+    if not ok then
+      print('[CrabRuntimeProbe] tick error: ' .. tostring(err))
+    end
+    return ok
+  end
+
+  local okDelay = scheduleDelayedTick()
+
+  if okDelay then
+    tickRegistered = true
+    print('[CrabRuntimeProbe] tick source registered: ExecuteWithDelay loop')
   end
 end
 
@@ -144,6 +154,19 @@ if not tickRegistered and type(LoopAsync) == 'function' then
   if okLoop then
     tickRegistered = true
     print('[CrabRuntimeProbe] tick source registered: LoopAsync')
+  end
+end
+
+if not tickRegistered and cfg.allowHudTickHook == true and type(RegisterHook) == 'function' then
+  local okHud = pcall(function()
+    RegisterHook('/Script/Engine.HUD:ReceiveDrawHUD', function()
+      tickOnce()
+    end)
+  end)
+
+  if okHud then
+    tickRegistered = true
+    print('[CrabRuntimeProbe] tick source registered: HUD ReceiveDrawHUD')
   end
 end
 

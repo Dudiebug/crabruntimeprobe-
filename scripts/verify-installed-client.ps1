@@ -66,6 +66,7 @@ if (Test-Path -LiteralPath $ModsTxt -PathType Leaf) {
 if (Test-Path -LiteralPath $ConfigPath -PathType Leaf) {
   $expected = @{
     mode = "observe"
+    allowHudTickHook = "false"
     allowDeepArrayProbes = "false"
     allowInventoryInfoProbes = "false"
     allowHealthProbes = "false"
