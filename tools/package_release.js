@@ -101,6 +101,33 @@ function writeModsTxt(modsDir) {
   fs.writeFileSync(path.join(modsDir, 'mods.txt'), text);
 }
 
+function writeInstallTxt(stagingDir) {
+  const text = [
+    'CrabRuntimeProbe UE4SS Bundle',
+    '',
+    'Extract ZIP contents into:',
+    'Crab Champions\\CrabChampions\\Binaries\\Win64',
+    '',
+    'First run should use mode = observe.',
+    '',
+    'Deep inventory, InventoryInfo, health, write, and RPC probes are disabled by default.',
+    '',
+    'UE4SS is redistributed under UE4SS-LICENSE.txt.',
+    '',
+    'This package does not include Crab Champions game binaries.',
+    '',
+    'Included UE4SS support mods from the CrabInvSync template:',
+    '- BPML_GenericFunctions',
+    '- BPModLoaderMod',
+    '- Keybinds',
+    '- shared',
+    '',
+    'These support mods are UE4SS support files, not CrabRuntimeProbe gameplay code.',
+    ''
+  ].join('\n');
+  fs.writeFileSync(path.join(stagingDir, 'INSTALL.txt'), text);
+}
+
 function verifyNoForbiddenFiles(stagingDir) {
   const forbidden = [
     'Mods/CrabInventorySync',
@@ -170,6 +197,7 @@ function main() {
 
   copyFileIfExists(path.join(templateRoot, 'UE4SS-LICENSE.txt'), path.join(stagingDir, 'UE4SS-LICENSE.txt'), true);
   copyFileIfExists(path.join(root, 'LICENSE'), path.join(stagingDir, 'CrabRuntimeProbe-LICENSE.txt'), true);
+  copyFileIfExists(path.join(root, 'README.md'), path.join(stagingDir, 'CrabRuntimeProbe-README.md'), true);
 
   for (const modName of supportMods) {
     copyDir(path.join(templateClient, 'Mods', modName), path.join(stagingMods, modName));
@@ -177,6 +205,7 @@ function main() {
 
   copyDir(path.join(root, 'client', 'Mods', 'CrabRuntimeProbe'), path.join(stagingMods, 'CrabRuntimeProbe'));
   writeModsTxt(stagingMods);
+  writeInstallTxt(stagingDir);
   verifyNoForbiddenFiles(stagingDir);
 
   fs.rmSync(outZip, { force: true });
