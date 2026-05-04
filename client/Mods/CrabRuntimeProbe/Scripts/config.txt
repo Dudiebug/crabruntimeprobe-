@@ -1,0 +1,23 @@
+enabled = true
+
+mode = observe
+
+debugBreadcrumbs = true
+writeJsonlResults = true
+writeMarkdownSnapshots = false
+
+observeIntervalTicks = 10
+probeIntervalTicks = 10
+startupWarmupTicks = 60
+contextStableTicksRequired = 10
+maxProbesPerSession = 100
+
+allowUnknownRoleProbes = false
+allowJoinedClientDeepProbes = false
+allowDeepArrayProbes = false
+allowInventoryInfoProbes = false
+allowHealthProbes = false
+allowWriteProbes = false
+allowRpcProbes = false
+
+probeSet = shallow-core
