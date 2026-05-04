@@ -2,6 +2,7 @@ enabled = true
 
 mode = observe
 
+tickDriver = none
 debugBreadcrumbs = true
 debugTickHeartbeat = false
 debugWriterSelfTest = false

@@ -100,6 +100,7 @@ if (-not $hasCrabRuntimeProbe) {
 Set-Content -LiteralPath $ModsTxt -Value $updatedLines -Encoding ASCII
 
 $allowHudTickHook = Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowHudTickHook"
+$tickDriver = Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver"
 
 Write-Host "CrabRuntimeProbe install passed."
 Write-Host "Source repo path: $RepoRoot"
@@ -107,5 +108,6 @@ Write-Host "Game bin path: $GameBinFull"
 Write-Host "Installed mod path: $InstallModRoot"
 Write-Host "Installed config path: $InstalledConfigPath"
 Write-Host "Build info path: $BuildInfoPath"
+Write-Host "tickDriver = $tickDriver"
 Write-Host "allowHudTickHook = $allowHudTickHook"
 Write-Host "Ensured Mods\mods.txt contains: CrabRuntimeProbe : 1"

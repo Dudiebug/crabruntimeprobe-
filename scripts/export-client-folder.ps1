@@ -88,6 +88,7 @@ if ($Zip) {
 }
 
 $allowHudTickHook = Get-CrabRuntimeProbeConfigValue -ConfigPath $ExportedConfigPath -Key "allowHudTickHook"
+$tickDriver = Get-CrabRuntimeProbeConfigValue -ConfigPath $ExportedConfigPath -Key "tickDriver"
 
 Write-Host "CrabRuntimeProbe client export passed."
 Write-Host "Source repo path: $RepoRoot"
@@ -95,5 +96,6 @@ Write-Host "Copy from: $OutputFull"
 Write-Host "Manual mod folder source: $ExportedModRoot"
 Write-Host "Exported config path: $ExportedConfigPath"
 Write-Host "Build info path: $BuildInfoPath"
+Write-Host "tickDriver = $tickDriver"
 Write-Host "allowHudTickHook = $allowHudTickHook"
 Write-Host "For a full manual UE4SS client copy, copy the contents of '$OutputFull' into the Crab Champions Win64 folder."

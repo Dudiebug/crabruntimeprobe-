@@ -59,21 +59,33 @@ git checkout main
 git pull origin main
 ```
 
-3. Run one quick prepare script:
+3. Run one quick smoke prepare script:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-install-and-prepare.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-smoke-prepare.ps1
 ```
 
 4. Launch Crab Champions, sit at the menu for 20 to 30 seconds, then quit.
-5. Run one quick collect script:
+5. Run one quick smoke collect script:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-collect-diagnostics.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-smoke-collect.ps1
 ```
 
 6. Paste
 `Mods\CrabRuntimeProbe\Scripts\diagnostic_summary.txt` back to ChatGPT/Codex.
+
+Only after the smoke test passes, test one isolated tick driver:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-tickdriver-prepare.ps1 -TickDriver executeDelay
+```
+
+Launch Crab Champions, sit at the menu for 20 to 30 seconds, then quit:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-tickdriver-collect.ps1
+```
 
 The quick scripts use the default Steam path:
 
@@ -84,13 +96,13 @@ C:\Program Files (x86)\Steam\steamapps\common\Crab Champions\CrabChampions\Binar
 For a non-default install path, use the full diagnostic cycle script:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-local-diagnostic-cycle.ps1 -GameBin "C:\Program Files (x86)\Steam\steamapps\common\Crab Champions\CrabChampions\Binaries\Win64" -Prepare
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-local-diagnostic-cycle.ps1 -GameBin "C:\Program Files (x86)\Steam\steamapps\common\Crab Champions\CrabChampions\Binaries\Win64" -PrepareSmoke
 ```
 
 After launching and quitting:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-local-diagnostic-cycle.ps1 -GameBin "C:\Program Files (x86)\Steam\steamapps\common\Crab Champions\CrabChampions\Binaries\Win64" -Collect
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-local-diagnostic-cycle.ps1 -GameBin "C:\Program Files (x86)\Steam\steamapps\common\Crab Champions\CrabChampions\Binaries\Win64" -CollectSmoke
 ```
 
 ## Quick local test install
@@ -125,6 +137,7 @@ Crab Champions testing; set `allowHudTickHook = false`.
 Use:
 
 - `mode = observe`
+- `tickDriver = none`
 - `observeIntervalTicks = 10`
 - `allowHudTickHook = false`
 - `probeSet = shallow-core`
@@ -196,6 +209,11 @@ written, it should include `ERROR: result write failed for primary and fallback`
 Keep `mode = observe` for this diagnostic pass so active probes stay disabled.
 If no JSONL appears, check the tick source line in `UE4SS.log`; heartbeat lines
 confirm that the selected scheduler is actually firing.
+
+By default `tickDriver = none`, so the first smoke run should not register any
+tick source. Set exactly one tick driver only for an isolated follow-up run:
+`registerTick`, `executeDelay`, or `loopAsync`. The `hud` driver remains blocked
+by the local helper because `allowHudTickHook = false` is the safe default.
 
 ## Release packaging
 

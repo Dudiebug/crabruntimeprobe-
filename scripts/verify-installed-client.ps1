@@ -67,12 +67,14 @@ if ($errors.Count -gt 0) {
 }
 
 $allowHudTickHook = Get-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "allowHudTickHook"
+$tickDriver = Get-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "tickDriver"
 
 Write-Host "Installed CrabRuntimeProbe verification passed."
 Write-Host "Source repo path: $RepoRoot"
 Write-Host "Game bin path: $GameBinFull"
 Write-Host "Installed mod path: $ModRoot"
 Write-Host "Installed config path: $ConfigPath"
+Write-Host "tickDriver = $tickDriver"
 Write-Host "allowHudTickHook = $allowHudTickHook"
 if (Test-Path -LiteralPath $BuildInfoPath -PathType Leaf) {
   Write-Host "Build info path: $BuildInfoPath"

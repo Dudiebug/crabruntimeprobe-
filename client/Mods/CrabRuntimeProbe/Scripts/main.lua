@@ -1,13 +1,12 @@
 local SCRIPT_DIR = 'Mods/CrabRuntimeProbe/Scripts/'
 package.path = package.path .. ';' .. SCRIPT_DIR .. '?.lua'
 
-local safe = require('safe_access')
-local runner = require('probe_runner')
 local writerFactory = require('result_writer')
 
 local DEFAULT_CONFIG = {
   enabled = true,
   mode = 'observe',
+  tickDriver = 'none',
   debugBreadcrumbs = true,
   debugTickHeartbeat = false,
   debugWriterSelfTest = false,
@@ -28,6 +27,18 @@ local DEFAULT_CONFIG = {
   allowRpcProbes = false,
   probeSet = 'shallow-core'
 }
+
+local ALLOWED_TICK_DRIVERS = {
+  none = true,
+  registerTick = true,
+  executeDelay = true,
+  loopAsync = true,
+  hud = true
+}
+
+local function log(message)
+  print(tostring(message) .. '\n')
+end
 
 local function parseConfig(path)
   local config = {}
@@ -56,120 +67,171 @@ local function parseConfig(path)
   return config
 end
 
-local cfg = parseConfig(SCRIPT_DIR .. 'config.txt')
-if cfg.enabled == false then
-  print('[CrabRuntimeProbe] disabled in config')
-  return
-end
-
-local sessionId = os.date('!%Y%m%dT%H%M%SZ')
-local writer = writerFactory.new(sessionId, cfg)
-local state = runner.new(cfg, safe, writer)
-
-print('[CrabRuntimeProbe] started session=' .. sessionId .. ' mode=' .. tostring(cfg.mode))
-print('[CrabRuntimeProbe] config path=Mods/CrabRuntimeProbe/Scripts/config.txt')
-print('[CrabRuntimeProbe] mode=' .. tostring(cfg.mode))
-print('[CrabRuntimeProbe] results primary=' .. tostring(writer.resultPath))
-print('[CrabRuntimeProbe] results fallback=' .. tostring(writer.fallbackPath))
-
-if cfg.debugWriterSelfTest == true then
-  writer:write({
+local function writeStartupRecord(writer, cfg, eventName, summary)
+  return writer:write({
+    event = eventName,
     tick = 0,
     mode = cfg.mode,
-    probeId = 'Debug.WriterSelfTest',
-    probeName = 'Debug.WriterSelfTest',
+    tickDriver = tostring(cfg.tickDriver),
+    probeId = eventName,
+    probeName = eventName,
     category = 'debug',
     context = 'startup',
     role = 'unknown',
     lifecycleState = 'startup',
     result = 'ok',
-    valueKind = '',
-    valueSummary = 'writer self-test',
+    valueKind = 'startup',
+    valueSummary = summary,
     error = ''
   })
 end
 
-if type(RegisterHook) == 'function' then
-  pcall(function()
-    RegisterHook('/Script/Engine.PlayerController:ClientRestart', function()
-      print('[CrabRuntimeProbe][hook] ClientRestart')
-    end)
-  end)
+local function readBuildInfo(path)
+  local lines = {}
+  local f = io.open(path, 'r')
+  if not f then
+    return lines
+  end
+  for line in f:lines() do
+    lines[#lines + 1] = line
+    if #lines >= 8 then break end
+  end
+  f:close()
+  return lines
 end
+
+local cfg = parseConfig(SCRIPT_DIR .. 'config.txt')
+log('[CrabRuntimeProbe] boot phase: config loaded')
+
+if cfg.enabled == false then
+  log('[CrabRuntimeProbe] disabled in config')
+  return
+end
+
+if type(cfg.tickDriver) ~= 'string' or ALLOWED_TICK_DRIVERS[cfg.tickDriver] ~= true then
+  log('[CrabRuntimeProbe] ERROR: invalid tickDriver=' .. tostring(cfg.tickDriver))
+  return
+end
+
+local sessionId = os.date('!%Y%m%dT%H%M%SZ')
+local writer = writerFactory.new(sessionId, cfg)
+log('[CrabRuntimeProbe] boot phase: writer initialized')
+
+log('[CrabRuntimeProbe] started session=' .. sessionId .. ' mode=' .. tostring(cfg.mode))
+log('[CrabRuntimeProbe] config path=Mods/CrabRuntimeProbe/Scripts/config.txt')
+log('[CrabRuntimeProbe] mode=' .. tostring(cfg.mode))
+log('[CrabRuntimeProbe] tickDriver=' .. tostring(cfg.tickDriver))
+local buildInfoLines = readBuildInfo(SCRIPT_DIR .. 'build_info.txt')
+if #buildInfoLines == 0 then
+  log('[CrabRuntimeProbe] build info unavailable')
+else
+  for _, line in ipairs(buildInfoLines) do
+    log('[CrabRuntimeProbe] build ' .. tostring(line))
+  end
+end
+log('[CrabRuntimeProbe] safety allowHudTickHook=' .. tostring(cfg.allowHudTickHook)
+  .. ' allowDeepArrayProbes=' .. tostring(cfg.allowDeepArrayProbes)
+  .. ' allowInventoryInfoProbes=' .. tostring(cfg.allowInventoryInfoProbes)
+  .. ' allowHealthProbes=' .. tostring(cfg.allowHealthProbes)
+  .. ' allowWriteProbes=' .. tostring(cfg.allowWriteProbes)
+  .. ' allowRpcProbes=' .. tostring(cfg.allowRpcProbes))
+log('[CrabRuntimeProbe] results primary=' .. tostring(writer.resultPath))
+log('[CrabRuntimeProbe] results fallback=' .. tostring(writer.fallbackPath))
+
+log('[CrabRuntimeProbe] boot phase: startup smoke write begin')
+writeStartupRecord(writer, cfg, 'Debug.StartupSmoke', 'startup smoke')
+log('[CrabRuntimeProbe] boot phase: startup smoke write complete')
+
+if cfg.debugWriterSelfTest == true then
+  writeStartupRecord(writer, cfg, 'Debug.WriterSelfTest', 'writer self-test')
+end
+
+log('[CrabRuntimeProbe] boot phase: tick driver decision')
+
+if cfg.tickDriver == 'none' then
+  log('[CrabRuntimeProbe] tick driver disabled: none')
+  log('[CrabRuntimeProbe] startup smoke complete')
+  log('[CrabRuntimeProbe] boot phase: startup complete')
+  return
+end
+
+local safe = require('safe_access')
+local runner = require('probe_runner')
+local state = runner.new(cfg, safe, writer)
 
 local function tickOnce()
   local ok, err = pcall(function()
     state:onTick()
   end)
   if not ok then
-    print('[CrabRuntimeProbe] tick error: ' .. tostring(err))
+    log('[CrabRuntimeProbe] tick error: ' .. tostring(err))
   end
 end
 
-local tickRegistered = false
+local function registerSelectedTickDriver(driver)
+  log('[CrabRuntimeProbe] boot phase: tick registration begin')
+  log('[CrabRuntimeProbe] tick driver register begin: ' .. tostring(driver))
 
-if type(RegisterTick) == 'function' then
-  local okTick = pcall(function()
+  if driver == 'registerTick' then
+    if type(RegisterTick) ~= 'function' then
+      log('[CrabRuntimeProbe] tick driver unavailable: registerTick')
+      return false
+    end
     RegisterTick(function()
       tickOnce()
     end)
-  end)
-
-  if okTick then
-    tickRegistered = true
-    print('[CrabRuntimeProbe] tick source registered: RegisterTick')
-  end
-end
-
-if not tickRegistered and type(ExecuteWithDelay) == 'function' then
-  local function scheduleDelayedTick()
-    local ok, err = pcall(function()
+  elseif driver == 'executeDelay' then
+    if type(ExecuteWithDelay) ~= 'function' then
+      log('[CrabRuntimeProbe] tick driver unavailable: executeDelay')
+      return false
+    end
+    local function scheduleDelayedTick()
       ExecuteWithDelay(100, function()
         tickOnce()
         scheduleDelayedTick()
       end)
-    end)
-    if not ok then
-      print('[CrabRuntimeProbe] tick error: ' .. tostring(err))
     end
-    return ok
-  end
-
-  local okDelay = scheduleDelayedTick()
-
-  if okDelay then
-    tickRegistered = true
-    print('[CrabRuntimeProbe] tick source registered: ExecuteWithDelay loop')
-  end
-end
-
-if not tickRegistered and type(LoopAsync) == 'function' then
-  local okLoop = pcall(function()
+    scheduleDelayedTick()
+  elseif driver == 'loopAsync' then
+    if type(LoopAsync) ~= 'function' then
+      log('[CrabRuntimeProbe] tick driver unavailable: loopAsync')
+      return false
+    end
     LoopAsync(100, function()
       tickOnce()
       return true
     end)
-  end)
-
-  if okLoop then
-    tickRegistered = true
-    print('[CrabRuntimeProbe] tick source registered: LoopAsync')
-  end
-end
-
-if not tickRegistered and cfg.allowHudTickHook == true and type(RegisterHook) == 'function' then
-  local okHud = pcall(function()
+  elseif driver == 'hud' then
+    if cfg.allowHudTickHook ~= true then
+      log('[CrabRuntimeProbe] tick driver blocked by allowHudTickHook=false: hud')
+      return false
+    end
+    if type(RegisterHook) ~= 'function' then
+      log('[CrabRuntimeProbe] tick driver unavailable: hud')
+      return false
+    end
     RegisterHook('/Script/Engine.HUD:ReceiveDrawHUD', function()
       tickOnce()
     end)
-  end)
-
-  if okHud then
-    tickRegistered = true
-    print('[CrabRuntimeProbe] tick source registered: HUD ReceiveDrawHUD')
   end
+
+  log('[CrabRuntimeProbe] tick source registered: ' .. tostring(driver))
+  log('[CrabRuntimeProbe] boot phase: tick registration complete')
+  return true
 end
 
-if not tickRegistered then
-  print('[CrabRuntimeProbe] ERROR: no supported tick source registered')
+local ok, registeredOrError = pcall(function()
+  return registerSelectedTickDriver(cfg.tickDriver)
+end)
+
+if not ok then
+  log('[CrabRuntimeProbe] ERROR: tick driver registration failed: ' .. tostring(registeredOrError))
+  return
 end
+
+if registeredOrError ~= true then
+  log('[CrabRuntimeProbe] boot phase: startup complete')
+  return
+end
+
+log('[CrabRuntimeProbe] boot phase: startup complete')

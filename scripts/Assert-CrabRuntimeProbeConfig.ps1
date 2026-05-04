@@ -13,6 +13,7 @@ $script:CrabRuntimeProbeRequiredModFiles = @(
 $script:CrabRuntimeProbeRequiredConfigDefaults = [ordered]@{
   enabled = "true"
   mode = "observe"
+  tickDriver = "none"
   debugBreadcrumbs = "true"
   debugTickHeartbeat = "false"
   debugWriterSelfTest = "false"
@@ -33,6 +34,8 @@ $script:CrabRuntimeProbeRequiredConfigDefaults = [ordered]@{
   allowRpcProbes = "false"
   probeSet = "shallow-core"
 }
+
+$script:CrabRuntimeProbeAllowedTickDrivers = @("none", "registerTick", "executeDelay", "loopAsync", "hud")
 
 function Resolve-CrabRuntimeProbeRepoRoot {
   param(
@@ -116,7 +119,9 @@ function Get-CrabRuntimeProbeConfigValue {
 function Assert-CrabRuntimeProbeConfig {
   param(
     [Parameter(Mandatory = $true)][string]$ConfigPath,
-    [string]$Label = "CrabRuntimeProbe config"
+    [string]$Label = "CrabRuntimeProbe config",
+    [switch]$AllowRuntimeTickDriver,
+    [switch]$AllowHudTickHook
   )
 
   if (-not (Test-Path -LiteralPath $ConfigPath -PathType Leaf)) {
@@ -135,10 +140,26 @@ function Assert-CrabRuntimeProbeConfig {
       $errors.Add("Duplicate config key: $key") | Out-Null
     }
     foreach ($value in $values) {
-      if (-not [string]::Equals($value, $expected, [System.StringComparison]::OrdinalIgnoreCase)) {
+      $isRuntimeTickDriver = $AllowRuntimeTickDriver -and $key -eq "tickDriver"
+      $isRuntimeHudGate = $AllowHudTickHook -and $key -eq "allowHudTickHook"
+      if (-not $isRuntimeTickDriver -and -not $isRuntimeHudGate -and -not [string]::Equals($value, $expected, [System.StringComparison]::OrdinalIgnoreCase)) {
         $errors.Add("Unsafe config default: $key expected '$expected' got '$value'") | Out-Null
       }
     }
+  }
+
+  $tickDriver = Get-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "tickDriver"
+  if ($null -ne $tickDriver -and $script:CrabRuntimeProbeAllowedTickDrivers -notcontains $tickDriver) {
+    $errors.Add("Invalid tickDriver '$tickDriver'. Allowed values: $($script:CrabRuntimeProbeAllowedTickDrivers -join ', ')") | Out-Null
+  }
+
+  $allowHudTickHookValue = Get-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "allowHudTickHook"
+  if ($tickDriver -eq "hud" -and $allowHudTickHookValue -ne "true") {
+    $errors.Add("tickDriver = hud requires allowHudTickHook = true") | Out-Null
+  }
+
+  if (-not $AllowHudTickHook -and $allowHudTickHookValue -eq "true") {
+    $errors.Add("allowHudTickHook must be false by default") | Out-Null
   }
 
   if ($errors.Count -gt 0) {
