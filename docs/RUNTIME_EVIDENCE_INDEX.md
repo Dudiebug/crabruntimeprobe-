@@ -2,13 +2,13 @@
 
 Generated from imported runtime evidence under `evidence/runtime/`.
 
-- Access evidence files: 9
-- Probe result files: 9
-- Diagnostic summaries: 8
-- Evidence rows: 292
+- Access evidence files: 10
+- Probe result files: 10
+- Diagnostic summaries: 9
+- Evidence rows: 298
 - Health playerstate watch samples: 200
 - Identity/roster samples: 15
-- Resource visibility samples: 0
+- Resource visibility samples: 6
 - Objectdump symbols discovered: 0
 
 - Probe candidates doc present: yes
@@ -26,18 +26,18 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 
 ## Latest Health PlayerState Watch Summary
 
-- Samples: 118
-- PlayerState watch probe ran: True
+- Samples: 0
+- PlayerState watch probe ran: False
 - CrabHC touched: False
 - Ambiguous CrabHC detected: False
 - Unsafe gates: HUD=false, deepArrays=false, InventoryInfo=false, writes=false, RPCs=false, unknownRole=false, joinedClientDeep=false
-- currentHealth first/last/min/max: 250 / 0 / 0 / 250
-- currentMaxHealth first/last/min/max: 250 / 0 / 0 / 250
-- baseMaxHealth first/last/min/max: 250 / 250 / 250 / 250
-- maxHealthMultiplier first/last/min/max: 1 / 1 / 1 / 1
-- Possible base health model: local PlayerState base appears 250
+- currentHealth first/last/min/max: not found / not found / not found / not found
+- currentMaxHealth first/last/min/max: not found / not found / not found / not found
+- baseMaxHealth first/last/min/max: not found / not found / not found / not found
+- maxHealthMultiplier first/last/min/max: not found / not found / not found / not found
+- Possible base health model: unknown
 - Vanilla local PlayerState health visibility: 250/250 observed during valid samples; BaseMaxHealth stayed 250 and MaxHealthMultiplier stayed 1 in the latest watch evidence.
-- Terminal 0/0 was observed; treat it as a likely lifecycle, quit, transition, or despawn artifact unless separately proven.
+- Terminal 0/0 was not observed in the latest watch summary.
 
 ## Latest Identity Roster Summary
 
@@ -54,8 +54,17 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 
 ## Multiplayer Resource Visibility Summary
 
-- Summary: unresolved; no `multiplayer-resource-visibility-read` evidence has been imported yet.
-- Player count sampled: 0
+- Summary: partial
+- Resource visibility class: remote_resources_partial
+- Player count sampled: 4
+- Fields visible across more than one PlayerState: AbilityDA, BaseMaxHealth, Crystals, HealthInfo, HealthInfo.CurrentHealth, HealthInfo.CurrentMaxHealth, Keys, MaxHealthMultiplier, MeleeDA, NumAbilityModSlots, NumMeleeModSlots, NumPerkSlots, NumWeaponModSlots, WeaponDA
+- Fields only visible on local PlayerState: none
+- Fields returning nil/errors: AbilityMods, MeleeMods, Perks, Relics, WeaponMods
+- Readable categories by candidate: crystals=4/4, slots=4/4, equipment=4/4, inventory array counts=0/4, health=4/4
+- Supports future P2P resource merge design: partial
+- CrabInvSync v2 implication: P2P-style merge is plausible for crystals, slots, equipment, and possibly health inputs.
+- Inventory item sync still needs separate research; current shallow count-only inventory array visibility is unresolved and does not expose item metadata.
+- An external relay/server may still be needed for inventory until array/item metadata visibility or another safe carrier is proven.
 - Raw identity values are not emitted by this summary; PlayerName and UniqueId evidence remains fingerprint-only.
 - No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.
 
@@ -72,14 +81,17 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 | `CrabPC.PlayerState` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T034622Z, 20260505T035239Z, 20260505T052110Z | read-only local CrabPC -> PlayerState identity sample; raw values redacted unless allowRawIdentityEvidence=true |
 | `CrabPS.AbilityDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z | sourceScope=player_state_scoped; shortName=DA_Ability_BlackHole nameSource=fullNameFallback objectClass=CrabAbilityDA |
 | `CrabPS.BaseMaxHealth` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
+| `CrabPS.Crystals` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T063937Z | Read-only Crystals and optional Keys scalar visibility checks |
 | `CrabPS.HealthInfo` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.HealthInfo` | PlayerStateHealthSample | solo | solo-or-host | SAFE | ok | 20260505T025430Z, 20260505T055346Z | CrabPC -> PlayerState -> CrabPS -> HealthInfo read-only sample |
+| `CrabPS.HealthInfo` | RemotePlayerStateHealthSample | solo | solo-or-host | SAFE | ok | 20260505T063937Z | Read-only HealthInfo.CurrentHealth/CurrentMaxHealth plus BaseMaxHealth/MaxHealthMultiplier checks from visible PlayerStates; no CrabHC touched |
 | `CrabPS.MaxHealthMultiplier` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.MeleeDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z | sourceScope=player_state_scoped; shortName=DA_Melee_Hammer nameSource=fullNameFallback objectClass=CrabMeleeDA |
-| `CrabPS.WeaponDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z | sourceScope=player_state_scoped; shortName=DA_Weapon_Minigun nameSource=fullNameFallback objectClass=CrabWeaponDA |
+| `CrabPS.NumWeaponModSlots` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T063937Z | Read-only NumWeaponModSlots/NumAbilityModSlots/NumMeleeModSlots/NumPerkSlots visibility checks |
+| `CrabPS.WeaponDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z, 20260505T063937Z | Read-only WeaponDA/AbilityDA/MeleeDA property visibility checks; object identities are not dereferenced or summarized in this phase |
 | `CrabPS.HealthInfo.CurrentHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.HealthInfo.CurrentMaxHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
-| `PlayerState.Identity` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T034622Z, 20260505T035239Z, 20260505T052110Z | candidate PlayerState display/stable-id fields via GetPropertyValue only; no raw IDs by default |
+| `PlayerState.Identity` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T034622Z, 20260505T035239Z, 20260505T052110Z, 20260505T063937Z | Capped read-only visible PlayerState/CrabPS candidate identity fingerprints; no raw names or UniqueIds emitted; candidate PlayerState display/stable-id fields via GetPropertyValue only; no raw IDs by default |
 | `CrabGS` | FindFirstOf | solo | solo-or-host | SAFE | ok | 20260505T052110Z | FindFirstOf(CrabGS); GetFullName/GetName/GetClass only; objectdump shows CrabGS extends GameStateBase but no CrabGS-specific PlayerArray property; optional source name/class read error: function: 000002227AAEBC50function: 000002227AAEBC50 |
 | `CrabHC` | FindFirstOf | solo | solo-or-host | SAFE | ok | 20260505T002614Z | sourceScope=non_player_candidate; value=CrabHC found |
 | `GameStateBase GameState` | FindFirstOf | solo | solo-or-host | SAFE | ok | 20260505T052110Z | FindFirstOf(GameStateBase) with GameState fallback; GetFullName/GetName/GetClass only; no roster or property traversal performed; optional source name/class read error: function: 000002227AAEBC50function: 000002227AAEBC50 |

@@ -1,12 +1,12 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T06:29:13.602Z
-- Current phase: none
+- Updated: 2026-05-05T06:52:20.118Z
+- Current phase: `multiplayer-resource-visibility-read`
 - Next recommended phase: `multiplayer-resource-visibility-read`
-- Latest session: 20260505T055346Z
-- Latest commit: d5f22ad6f321d6734ce77d07df73129d94f962bc
-- Latest summary: evidence/runtime/20260505T055346Z/diagnostic_summary.txt
+- Latest session: 20260505T063937Z
+- Latest commit: 84e06d51e1b1183b30e5136e005544f4eeff35c5
+- Latest summary: evidence/runtime/20260505T063937Z/diagnostic_summary.txt
 
 ## Completed Phases
 
@@ -21,7 +21,7 @@
 
 ## Partial Phases
 
-- None.
+- `multiplayer-resource-visibility-read` - Multiplayer resource visibility read: remote_resources_partial; Multiple PlayerState candidates were sampled and some resource fields were visible remotely, but visibility was partial.
 
 ## Failed Phases
 
@@ -39,7 +39,7 @@
 
 ## Pending Phases
 
-- `multiplayer-resource-visibility-read` - Multiplayer resource visibility read
+- None.
 
 ## Confirmed Safe Paths
 
@@ -49,6 +49,7 @@
 - `CrabPC -> PlayerState -> CrabPS -> HealthInfo` read-only PlayerState health path
 - `CrabPC -> PlayerState` local identity reads with redacted/fingerprinted identity values
 - confirmed visible multiplayer roster reads
+- partial remote multiplayer PlayerState resource reads for crystals, slots, equipment, and health scalars
 
 ## Identity And Roster Notes
 
@@ -64,9 +65,19 @@
 
 ## Multiplayer Resource Visibility
 
-- Summary: unresolved; no `multiplayer-resource-visibility-read` evidence has been imported yet.
-- Player count sampled: 0
-- No raw identity values are emitted; writes, RPCs, HUD hooks, deep arrays, `InventoryInfo`, and Enhancements remain disabled.
+- Summary: partial
+- Resource visibility class: remote_resources_partial
+- Player count sampled: 4
+- Fields visible across more than one PlayerState: AbilityDA, BaseMaxHealth, Crystals, HealthInfo, HealthInfo.CurrentHealth, HealthInfo.CurrentMaxHealth, Keys, MaxHealthMultiplier, MeleeDA, NumAbilityModSlots, NumMeleeModSlots, NumPerkSlots, NumWeaponModSlots, WeaponDA
+- Fields only visible on local PlayerState: none
+- Fields returning nil/errors: AbilityMods, MeleeMods, Perks, Relics, WeaponMods
+- Readable categories by candidate: crystals=4/4, slots=4/4, equipment=4/4, inventory array counts=0/4, health=4/4
+- Supports future P2P resource merge design: partial
+- CrabInvSync v2 implication: P2P-style merge is plausible for crystals, slots, equipment, and possibly health inputs.
+- Inventory item sync still needs separate research; current shallow count-only inventory array visibility is unresolved and does not expose item metadata.
+- An external relay/server may still be needed for inventory until array/item metadata visibility or another safe carrier is proven.
+- Raw IDs/names emitted: no, redacted/fingerprinted by default
+- No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.
 
 ## Confirmed Unsafe Paths
 

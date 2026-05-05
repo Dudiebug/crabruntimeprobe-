@@ -19,8 +19,6 @@ The following areas remain UNTESTED or UNSAFE_DISABLED unless explicit runtime e
 | `FindAllOf(PlayerState,CrabPS)` | identity roster candidates | UNTESTED | Capped PlayerState-like discovery is gated by allowIdentityProbes and emits only redacted/fingerprinted identity values. |
 | `FindAllOf(PlayerController,CrabPC).PlayerState` | identity controller candidates | UNTESTED | Capped controller discovery reads only PlayerState from valid controllers. |
 | `FindAllOf(PlayerState,CrabPS)` | resource visibility candidates | UNTESTED | Capped resource visibility discovery is gated by allowResourceVisibilityProbes and reads only explicitly named PlayerState fields. |
-| `CrabPS.Crystals` | GetPropertyValue | UNTESTED | Resource visibility probes are disabled by default. |
-| `CrabPS.WeaponMods` | GetPropertyValueCountOnly | UNTESTED | Inventory arrays are count-only in resource visibility; no element dereference. |
 | `PlayerState.UniqueId` | identity | UNTESTED | Stable IDs must be fingerprinted unless allowRawIdentityEvidence is explicitly enabled. |
 | `GameplayState.*` | write | UNSAFE_DISABLED | Writes are disabled. |
 | `RPC.*` | rpc | UNSAFE_DISABLED | RPC probes are disabled. |

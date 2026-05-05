@@ -237,6 +237,11 @@ function classifyResourceVisibilityEvidence(rows) {
   };
 }
 
+function formatReadableCount(count, total) {
+  const denominator = Number.isFinite(Number(total)) && Number(total) > 0 ? Number(total) : 0;
+  return `${count}/${denominator}`;
+}
+
 function parseKeyValueText(text) {
   const out = {};
   for (const line of text.split(/\r?\n/)) {
@@ -696,6 +701,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   if (roster.visibleRosterConfirmed) safeSignals.push('confirmed visible multiplayer roster reads');
   const resourceVisibility = classifyResourceVisibilityEvidence(facts.rows);
   if (resourceVisibility.status === 'passed') safeSignals.push('remote-visible multiplayer PlayerState resource reads');
+  else if (resourceVisibility.remoteResourceVisible) safeSignals.push('partial remote multiplayer PlayerState resource reads for crystals, slots, equipment, and health scalars');
   if (!safeSignals.length) out += '- None imported yet.\n';
   else out += safeSignals.map((item) => `- ${item}\n`).join('');
 
@@ -748,12 +754,16 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     out += '- No raw identity values are emitted; writes, RPCs, HUD hooks, deep arrays, `InventoryInfo`, and Enhancements remain disabled.\n';
   } else {
     out += `- Summary: ${resourceVisibility.classification}\n`;
+    out += `- Resource visibility class: ${resourceVisibility.status}\n`;
     out += `- Player count sampled: ${resourceVisibility.sampledPlayerStateCount}\n`;
     out += `- Fields visible across more than one PlayerState: ${resourceVisibility.fieldsVisibleAcrossMultiple.length ? resourceVisibility.fieldsVisibleAcrossMultiple.join(', ') : 'none'}\n`;
     out += `- Fields only visible on local PlayerState: ${resourceVisibility.fieldsOnlyVisibleOnLocal.length ? resourceVisibility.fieldsOnlyVisibleOnLocal.join(', ') : 'none'}\n`;
     out += `- Fields returning nil/errors: ${resourceVisibility.fieldsNilOrErrors.length ? resourceVisibility.fieldsNilOrErrors.join(', ') : 'none'}\n`;
-    out += `- Readable categories by candidate: crystals=${resourceVisibility.readableCrystals}, slots=${resourceVisibility.readableSlots}, equipment=${resourceVisibility.readableEquipment}, inventory array counts=${resourceVisibility.readableInventoryArrayCounts}, health=${resourceVisibility.readableHealth}\n`;
+    out += `- Readable categories by candidate: crystals=${formatReadableCount(resourceVisibility.readableCrystals, resourceVisibility.sampledPlayerStateCount)}, slots=${formatReadableCount(resourceVisibility.readableSlots, resourceVisibility.sampledPlayerStateCount)}, equipment=${formatReadableCount(resourceVisibility.readableEquipment, resourceVisibility.sampledPlayerStateCount)}, inventory array counts=${formatReadableCount(resourceVisibility.readableInventoryArrayCounts, resourceVisibility.sampledPlayerStateCount)}, health=${formatReadableCount(resourceVisibility.readableHealth, resourceVisibility.sampledPlayerStateCount)}\n`;
     out += `- Supports future P2P resource merge design: ${resourceVisibility.supportsP2PResourceMerge}\n`;
+    out += '- CrabInvSync v2 implication: P2P-style merge is plausible for crystals, slots, equipment, and possibly health inputs.\n';
+    out += '- Inventory item sync still needs separate research; current shallow count-only inventory array visibility is unresolved and does not expose item metadata.\n';
+    out += '- An external relay/server may still be needed for inventory until array/item metadata visibility or another safe carrier is proven.\n';
     out += `- Raw IDs/names emitted: ${resourceVisibility.rawIdentityLeak ? 'yes' : 'no, redacted/fingerprinted by default'}\n`;
     out += '- No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.\n';
   }

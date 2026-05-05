@@ -58,6 +58,11 @@ function bestStatus(values) {
   return values.sort((a, b) => statusRank(b) - statusRank(a))[0] || 'UNTESTED';
 }
 
+function formatReadableCount(count, total) {
+  const denominator = Number.isFinite(Number(total)) && Number(total) > 0 ? Number(total) : 0;
+  return `${count}/${denominator}`;
+}
+
 function md(value) {
   const s = String(value ?? '');
   return s.replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
@@ -266,12 +271,16 @@ if (!resourceVisibility.resourceVisibilityEvidenceFound) {
   index += '- Player count sampled: 0\n';
 } else {
   index += `- Summary: ${resourceVisibility.classification}\n`;
+  index += `- Resource visibility class: ${resourceVisibility.status}\n`;
   index += `- Player count sampled: ${resourceVisibility.sampledPlayerStateCount}\n`;
   index += `- Fields visible across more than one PlayerState: ${resourceVisibility.fieldsVisibleAcrossMultiple.length ? resourceVisibility.fieldsVisibleAcrossMultiple.join(', ') : 'none'}\n`;
   index += `- Fields only visible on local PlayerState: ${resourceVisibility.fieldsOnlyVisibleOnLocal.length ? resourceVisibility.fieldsOnlyVisibleOnLocal.join(', ') : 'none'}\n`;
   index += `- Fields returning nil/errors: ${resourceVisibility.fieldsNilOrErrors.length ? resourceVisibility.fieldsNilOrErrors.join(', ') : 'none'}\n`;
-  index += `- Readable categories by candidate: crystals=${resourceVisibility.readableCrystals}, slots=${resourceVisibility.readableSlots}, equipment=${resourceVisibility.readableEquipment}, inventory array counts=${resourceVisibility.readableInventoryArrayCounts}, health=${resourceVisibility.readableHealth}\n`;
+  index += `- Readable categories by candidate: crystals=${formatReadableCount(resourceVisibility.readableCrystals, resourceVisibility.sampledPlayerStateCount)}, slots=${formatReadableCount(resourceVisibility.readableSlots, resourceVisibility.sampledPlayerStateCount)}, equipment=${formatReadableCount(resourceVisibility.readableEquipment, resourceVisibility.sampledPlayerStateCount)}, inventory array counts=${formatReadableCount(resourceVisibility.readableInventoryArrayCounts, resourceVisibility.sampledPlayerStateCount)}, health=${formatReadableCount(resourceVisibility.readableHealth, resourceVisibility.sampledPlayerStateCount)}\n`;
   index += `- Supports future P2P resource merge design: ${resourceVisibility.supportsP2PResourceMerge}\n`;
+  index += '- CrabInvSync v2 implication: P2P-style merge is plausible for crystals, slots, equipment, and possibly health inputs.\n';
+  index += '- Inventory item sync still needs separate research; current shallow count-only inventory array visibility is unresolved and does not expose item metadata.\n';
+  index += '- An external relay/server may still be needed for inventory until array/item metadata visibility or another safe carrier is proven.\n';
 }
 index += '- Raw identity values are not emitted by this summary; PlayerName and UniqueId evidence remains fingerprint-only.\n';
 index += '- No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.\n';
