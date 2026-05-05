@@ -1,0 +1,225 @@
+CrabRuntimeProbe diagnostic summary
+timestamp = 2026-05-04T22:25:50.9244571-07:00
+collection_mode = Collect
+source_repo_path = <REDACTED_LOCAL_PATH>
+game_bin_path = <REDACTED_LOCAL_PATH>
+installed_mod_path = <REDACTED_LOCAL_PATH>
+installed_config_path = <REDACTED_LOCAL_PATH>
+ue4ss_log_path = <REDACTED_LOCAL_PATH>
+jsonl_file_count = 1
+jsonl_event_count = 11
+access_evidence_file_count = 1
+access_evidence_event_count = 9
+session_manifest_file_count = 1
+prepare_marker_found = True
+prepare_marker_path = <REDACTED_LOCAL_PATH>
+prepare_marker_preparedAt = 2026-05-05T05:20:40.0620912Z
+expected_git_commit = 69a6c3a77a237875710a147f81310a79247d0684
+expected_probeSet = multiplayer-roster-read
+expected_tickDriver = executeDelay
+expected_mode = active
+installed_git_commit = 69a6c3a77a237875710a147f81310a79247d0684
+latest_session_manifest_file = <REDACTED_LOCAL_PATH>
+latest_manifest_sessionId = 20260505T052110Z
+latest_manifest_git_commit = 69a6c3a77a237875710a147f81310a79247d0684
+latest_manifest_probeSet = multiplayer-roster-read
+latest_manifest_tickDriver = executeDelay
+latest_probe_results_file = <REDACTED_LOCAL_PATH>
+latest_access_evidence_file = <REDACTED_LOCAL_PATH>
+artifact_session_matches_prepare = True
+ue4ss_log_contains_session = True
+ue4ss_log_contains_installed_git_commit = True
+evidence_files_match_installed_config_probeSet = True
+latest_evidence_older_than_prepare = False
+stale_artifact_suspected = False
+jsonl_first_timestamp = 2026-05-05T05:21:11Z
+jsonl_last_timestamp = 2026-05-05T05:21:27Z
+observe_context_count = 0
+debug_startup_smoke_count = 1
+debug_writer_self_test_count = 1
+tickDriver = executeDelay
+mode = active
+probeSet = multiplayer-roster-read
+direct_field_probe_ran = False
+equipment_property_probe_ran = False
+equipment_property_weapon_count = 0
+equipment_property_ability_count = 0
+equipment_property_melee_count = 0
+latest_WeaponDA_value_summary = not found
+latest_AbilityDA_value_summary = not found
+latest_MeleeDA_value_summary = not found
+health_probe_ran = False
+latest_CrabHC_CurrentHealth = not found
+latest_CrabHC_CurrentMaxHealth = not found
+latest_CrabHC_BaseMaxHealth = not found
+latest_CrabPS_CurrentHealth = not found
+latest_CrabPS_CurrentMaxHealth = not found
+latest_CrabPS_BaseMaxHealth = not found
+latest_CrabPS_MaxHealthMultiplier = not found
+playerstate_health_probe_ran = False
+playerstate_health_watch_probe_ran = False
+ambiguous_crabhc_detected = False
+crab_hc_touched = False
+unscoped_crabhc_fullName = not found
+playerstate_current_health = not found
+playerstate_current_max_health = not found
+playerstate_base_max_health = not found
+playerstate_max_health_multiplier = not found
+health_playerstate_watch_sample_count = 0
+health_playerstate_watch_currentHealth_first = not found
+health_playerstate_watch_currentHealth_last = not found
+health_playerstate_watch_currentHealth_min = not found
+health_playerstate_watch_currentHealth_max = not found
+health_playerstate_watch_currentMaxHealth_first = not found
+health_playerstate_watch_currentMaxHealth_last = not found
+health_playerstate_watch_currentMaxHealth_min = not found
+health_playerstate_watch_currentMaxHealth_max = not found
+health_playerstate_watch_baseMaxHealth_first = not found
+health_playerstate_watch_baseMaxHealth_last = not found
+health_playerstate_watch_baseMaxHealth_min = not found
+health_playerstate_watch_baseMaxHealth_max = not found
+health_playerstate_watch_maxHealthMultiplier_first = not found
+health_playerstate_watch_maxHealthMultiplier_last = not found
+health_playerstate_watch_maxHealthMultiplier_min = not found
+health_playerstate_watch_maxHealthMultiplier_max = not found
+possible_base_health_model = unknown
+unique_contexts_seen = solo, startup
+unique_roles_seen = solo-or-host, unknown
+first_context = startup
+last_context = solo
+crabruntimeprobe_started = True
+startup_smoke_appeared = True
+writer_self_test_appeared = True
+observe_context_appeared = False
+tick_source_registered = executeDelay
+hud_receive_draw_hud_used = False
+crabinventorysync_appeared_unexpectedly = False
+last_crabruntimeprobe_log_line = [2026-05-05 05:24:29] [Lua] [CrabRuntimeProbe] tick heartbeat tick=1800 mode=active
+crash_suspicion = none
+startup_complete_reached = True
+tick_registration_happened = True
+probe_breadcrumbs_appeared = True
+likely_crash_phase = after current-run probe breadcrumbs appeared
+allowHudTickHook = false
+allowUnknownRoleProbes = false
+allowJoinedClientDeepProbes = false
+allowDeepArrayProbes = false
+allowInventoryInfoProbes = false
+allowHealthProbes = false
+allowIdentityProbes = true
+allowRawIdentityEvidence = false
+allowWriteProbes = false
+allowRpcProbes = false
+observe_context_latest_context = not found
+observe_context_latest_role = not found
+observe_context_latest_lifecycle = not found
+observe_context_latest_world = not found
+observe_context_latest_map = not found
+observe_context_latest_player = not found
+
+installed_build_info:
+ - action = install
+ - git_commit = 69a6c3a77a237875710a147f81310a79247d0684
+ - git_branch = main
+ - timestamp = 2026-05-04T22:20:39.6977492-07:00
+ - source_repo_path = <REDACTED_LOCAL_PATH>
+
+installed_config:
+ - enabled = true
+ - mode = active
+ - tickDriver = executeDelay
+ - debugBreadcrumbs = true
+ - debugTickHeartbeat = true
+ - debugWriterSelfTest = true
+ - allowHudTickHook = false
+ - writeJsonlResults = true
+ - writeMarkdownSnapshots = false
+ - observeIntervalTicks = 10
+ - probeIntervalTicks = 10
+ - startupWarmupTicks = 60
+ - contextStableTicksRequired = 10
+ - maxProbesPerSession = 100
+ - repeatProbeSet = false
+ - allowUnknownRoleProbes = false
+ - allowJoinedClientDeepProbes = false
+ - allowDeepArrayProbes = false
+ - allowInventoryInfoProbes = false
+ - allowHealthProbes = false
+ - allowIdentityProbes = true
+ - allowRawIdentityEvidence = false
+ - allowWriteProbes = false
+ - allowRpcProbes = false
+ - probeSet = multiplayer-roster-read
+
+jsonl_event_type_counts:
+ - Debug.StartupSmoke: 1
+ - Debug.WriterSelfTest: 1
+ - Identity.CrabGS.SourceCandidate: 1
+ - Identity.FindAll.PlayerStateCandidates: 1
+ - Identity.GameState.SourceCandidate: 1
+ - Identity.LocalPlayer.Sample: 1
+ - Identity.PlayerArray.Shape: 1
+ - Identity.PlayerControllerCandidates: 1
+ - Identity.PlayerState.Sample: 1
+ - Identity.VisiblePlayers.Sample: 1
+ - Identity.VisiblePlayers.SourceCandidate: 1
+
+probe_result_counts_by_probe_name:
+ - Debug.StartupSmoke: 1
+ - Debug.WriterSelfTest: 1
+ - Identity.CrabGS.SourceCandidate: 1
+ - Identity.FindAll.PlayerStateCandidates: 1
+ - Identity.GameState.SourceCandidate: 1
+ - Identity.LocalPlayer.Sample: 1
+ - Identity.PlayerArray.Shape: 1
+ - Identity.PlayerControllerCandidates: 1
+ - Identity.PlayerState.Sample: 1
+ - Identity.VisiblePlayers.Sample: 1
+ - Identity.VisiblePlayers.SourceCandidate: 1
+
+access_evidence_counts_by_symbol_accessMethod:
+ - CrabGS / FindFirstOf: 1
+ - CrabPC.PlayerState / GetPropertyValue: 1
+ - GameState.PlayerArray / GetPropertyValue: 1
+ - GameStateBase GameState / FindFirstOf: 1
+ - GameStateBase.PlayerArray / GetPropertyValueCapped: 1
+ - GameStateBase.PlayerArray / GetPropertyValueShapeOnly: 1
+ - PlayerController CrabPC / FindAllOfCapped: 1
+ - PlayerState CrabPS / FindAllOfCapped: 1
+ - PlayerState.Identity / GetPropertyValue: 1
+
+jsonl_files:
+ - <REDACTED_LOCAL_PATH>
+
+access_evidence_files:
+ - <REDACTED_LOCAL_PATH>
+
+session_manifest_files:
+ - <REDACTED_LOCAL_PATH>
+
+last_5_crabruntimeprobe_log_lines:
+ - [2026-05-05 05:23:45] [Lua] [CrabRuntimeProbe] tick heartbeat tick=1400 mode=active
+ - [2026-05-05 05:23:56] [Lua] [CrabRuntimeProbe] tick heartbeat tick=1500 mode=active
+ - [2026-05-05 05:24:07] [Lua] [CrabRuntimeProbe] tick heartbeat tick=1600 mode=active
+ - [2026-05-05 05:24:18] [Lua] [CrabRuntimeProbe] tick heartbeat tick=1700 mode=active
+ - [2026-05-05 05:24:29] [Lua] [CrabRuntimeProbe] tick heartbeat tick=1800 mode=active
+
+last_5_jsonl_events:
+ - ts=2026-05-05T05:21:23Z tick=110 event=Identity.PlayerArray.Shape result=nil context=solo role=solo-or-host summary=sourcePath=GameStateBase.PlayerArray valueKind=userdata tableSampleCount=0 cap=16 rawIdentityEvidence=false
+ - ts=2026-05-05T05:21:24Z tick=120 event=Identity.FindAll.PlayerStateCandidates result=ok context=solo role=solo-or-host summary=visiblePlayerCount=2 cap=16 sourcePath=FindAllOf(PlayerState,CrabPS) displayFingerprints=fbd14051:len25,11a8908b:len25 idFingerprints=d6c80c69:len31,88c31471:len31 displaySources=PlayerName idSources=UniqueId rawIdentityEvidence=false
+ - ts=2026-05-05T05:21:25Z tick=130 event=Identity.PlayerControllerCandidates result=ok context=solo role=solo-or-host summary=visiblePlayerCount=2 cap=8 sourcePath=FindAllOf(PlayerController,CrabPC).PlayerState displayFingerprints=9ea43e53:len25,82b31cc9:len25 idFingerprints=3e2ccbec:len31,4a0c8b25:len31 displaySources=PlayerName idSources=UniqueId rawIdentityEvidence=false
+ - ts=2026-05-05T05:21:26Z tick=140 event=Identity.VisiblePlayers.Sample result=nil context=solo role=solo-or-host summary=visiblePlayerCount=0 sourcePath=GameStateBase.PlayerArray rawIdentityEvidence=false
+ - ts=2026-05-05T05:21:27Z tick=150 event=Identity.VisiblePlayers.SourceCandidate result=nil context=solo role=solo-or-host summary=visiblePlayerCount=0 sourcePath=GameStateBase.PlayerArray valueKind=userdata rawIdentityEvidence=false
+
+latest_5_access_evidence_rows:
+ - ts=2026-05-05T05:21:23Z symbol=GameStateBase.PlayerArray accessMethod=GetPropertyValueShapeOnly status=RETURNS_NIL context=solo role=solo-or-host summary=sourcePath=GameStateBase.PlayerArray valueKind=userdata tableSampleCount=0 cap=16 rawIdentityEvidence=false
+ - ts=2026-05-05T05:21:24Z symbol=PlayerState CrabPS accessMethod=FindAllOfCapped status=SAFE context=solo role=solo-or-host summary=visiblePlayerCount=2 cap=16 sourcePath=FindAllOf(PlayerState,CrabPS) displayFingerprints=fbd14051:len25,11a8908b:len25 idFingerprints=d6c80c69:len31,88c31471:len31 displaySources=PlayerName idSources=UniqueId rawIdentityEvidence=false
+ - ts=2026-05-05T05:21:25Z symbol=PlayerController CrabPC accessMethod=FindAllOfCapped status=SAFE context=solo role=solo-or-host summary=visiblePlayerCount=2 cap=8 sourcePath=FindAllOf(PlayerController,CrabPC).PlayerState displayFingerprints=9ea43e53:len25,82b31cc9:len25 idFingerprints=3e2ccbec:len31,4a0c8b25:len31 displaySources=PlayerName idSources=UniqueId rawIdentityEvidence=false
+ - ts=2026-05-05T05:21:26Z symbol=GameState.PlayerArray accessMethod=GetPropertyValue status=RETURNS_NIL context=solo role=solo-or-host summary=visiblePlayerCount=0 sourcePath=GameStateBase.PlayerArray rawIdentityEvidence=false
+ - ts=2026-05-05T05:21:27Z symbol=GameStateBase.PlayerArray accessMethod=GetPropertyValueCapped status=RETURNS_NIL context=solo role=solo-or-host summary=visiblePlayerCount=0 sourcePath=GameStateBase.PlayerArray valueKind=userdata rawIdentityEvidence=false
+
+crabruntimeprobe_error_lines:
+ - none
+
+failures:
+ - none

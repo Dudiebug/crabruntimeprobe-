@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-05T04:41:32.149Z",
+  "updatedAt": "2026-05-05T05:36:52.186Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -64,20 +64,18 @@
       "latestSessionId": "20260505T032627Z",
       "latestCommit": "94503bd65af8508b4efe3e13a9f865da67c2f410",
       "latestSummaryPath": "evidence/runtime/20260505T032627Z/diagnostic_summary.txt"
-    }
-  ],
-  "partialPhases": [
+    },
     {
       "phaseId": "multiplayer-roster-read",
-      "status": "local_identity_confirmed",
-      "updatedAt": "2026-05-05T04:13:06.815Z",
+      "status": "complete",
+      "completedAt": "2026-05-05T05:25:51.739Z",
       "source": "campaign-collect",
-      "reason": "Local PlayerState identity read confirmed; visible roster source remains unresolved.",
-      "latestSessionId": "20260505T035239Z",
-      "latestCommit": "7b9c773f133d5464a1f5d6046bdf4ebdd565c75f",
-      "latestSummaryPath": "evidence/runtime/20260505T035239Z/diagnostic_summary.txt"
+      "latestSessionId": "20260505T052110Z",
+      "latestCommit": "69a6c3a77a237875710a147f81310a79247d0684",
+      "latestSummaryPath": "evidence/runtime/20260505T052110Z/diagnostic_summary.txt"
     }
   ],
+  "partialPhases": [],
   "failedPhases": [],
   "blockedPhases": [
     {
@@ -116,11 +114,11 @@
       "reason": "Probe set is not implemented yet."
     }
   ],
-  "currentPhase": "multiplayer-roster-read",
-  "nextRecommendedPhase": "multiplayer-roster-read",
-  "latestSessionId": "20260505T035239Z",
-  "latestCommit": "996578ac35c867b69687a243d60ebe5ab535e36c",
-  "latestSummaryPath": "evidence/runtime/20260505T035239Z/diagnostic_summary.txt",
+  "currentPhase": "multiplayer-health-playerstate-watch",
+  "nextRecommendedPhase": "multiplayer-health-playerstate-watch",
+  "latestSessionId": "20260505T052110Z",
+  "latestCommit": "69a6c3a77a237875710a147f81310a79247d0684",
+  "latestSummaryPath": "evidence/runtime/20260505T052110Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {
       "status": "complete",
@@ -165,15 +163,14 @@
       "mode": "active"
     },
     "multiplayer-roster-read": {
-      "status": "local_identity_confirmed",
+      "status": "complete",
       "riskTier": "cautious-read",
       "probeSet": "multiplayer-roster-read",
       "tickDriver": "executeDelay",
-      "mode": "active",
-      "reason": "Local PlayerState identity read confirmed; visible roster source remains unresolved."
+      "mode": "active"
     },
     "multiplayer-health-playerstate-watch": {
-      "status": "pending",
+      "status": "current",
       "riskTier": "confirmed-read",
       "probeSet": "health-playerstate-watch",
       "tickDriver": "executeDelay",

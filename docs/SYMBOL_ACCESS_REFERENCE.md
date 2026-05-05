@@ -22,7 +22,7 @@ Grouped by owner. A symbol may have multiple access methods with different runti
 
 | Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |
 |---|---|---|---|---|---|---|---|
-| `CrabPC.PlayerState` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T034622Z, 20260505T035239Z | read-only local CrabPC -> PlayerState identity sample; raw values redacted unless allowRawIdentityEvidence=true |
+| `CrabPC.PlayerState` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T034622Z, 20260505T035239Z, 20260505T052110Z | read-only local CrabPC -> PlayerState identity sample; raw values redacted unless allowRawIdentityEvidence=true |
 
 ## CrabPS
 
@@ -47,18 +47,29 @@ Grouped by owner. A symbol may have multiple access methods with different runti
 
 | Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |
 |---|---|---|---|---|---|---|---|
-| `GameState.PlayerArray` | GetPropertyValue | solo | solo-or-host | RETURNS_NIL | nil | 20260505T034622Z, 20260505T035239Z | PlayerArray was not exposed as a Lua table; no recursive traversal performed |
+| `GameState.PlayerArray` | GetPropertyValue | solo | solo-or-host | RETURNS_NIL | nil | 20260505T034622Z, 20260505T035239Z, 20260505T052110Z | PlayerArray was not exposed as a Lua table; no recursive traversal performed |
+
+## GameStateBase
+
+| Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |
+|---|---|---|---|---|---|---|---|
+| `GameStateBase.PlayerArray` | GetPropertyValueCapped | solo | solo-or-host | RETURNS_NIL | nil | 20260505T052110Z | Visible roster source candidate: PlayerArray was not a Lua table; no recursive traversal performed |
+| `GameStateBase.PlayerArray` | GetPropertyValueShapeOnly | solo | solo-or-host | RETURNS_NIL | nil | 20260505T052110Z | Shape-only PlayerArray check; records nil/userdata/table/unsupported kind and samples table length up to cap; no recursive traversal |
 
 ## PlayerState
 
 | Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |
 |---|---|---|---|---|---|---|---|
-| `PlayerState.Identity` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T034622Z, 20260505T035239Z | candidate PlayerState display/stable-id fields via GetPropertyValue only; no raw IDs by default |
+| `PlayerState.Identity` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T034622Z, 20260505T035239Z, 20260505T052110Z | candidate PlayerState display/stable-id fields via GetPropertyValue only; no raw IDs by default |
 
 ## Runtime
 
 | Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |
 |---|---|---|---|---|---|---|---|
+| `CrabGS` | FindFirstOf | solo | solo-or-host | SAFE | ok | 20260505T052110Z | FindFirstOf(CrabGS); GetFullName/GetName/GetClass only; objectdump shows CrabGS extends GameStateBase but no CrabGS-specific PlayerArray property; optional source name/class read error: function: 000002227AAEBC50function: 000002227AAEBC50 |
 | `CrabHC` | FindFirstOf | solo | solo-or-host | SAFE | ok | 20260505T002614Z | sourceScope=non_player_candidate; value=CrabHC found |
+| `GameStateBase GameState` | FindFirstOf | solo | solo-or-host | SAFE | ok | 20260505T052110Z | FindFirstOf(GameStateBase) with GameState fallback; GetFullName/GetName/GetClass only; no roster or property traversal performed; optional source name/class read error: function: 000002227AAEBC50function: 000002227AAEBC50 |
+| `PlayerController CrabPC` | FindAllOfCapped | solo | solo-or-host | SAFE | ok | 20260505T052110Z | FindAllOf availability checked before capped PlayerController/CrabPC traversal; only PlayerState property was read from valid controllers, cap=8 |
+| `PlayerState CrabPS` | FindAllOfCapped | solo | solo-or-host | SAFE | ok | 20260505T052110Z | FindAllOf availability checked before capped PlayerState-like candidate traversal; sampled PlayerState and CrabPS only, cap=16, no raw identity by default |
 | `Runtime.Context` | observe | lobby, solo, unknown | solo-or-host, unknown | SAFE | ok | 20260505T032627Z | context observation only; not arbitrary object access |
 

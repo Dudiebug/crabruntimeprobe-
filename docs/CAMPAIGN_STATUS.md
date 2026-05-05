@@ -1,12 +1,12 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T04:41:32.149Z
-- Current phase: `multiplayer-roster-read`
-- Next recommended phase: `multiplayer-roster-read`
-- Latest session: 20260505T035239Z
-- Latest commit: 996578ac35c867b69687a243d60ebe5ab535e36c
-- Latest summary: evidence/runtime/20260505T035239Z/diagnostic_summary.txt
+- Updated: 2026-05-05T05:36:52.186Z
+- Current phase: `multiplayer-health-playerstate-watch`
+- Next recommended phase: `multiplayer-health-playerstate-watch`
+- Latest session: 20260505T052110Z
+- Latest commit: 69a6c3a77a237875710a147f81310a79247d0684
+- Latest summary: evidence/runtime/20260505T052110Z/diagnostic_summary.txt
 
 ## Completed Phases
 
@@ -16,10 +16,11 @@
 - `equipment-property-read` - Equipment data asset property reads
 - `health-playerstate-read` - PlayerState health scalar reads
 - `health-playerstate-watch` - Solo PlayerState health watch
+- `multiplayer-roster-read` - Multiplayer roster identity read
 
 ## Partial Phases
 
-- `multiplayer-roster-read` - Multiplayer roster identity read: local_identity_confirmed; Local PlayerState identity read confirmed; visible roster source remains unresolved.
+- None.
 
 ## Failed Phases
 
@@ -37,7 +38,7 @@
 
 ## Pending Phases
 
-- `multiplayer-health-playerstate-watch` - Multiplayer PlayerState health watch
+- None.
 
 ## Confirmed Safe Paths
 
@@ -46,20 +47,19 @@
 - `CrabPS.MeleeDA` via `GetPropertyValue`
 - `CrabPC -> PlayerState -> CrabPS -> HealthInfo` read-only PlayerState health path
 - `CrabPC -> PlayerState` local identity reads with redacted/fingerprinted identity values
+- confirmed visible multiplayer roster reads
 
 ## Identity And Roster Notes
 
 - Local player identity visible: yes
-- Max visible player count observed: 1
-- Any candidate exposed more than one player: no
-- Roster source candidates attempted: none
-- Visible roster source resolved: no
+- Max visible player count observed: 2
+- Any candidate exposed more than one player: yes
+- Roster source candidates attempted: Identity.CrabGS.SourceCandidate, Identity.FindAll.PlayerStateCandidates, Identity.GameState.SourceCandidate, Identity.PlayerArray.Shape, Identity.PlayerControllerCandidates, Identity.VisiblePlayers.SourceCandidate
+- Visible roster source resolved: yes
 - Raw IDs/names emitted: no, redacted/fingerprinted by default
 - PlayerName and UniqueId can be fingerprinted from PlayerState identity reads without emitting raw values.
 - `solo-or-host` means local-player-present in the current detector; it is not proof that the run was solo and cannot distinguish true solo from multiplayer host-like local context.
-- `GameStateBase.PlayerArray` returned nil / was not exposed as a Lua table in the latest roster evidence.
-- Newly attempted roster candidates should be treated as discovery evidence only until a source exposes more than one visible player or a resolved roster source.
-- Visible player roster remains unresolved, so future auto-room grouping is not ready.
+- Visible player roster source is confirmed; future auto-room grouping still requires matched host and joined-client runs.
 
 ## Confirmed Unsafe Paths
 
