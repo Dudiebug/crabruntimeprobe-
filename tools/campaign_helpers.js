@@ -15,6 +15,7 @@ const ALL_GATES = [
   'allowHealthProbes',
   'allowIdentityProbes',
   'allowRawIdentityEvidence',
+  'allowResourceVisibilityProbes',
   'allowWriteProbes',
   'allowRpcProbes'
 ];
@@ -148,6 +149,94 @@ function classifyRosterEvidence(rows, allowRawIdentityEvidence = false) {
   };
 }
 
+function isResourceVisibilityRow(row) {
+  return /^ResourceVisibility\./.test(row.probeName || row.probeId || row.event || '');
+}
+
+function rowNumber(row, name) {
+  const value = Number(row && row[name]);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function flattenStringList(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  if (typeof value === 'string') return value.split(/\s*,\s*/).filter(Boolean);
+  return [];
+}
+
+function classifyResourceVisibilityEvidence(rows) {
+  const resourceRows = rows.filter(isResourceVisibilityRow);
+  const sampled = Math.max(0, ...resourceRows.map((row) => rowNumber(row, 'sampledPlayerStateCount')));
+  const visible = Math.max(0, ...resourceRows.map((row) => rowNumber(row, 'visiblePlayerCount')));
+  const readableCrystals = Math.max(0, ...resourceRows.map((row) => rowNumber(row, 'readableCrystalsCount')));
+  const readableSlots = Math.max(0, ...resourceRows.map((row) => rowNumber(row, 'readableSlotsCount')));
+  const readableEquipment = Math.max(0, ...resourceRows.map((row) => rowNumber(row, 'readableEquipmentCount')));
+  const readableInventoryArrayCounts = Math.max(0, ...resourceRows.map((row) => rowNumber(row, 'readableInventoryArrayCount')));
+  const readableHealth = Math.max(0, ...resourceRows.map((row) => rowNumber(row, 'readableHealthCount')));
+  const fieldsVisibleAcrossMultiple = Array.from(new Set(resourceRows.flatMap((row) => flattenStringList(row.fieldsVisibleAcrossMultiple)))).sort();
+  const fieldsOnlyVisibleOnLocal = Array.from(new Set(resourceRows.flatMap((row) => flattenStringList(row.fieldsOnlyVisibleOnLocal)))).sort();
+  const fieldsNilOrErrors = Array.from(new Set(resourceRows.flatMap((row) => flattenStringList(row.fieldsNilOrErrors)))).sort();
+  const nonIdentityResourceCategoryEvaluated = resourceRows.some((row) => row.nonIdentityResourceCategoryEvaluated === true) ||
+    readableCrystals > 0 || readableSlots > 0 || readableEquipment > 0 || readableInventoryArrayCounts > 0 || readableHealth > 0;
+  const rawIdentityLeak = resourceRows.some((row) => {
+    if (rowAllowsRawIdentityEvidence(row)) return false;
+    return row.rawIdentityEvidence === true ||
+      hasNonEmptyRawIdentityValue(row.rawDisplayNames) ||
+      hasNonEmptyRawIdentityValue(row.rawStableIds);
+  });
+  const remoteResourceVisible = sampled >= 2 && (
+    readableCrystals > 1 ||
+    readableSlots > 1 ||
+    readableEquipment > 1 ||
+    readableInventoryArrayCounts > 1 ||
+    fieldsVisibleAcrossMultiple.length > 0
+  );
+  const completeRemoteVisible = sampled >= 2 &&
+    readableCrystals > 1 &&
+    readableSlots > 1 &&
+    readableEquipment > 1 &&
+    readableInventoryArrayCounts > 1;
+  let status = 'no_evidence';
+  let classification = 'unresolved';
+  if (rawIdentityLeak) {
+    status = 'failed';
+    classification = 'unresolved';
+  } else if (sampled < 2 && resourceRows.length > 0) {
+    status = nonIdentityResourceCategoryEvaluated ? 'local_only_evidence' : 'needs_multiplayer';
+    classification = nonIdentityResourceCategoryEvaluated ? 'local-only' : 'unresolved';
+  } else if (sampled >= 2 && completeRemoteVisible) {
+    status = 'passed';
+    classification = 'remote-visible';
+  } else if (sampled >= 2 && remoteResourceVisible) {
+    status = 'remote_resources_partial';
+    classification = 'partial';
+  } else if (sampled >= 2) {
+    status = 'remote_resources_unresolved';
+    classification = 'unresolved';
+  }
+  return {
+    resourceVisibilityEvidenceFound: resourceRows.length > 0,
+    rawIdentityLeak,
+    visiblePlayerCount: visible,
+    sampledPlayerStateCount: sampled,
+    readableCrystals,
+    readableSlots,
+    readableEquipment,
+    readableInventoryArrayCounts,
+    readableHealth,
+    fieldsVisibleAcrossMultiple,
+    fieldsOnlyVisibleOnLocal,
+    fieldsNilOrErrors,
+    nonIdentityResourceCategoryEvaluated,
+    remoteResourceVisible,
+    completeRemoteVisible,
+    classification,
+    supportsP2PResourceMerge: completeRemoteVisible ? 'yes' : (remoteResourceVisible ? 'partial' : 'no'),
+    status
+  };
+}
+
 function parseKeyValueText(text) {
   const out = {};
   for (const line of text.split(/\r?\n/)) {
@@ -184,10 +273,13 @@ function validatePhaseSafety(phase, gates = gateConfigForPhaseUnchecked(phase)) 
       throw new Error(`${phase.phaseId} may not enable ${gate}.`);
     }
   }
-  if (gates.allowHealthProbes && !/^health-|^multiplayer-health-/.test(phase.phaseId)) {
+  if (gates.allowResourceVisibilityProbes && phase.phaseId !== 'multiplayer-resource-visibility-read') {
+    throw new Error(`${phase.phaseId} may not enable allowResourceVisibilityProbes.`);
+  }
+  if (gates.allowHealthProbes && !/^health-|^multiplayer-health-/.test(phase.phaseId) && phase.phaseId !== 'multiplayer-resource-visibility-read') {
     throw new Error(`${phase.phaseId} may not enable allowHealthProbes.`);
   }
-  if (gates.allowIdentityProbes && phase.phaseId !== 'multiplayer-roster-read') {
+  if (gates.allowIdentityProbes && phase.phaseId !== 'multiplayer-roster-read' && phase.phaseId !== 'multiplayer-resource-visibility-read') {
     throw new Error(`${phase.phaseId} may not enable allowIdentityProbes.`);
   }
   if (gates.allowRawIdentityEvidence) {
@@ -304,6 +396,10 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
   if (roster.visibleRosterConfirmed) {
     add('multiplayer-roster-read', 'Imported evidence contains visible multiplayer roster identity samples.');
   }
+  const resourceVisibility = classifyResourceVisibilityEvidence(facts.rows);
+  if (resourceVisibility.status === 'passed') {
+    add('multiplayer-resource-visibility-read', 'Imported evidence contains remote-visible multiplayer resource visibility samples.');
+  }
 
   const partial = [];
   if (!roster.visibleRosterConfirmed && roster.localIdentityConfirmed && !roster.rawIdentityLeak) {
@@ -324,6 +420,22 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
       reason: rosterCandidateRows.length > 0
         ? 'Local PlayerState identity read confirmed; roster source candidates were attempted but did not expose a visible multiplayer roster.'
         : 'Local PlayerState identity read confirmed; visible roster source remains unresolved.',
+      latestSessionId: facts.latestSessionId || '',
+      latestCommit: facts.latestCommit || '',
+      latestSummaryPath: facts.latestSummaryPath || ''
+    });
+  }
+  if (resourceVisibility.resourceVisibilityEvidenceFound && resourceVisibility.status !== 'passed' && resourceVisibility.status !== 'failed') {
+    partial.push({
+      phaseId: 'multiplayer-resource-visibility-read',
+      status: resourceVisibility.status,
+      updatedAt: nowIso(),
+      source: 'imported-evidence',
+      reason: resourceVisibility.status === 'local_only_evidence'
+        ? 'Only one PlayerState candidate was sampled; resource fields were evaluated as local-only evidence.'
+        : (resourceVisibility.status === 'remote_resources_partial'
+          ? 'Multiple PlayerState candidates were sampled and some resource fields were visible remotely, but visibility was not complete.'
+          : 'Multiple PlayerState candidates were sampled, but resource fields did not establish remote resource visibility.'),
       latestSessionId: facts.latestSessionId || '',
       latestCommit: facts.latestCommit || '',
       latestSummaryPath: facts.latestSummaryPath || ''
@@ -486,6 +598,22 @@ function markCollected(plan, state, phaseId, result) {
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
     });
+  } else if (phaseId === 'multiplayer-resource-visibility-read' && (
+    result.status === 'needs_multiplayer' ||
+    result.status === 'local_only_evidence' ||
+    result.status === 'remote_resources_unresolved' ||
+    result.status === 'remote_resources_partial'
+  )) {
+    out.partialPhases.push({
+      phaseId,
+      status: result.status,
+      updatedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || 'Resource visibility evidence is partial or unresolved.',
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
   } else {
     out.failedPhases.push({
       phaseId,
@@ -533,7 +661,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '## Completed Phases\n\n';
   out += renderList(listByStatus(plan, state, 'complete'));
   out += '\n## Partial Phases\n\n';
-  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$/.test(phaseStatus(state, phase.phaseId)));
+  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$/.test(phaseStatus(state, phase.phaseId)));
   if (!partial.length) {
     out += '- None.\n';
   } else {
@@ -566,6 +694,8 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   const roster = classifyRosterEvidence(facts.rows);
   if (roster.localIdentityConfirmed) safeSignals.push('`CrabPC -> PlayerState` local identity reads with redacted/fingerprinted identity values');
   if (roster.visibleRosterConfirmed) safeSignals.push('confirmed visible multiplayer roster reads');
+  const resourceVisibility = classifyResourceVisibilityEvidence(facts.rows);
+  if (resourceVisibility.status === 'passed') safeSignals.push('remote-visible multiplayer PlayerState resource reads');
   if (!safeSignals.length) out += '- None imported yet.\n';
   else out += safeSignals.map((item) => `- ${item}\n`).join('');
 
@@ -611,6 +741,23 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     }
   }
 
+  out += '\n## Multiplayer Resource Visibility\n\n';
+  if (!resourceVisibility.resourceVisibilityEvidenceFound) {
+    out += '- Summary: unresolved; no `multiplayer-resource-visibility-read` evidence has been imported yet.\n';
+    out += '- Player count sampled: 0\n';
+    out += '- No raw identity values are emitted; writes, RPCs, HUD hooks, deep arrays, `InventoryInfo`, and Enhancements remain disabled.\n';
+  } else {
+    out += `- Summary: ${resourceVisibility.classification}\n`;
+    out += `- Player count sampled: ${resourceVisibility.sampledPlayerStateCount}\n`;
+    out += `- Fields visible across more than one PlayerState: ${resourceVisibility.fieldsVisibleAcrossMultiple.length ? resourceVisibility.fieldsVisibleAcrossMultiple.join(', ') : 'none'}\n`;
+    out += `- Fields only visible on local PlayerState: ${resourceVisibility.fieldsOnlyVisibleOnLocal.length ? resourceVisibility.fieldsOnlyVisibleOnLocal.join(', ') : 'none'}\n`;
+    out += `- Fields returning nil/errors: ${resourceVisibility.fieldsNilOrErrors.length ? resourceVisibility.fieldsNilOrErrors.join(', ') : 'none'}\n`;
+    out += `- Readable categories by candidate: crystals=${resourceVisibility.readableCrystals}, slots=${resourceVisibility.readableSlots}, equipment=${resourceVisibility.readableEquipment}, inventory array counts=${resourceVisibility.readableInventoryArrayCounts}, health=${resourceVisibility.readableHealth}\n`;
+    out += `- Supports future P2P resource merge design: ${resourceVisibility.supportsP2PResourceMerge}\n`;
+    out += `- Raw IDs/names emitted: ${resourceVisibility.rawIdentityLeak ? 'yes' : 'no, redacted/fingerprinted by default'}\n`;
+    out += '- No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.\n';
+  }
+
   out += '\n## Confirmed Unsafe Paths\n\n';
   out += '- HUD ReceiveDrawHUD tick hook remains blocked by default.\n';
   out += '- `FindFirstOf.CrabHC` is not confirmed as a player-health source; imported evidence has seen an unscoped destructible/barrel candidate.\n';
@@ -620,14 +767,16 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- Vanilla multiplayer local PlayerState health visibility is confirmed only after `multiplayer-health-playerstate-watch` evidence exists; pooled/shared health is a CrabInvSync design concept, not vanilla RuntimeProbe evidence.\n';
   out += '- Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.\n';
   out += '- Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.\n';
-  out += '- Crystals, slots, inventory arrays, `InventoryInfo`, and enhancements are placeholders until explicit probe sets are implemented.\n';
+  out += '- Crystals, slots, equipment, and inventory array counts are only covered by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.\n';
+  out += '- `InventoryInfo` and enhancements remain placeholders until explicit probe sets are implemented.\n';
   out += '- Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.\n';
 
   out += '\n## Safety Gate Summary\n\n';
   out += '- Default config remains `tickDriver = none`, `probeSet = shallow-core`, and all research gates false.\n';
   out += '- Campaign read phases never enable writes, RPCs, or HUD hooks.\n';
-  out += '- `allowHealthProbes` is enabled only for explicit health phases.\n';
-  out += '- `allowIdentityProbes` is enabled only for the explicit multiplayer roster phase; `allowRawIdentityEvidence` remains false by default.\n';
+  out += '- `allowHealthProbes` is enabled only for explicit health phases and `multiplayer-resource-visibility-read` health scalar checks.\n';
+  out += '- `allowIdentityProbes` is enabled only for the explicit multiplayer roster and resource visibility phases; `allowRawIdentityEvidence` remains false by default.\n';
+  out += '- `allowResourceVisibilityProbes` is enabled only for `multiplayer-resource-visibility-read`.\n';
   out += '- `allowDeepArrayProbes` and `allowInventoryInfoProbes` are not enabled by implemented phases.\n';
   return out;
 }
@@ -638,6 +787,7 @@ module.exports = {
   DOC_PATH,
   PLAN_PATH,
   STATE_PATH,
+  classifyResourceVisibilityEvidence,
   classifyRosterEvidence,
   completedPhaseIds,
   evidenceFacts,

@@ -109,6 +109,7 @@ const groups = {
   'inventory-array-deep': [],
   'inventory-info': [],
   roster: [],
+  'resource-visibility': [],
   health: [],
   'rpc-dryrun': [],
   'write-unsafe': [],
@@ -160,6 +161,20 @@ groups.roster.push(candidate('roster', 'Identity.VisiblePlayers.SourceCandidate'
 groups.roster.push(candidate('roster', 'Identity.FindAll.PlayerStateCandidates', 'PlayerState / CrabPS', hasClass('PlayerState') || hasClass('CrabPS'), 'allowIdentityProbes = true', 'FindAllOf availability checked first, then capped PlayerState-like candidates only; no arbitrary property dumping.'));
 groups.roster.push(candidate('roster', 'Identity.PlayerControllerCandidates', 'PlayerController / CrabPC', hasClass('PlayerController') || hasClass('CrabPC'), 'allowIdentityProbes = true', 'FindAllOf availability checked first, then capped controller candidates; reads only PlayerState from valid controllers.'));
 
+for (const field of ['Crystals', 'Keys', 'NumWeaponModSlots', 'NumAbilityModSlots', 'NumMeleeModSlots', 'NumPerkSlots', 'WeaponDA', 'AbilityDA', 'MeleeDA', 'WeaponMods', 'AbilityMods', 'MeleeMods', 'Perks', 'Relics']) {
+  const isArray = /Mods$|^Perks$|^Relics$/.test(field);
+  groups['resource-visibility'].push(candidate(
+    'resource-visibility',
+    `ResourceVisibility.CrabPS.${field}`,
+    `CrabPS.${field}`,
+    hasField('CrabPS', field),
+    'allowResourceVisibilityProbes = true',
+    isArray
+      ? 'Count-only resource visibility check; no element dereference, InventoryInfo, or Enhancements.'
+      : 'Explicit read-only resource visibility field check across capped visible PlayerState candidates.'
+  ));
+}
+
 for (const fn of KNOWN_RPC_FUNCTIONS) {
   const discovered = hasFunction(fn);
   const isMutatingServer = /^Server/.test(fn);
@@ -181,6 +196,7 @@ function sectionTitle(category) {
     'inventory-array-deep': 'Inventory Array Deep Probes',
     'inventory-info': 'InventoryInfo Probes',
     roster: 'Roster Identity Probes',
+    'resource-visibility': 'Multiplayer Resource Visibility Probes',
     health: 'Health Probes',
     'rpc-dryrun': 'RPC Dry-Run Candidates',
     'write-unsafe': 'Write-Unsafe Candidates',
@@ -215,6 +231,7 @@ md += '- Enable deep inventory candidates only with `allowDeepArrayProbes = true
 md += '- Enable InventoryInfo candidates only with `allowInventoryInfoProbes = true`.\n';
 md += '- Enable health candidates only with `allowHealthProbes = true`.\n';
 md += '- Enable roster identity candidates only with `allowIdentityProbes = true`; keep `allowRawIdentityEvidence = false` unless private evidence capture is explicitly requested.\n';
+md += '- Enable multiplayer resource visibility candidates only with `allowResourceVisibilityProbes = true`; keep reads capped, count-only for arrays, and keep writes/RPCs/HUD/deep arrays/InventoryInfo disabled.\n';
 md += '- Do not implement or call write-unsafe or mutating RPC candidates in CrabRuntimeProbe.\n';
 
 fs.mkdirSync(path.dirname(outMd), { recursive: true });

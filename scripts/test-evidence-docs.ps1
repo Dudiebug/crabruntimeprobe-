@@ -36,6 +36,7 @@ function Assert-UnsafeGatesFalse {
     "allowDeepArrayProbes",
     "allowInventoryInfoProbes",
     "allowHealthProbes",
+    "allowResourceVisibilityProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {

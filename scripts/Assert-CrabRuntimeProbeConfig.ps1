@@ -35,6 +35,7 @@ $script:CrabRuntimeProbeRequiredConfigDefaults = [ordered]@{
   allowHealthProbes = "false"
   allowIdentityProbes = "false"
   allowRawIdentityEvidence = "false"
+  allowResourceVisibilityProbes = "false"
   allowWriteProbes = "false"
   allowRpcProbes = "false"
   probeSet = "shallow-core"

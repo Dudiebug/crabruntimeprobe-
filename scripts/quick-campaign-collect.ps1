@@ -211,6 +211,10 @@ function Invoke-CampaignCollect {
     & $cycle -GameBin $GameBinFull -CollectHealthPlayerStateWatch
     return $LASTEXITCODE
   }
+  if ($PhaseId -eq "multiplayer-resource-visibility-read") {
+    & $cycle -GameBin $GameBinFull -CollectResourceVisibility
+    return $LASTEXITCODE
+  }
   throw "Campaign phase '$PhaseId' is not implemented and cannot be collected."
 }
 
@@ -334,6 +338,66 @@ if ($status -eq "passed" -and $phase.phaseId -eq "multiplayer-roster-read") {
   }
 }
 
+if ($status -eq "passed" -and $phase.phaseId -eq "multiplayer-resource-visibility-read") {
+  $rows = Read-JsonLines -Paths @(
+    $(if ($null -ne $latestProbeFile) { $latestProbeFile.FullName } else { "" }),
+    $(if ($null -ne $latestAccessFile) { $latestAccessFile.FullName } else { "" })
+  )
+  $resourceRows = @($rows | Where-Object {
+    $name = ""
+    foreach ($field in @("probeName", "probeId", "event")) {
+      if ($_.PSObject.Properties.Name -contains $field) {
+        $name = [string]$_.$field
+        if (-not [string]::IsNullOrWhiteSpace($name)) { break }
+      }
+    }
+    $name -match "^ResourceVisibility\."
+  })
+  $sampled = 0
+  $readableCrystals = 0
+  $readableSlots = 0
+  $readableEquipment = 0
+  $readableInventoryArrays = 0
+  $fieldsVisibleAcrossMultiple = 0
+  $rawIdentityLeak = $false
+  foreach ($row in $resourceRows) {
+    $n = 0
+    if ([int]::TryParse([string]$row.sampledPlayerStateCount, [ref]$n) -and $n -gt $sampled) { $sampled = $n }
+    if ([int]::TryParse([string]$row.readableCrystalsCount, [ref]$n) -and $n -gt $readableCrystals) { $readableCrystals = $n }
+    if ([int]::TryParse([string]$row.readableSlotsCount, [ref]$n) -and $n -gt $readableSlots) { $readableSlots = $n }
+    if ([int]::TryParse([string]$row.readableEquipmentCount, [ref]$n) -and $n -gt $readableEquipment) { $readableEquipment = $n }
+    if ([int]::TryParse([string]$row.readableInventoryArrayCount, [ref]$n) -and $n -gt $readableInventoryArrays) { $readableInventoryArrays = $n }
+    if (($row.PSObject.Properties.Name -contains "fieldsVisibleAcrossMultiple") -and $null -ne $row.fieldsVisibleAcrossMultiple) {
+      $fieldsVisibleAcrossMultiple = @($row.fieldsVisibleAcrossMultiple).Count
+    }
+    if (($row.PSObject.Properties.Name -contains "rawIdentityEvidence") -and $row.rawIdentityEvidence -eq $true) {
+      $rawIdentityLeak = $true
+    }
+  }
+  $anyResource = ($readableCrystals -gt 0 -or $readableSlots -gt 0 -or $readableEquipment -gt 0 -or $readableInventoryArrays -gt 0)
+  if ($resourceRows.Count -eq 0) {
+    $status = "no_evidence"
+    $reason = "No multiplayer resource visibility probe evidence was found."
+  } elseif ($rawIdentityLeak) {
+    $status = "failed"
+    $reason = "Raw identity evidence appeared during resource visibility even though allowRawIdentityEvidence should be false."
+  } elseif ($sampled -lt 2 -and -not $anyResource) {
+    $status = "needs_multiplayer"
+    $reason = "Only one or zero PlayerState candidates were sampled; run with at least two visible players."
+  } elseif ($sampled -lt 2) {
+    $status = "local_only_evidence"
+    $reason = "Only one PlayerState candidate was sampled, so resource visibility is local-only evidence."
+  } elseif ($readableCrystals -gt 1 -and $readableSlots -gt 1 -and $readableEquipment -gt 1 -and $readableInventoryArrays -gt 1) {
+    $status = "passed"
+  } elseif ($readableCrystals -gt 1 -or $readableSlots -gt 1 -or $readableEquipment -gt 1 -or $readableInventoryArrays -gt 1 -or $fieldsVisibleAcrossMultiple -gt 0) {
+    $status = "remote_resources_partial"
+    $reason = "Multiple PlayerState candidates were sampled and some resource fields were visible remotely, but visibility was partial."
+  } else {
+    $status = "remote_resources_unresolved"
+    $reason = "Multiple PlayerState candidates were sampled, but resource fields did not establish remote visibility."
+  }
+}
+
 if ($null -ne $latestManifestFile) {
   try {
     & (Join-Path $PSScriptRoot "import-latest-runtime-evidence.ps1") -From $ResultsRoot
@@ -365,6 +429,6 @@ Write-Host "phaseResult = $status"
 Write-Host "phaseId = $($phase.phaseId)"
 Write-Host "nextRecommendedPhase = $($updatedState.nextRecommendedPhase)"
 
-if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved") {
+if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial") {
   exit 1
 }

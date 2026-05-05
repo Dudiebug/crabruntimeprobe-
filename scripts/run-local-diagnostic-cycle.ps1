@@ -16,8 +16,10 @@ param(
   [switch]$CollectHealthBaseline,
   [switch]$CollectHealthPlayerState,
   [switch]$CollectHealthPlayerStateWatch,
+  [switch]$CollectResourceVisibility,
   [switch]$ExpectObserveContext,
   [switch]$AllowIdentityProbes,
+  [switch]$AllowResourceVisibilityProbes,
   [switch]$NoDiagnosticDebug
 )
 
@@ -40,10 +42,11 @@ function Get-CycleMode {
   if ($CollectHealthBaseline) { $modes += "CollectHealthBaseline" }
   if ($CollectHealthPlayerState) { $modes += "CollectHealthPlayerState" }
   if ($CollectHealthPlayerStateWatch) { $modes += "CollectHealthPlayerStateWatch" }
+  if ($CollectResourceVisibility) { $modes += "CollectResourceVisibility" }
 
   $unique = @($modes | Sort-Object -Unique)
   if ($unique.Count -ne 1) {
-    throw "Choose exactly one mode: -PrepareSmoke, -CollectSmoke, -PrepareTickDriver <driver>, -PrepareEquipmentProperty, -PrepareHealthBaseline, -PrepareHealthPlayerState, -PrepareHealthPlayerStateWatch, -Collect, -CollectEquipmentProperty, -CollectHealthBaseline, -CollectHealthPlayerState, or -CollectHealthPlayerStateWatch."
+    throw "Choose exactly one mode: -PrepareSmoke, -CollectSmoke, -PrepareTickDriver <driver>, -PrepareEquipmentProperty, -PrepareHealthBaseline, -PrepareHealthPlayerState, -PrepareHealthPlayerStateWatch, -Collect, -CollectEquipmentProperty, -CollectHealthBaseline, -CollectHealthPlayerState, -CollectHealthPlayerStateWatch, or -CollectResourceVisibility."
   }
 
   return $unique[0]
@@ -111,7 +114,8 @@ function Test-CrabRuntimeProbeInstalledSafety {
   param(
     [Parameter(Mandatory = $true)][string]$ConfigPath,
     [switch]$AllowHealthProbes,
-    [switch]$AllowIdentityProbes
+    [switch]$AllowIdentityProbes,
+    [switch]$AllowResourceVisibilityProbes
   )
 
   $errors = New-Object System.Collections.Generic.List[string]
@@ -136,6 +140,7 @@ function Test-CrabRuntimeProbeInstalledSafety {
     "allowHealthProbes",
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
+    "allowResourceVisibilityProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )
@@ -153,6 +158,9 @@ function Test-CrabRuntimeProbeInstalledSafety {
       if ($AllowIdentityProbes -and $key -eq "allowIdentityProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
         continue
       }
+      if ($AllowResourceVisibilityProbes -and $key -eq "allowResourceVisibilityProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
+        continue
+      }
       if (-not [string]::Equals($value, "false", [System.StringComparison]::OrdinalIgnoreCase)) {
         $errors.Add("$key must be false, got '$value'") | Out-Null
       }
@@ -166,10 +174,11 @@ function Assert-CrabRuntimeProbeInstalledSafety {
   param(
     [Parameter(Mandatory = $true)][string]$ConfigPath,
     [switch]$AllowHealthProbes,
-    [switch]$AllowIdentityProbes
+    [switch]$AllowIdentityProbes,
+    [switch]$AllowResourceVisibilityProbes
   )
 
-  $errors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $ConfigPath -AllowHealthProbes:$AllowHealthProbes -AllowIdentityProbes:$AllowIdentityProbes
+  $errors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $ConfigPath -AllowHealthProbes:$AllowHealthProbes -AllowIdentityProbes:$AllowIdentityProbes -AllowResourceVisibilityProbes:$AllowResourceVisibilityProbes
   if ($errors.Count -gt 0) {
     throw "Installed config safety validation failed at $ConfigPath`n$((($errors | ForEach-Object { " - $_" }) -join "`n"))"
   }
@@ -554,6 +563,7 @@ function Set-InstalledSmokeConfig {
     "allowHealthProbes",
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
+    "allowResourceVisibilityProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -587,6 +597,7 @@ function Set-InstalledTickDriverConfig {
     "allowHealthProbes",
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
+    "allowResourceVisibilityProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -612,6 +623,7 @@ function Set-InstalledEquipmentPropertyConfig {
     "allowHealthProbes",
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
+    "allowResourceVisibilityProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -637,6 +649,7 @@ function Set-InstalledHealthBaselineConfig {
     "allowInventoryInfoProbes",
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
+    "allowResourceVisibilityProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -662,6 +675,7 @@ function Set-InstalledHealthPlayerStateConfig {
     "allowInventoryInfoProbes",
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
+    "allowResourceVisibilityProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -688,6 +702,7 @@ function Set-InstalledHealthPlayerStateWatchConfig {
     "allowInventoryInfoProbes",
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
+    "allowResourceVisibilityProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -788,7 +803,11 @@ if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "Pr
   exit 0
 }
 
-$safetyErrors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $InstalledConfigPath -AllowHealthProbes:($Mode -eq "CollectHealthBaseline" -or $Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch") -AllowIdentityProbes:$AllowIdentityProbes
+$safetyErrors = Test-CrabRuntimeProbeInstalledSafety `
+  -ConfigPath $InstalledConfigPath `
+  -AllowHealthProbes:($Mode -eq "CollectHealthBaseline" -or $Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch" -or $Mode -eq "CollectResourceVisibility") `
+  -AllowIdentityProbes:($AllowIdentityProbes -or $Mode -eq "CollectResourceVisibility") `
+  -AllowResourceVisibilityProbes:($AllowResourceVisibilityProbes -or $Mode -eq "CollectResourceVisibility")
 $logText = Read-TextFileOrEmpty -Path $Ue4ssLogPath
 $logLines = @()
 if (Test-Path -LiteralPath $Ue4ssLogPath -PathType Leaf) {
@@ -867,6 +886,29 @@ $playerStateHealthProbeNames = @(
 )
 $playerStateHealthRecords = @($jsonlRecords | Where-Object { $playerStateHealthProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) })
 $healthPlayerStateWatchRecords = @($jsonlRecords | Where-Object { (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) -eq "Health.PlayerState.Sample" })
+$resourceVisibilityProbeNames = @(
+  "ResourceVisibility.PlayerState.Sample",
+  "ResourceVisibility.Health.Sample",
+  "ResourceVisibility.Resources.Sample",
+  "ResourceVisibility.Slots.Sample",
+  "ResourceVisibility.Equipment.Sample",
+  "ResourceVisibility.InventoryArrays.ShallowSample"
+)
+$resourceVisibilityRecords = @($jsonlRecords | Where-Object { $resourceVisibilityProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) })
+$resourceVisibilityEvidenceRecords = @($accessEvidenceRecords | Where-Object { $resourceVisibilityProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) })
+$resourceVisibilityAllRecords = @($resourceVisibilityRecords + $resourceVisibilityEvidenceRecords)
+$resourceVisibilitySampledCounts = @($resourceVisibilityAllRecords | ForEach-Object { Get-RecordValue -Record $_ -Names @("sampledPlayerStateCount") } | Where-Object { $_ -match '^\d+$' } | ForEach-Object { [int]$_ })
+$resourceVisibilityVisibleCounts = @($resourceVisibilityAllRecords | ForEach-Object { Get-RecordValue -Record $_ -Names @("visiblePlayerCount") } | Where-Object { $_ -match '^\d+$' } | ForEach-Object { [int]$_ })
+$resourceVisibilitySampledPlayerStateCount = if ($resourceVisibilitySampledCounts.Count -gt 0) { ($resourceVisibilitySampledCounts | Measure-Object -Maximum).Maximum } else { 0 }
+$resourceVisibilityVisiblePlayerCount = if ($resourceVisibilityVisibleCounts.Count -gt 0) { ($resourceVisibilityVisibleCounts | Measure-Object -Maximum).Maximum } else { 0 }
+$resourceVisibilityReadableCrystals = @($resourceVisibilityAllRecords | ForEach-Object { Get-RecordValue -Record $_ -Names @("readableCrystalsCount") } | Where-Object { $_ -match '^\d+$' } | ForEach-Object { [int]$_ } | Measure-Object -Maximum).Maximum
+$resourceVisibilityReadableSlots = @($resourceVisibilityAllRecords | ForEach-Object { Get-RecordValue -Record $_ -Names @("readableSlotsCount") } | Where-Object { $_ -match '^\d+$' } | ForEach-Object { [int]$_ } | Measure-Object -Maximum).Maximum
+$resourceVisibilityReadableEquipment = @($resourceVisibilityAllRecords | ForEach-Object { Get-RecordValue -Record $_ -Names @("readableEquipmentCount") } | Where-Object { $_ -match '^\d+$' } | ForEach-Object { [int]$_ } | Measure-Object -Maximum).Maximum
+$resourceVisibilityReadableInventoryArrays = @($resourceVisibilityAllRecords | ForEach-Object { Get-RecordValue -Record $_ -Names @("readableInventoryArrayCount") } | Where-Object { $_ -match '^\d+$' } | ForEach-Object { [int]$_ } | Measure-Object -Maximum).Maximum
+if ($null -eq $resourceVisibilityReadableCrystals) { $resourceVisibilityReadableCrystals = 0 }
+if ($null -eq $resourceVisibilityReadableSlots) { $resourceVisibilityReadableSlots = 0 }
+if ($null -eq $resourceVisibilityReadableEquipment) { $resourceVisibilityReadableEquipment = 0 }
+if ($null -eq $resourceVisibilityReadableInventoryArrays) { $resourceVisibilityReadableInventoryArrays = 0 }
 $healthPlayerStateWatchCurrentHealthStats = Get-NumericSeriesStats -Records $healthPlayerStateWatchRecords -Name "currentHealth"
 $healthPlayerStateWatchCurrentMaxHealthStats = Get-NumericSeriesStats -Records $healthPlayerStateWatchRecords -Name "currentMaxHealth"
 $healthPlayerStateWatchBaseMaxHealthStats = Get-NumericSeriesStats -Records $healthPlayerStateWatchRecords -Name "baseMaxHealth"
@@ -1155,6 +1197,29 @@ if ($Mode -eq "CollectHealthPlayerStateWatch") {
   }
 }
 
+if ($Mode -eq "CollectResourceVisibility") {
+  if ($installedMode -ne "active") { $failures.Add("Resource visibility collect expected mode = active, got '$installedMode'.") | Out-Null }
+  if ($tickDriver -ne "executeDelay") { $failures.Add("Resource visibility collect expected tickDriver = executeDelay, got '$tickDriver'.") | Out-Null }
+  if ($probeSet -ne "multiplayer-resource-visibility-read") { $failures.Add("Resource visibility collect expected probeSet = multiplayer-resource-visibility-read, got '$probeSet'.") | Out-Null }
+  if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowIdentityProbes") -ne "true") {
+    $failures.Add("Resource visibility collect expected allowIdentityProbes = true.") | Out-Null
+  }
+  if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowHealthProbes") -ne "true") {
+    $failures.Add("Resource visibility collect expected allowHealthProbes = true.") | Out-Null
+  }
+  if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowResourceVisibilityProbes") -ne "true") {
+    $failures.Add("Resource visibility collect expected allowResourceVisibilityProbes = true.") | Out-Null
+  }
+  foreach ($probeName in $resourceVisibilityProbeNames) {
+    if (@($resourceVisibilityRecords | Where-Object { (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) -eq $probeName }).Count -eq 0) {
+      $failures.Add("Expected $probeName during resource visibility collection, but it did not run.") | Out-Null
+    }
+  }
+  if ($crabHcTouchedRecords.Count -gt 0) {
+    $failures.Add("CrabHC evidence appeared during resource visibility collection.") | Out-Null
+  }
+}
+
 $crashSuspicion = "none"
 if (-not $startupSmoke) {
   $crashSuspicion = "startup smoke missing; crash likely occurred before or during pure file-I/O startup smoke write"
@@ -1266,6 +1331,13 @@ $summaryLines = @(
   "health_playerstate_watch_maxHealthMultiplier_last = $($healthPlayerStateWatchMaxHealthMultiplierStats.Last)",
   "health_playerstate_watch_maxHealthMultiplier_min = $($healthPlayerStateWatchMaxHealthMultiplierStats.Min)",
   "health_playerstate_watch_maxHealthMultiplier_max = $($healthPlayerStateWatchMaxHealthMultiplierStats.Max)",
+  "resource_visibility_probe_ran = $($resourceVisibilityRecords.Count -gt 0)",
+  "resource_visibility_visible_player_count = $resourceVisibilityVisiblePlayerCount",
+  "resource_visibility_sampled_playerstate_count = $resourceVisibilitySampledPlayerStateCount",
+  "resource_visibility_readable_crystals_count = $resourceVisibilityReadableCrystals",
+  "resource_visibility_readable_slots_count = $resourceVisibilityReadableSlots",
+  "resource_visibility_readable_equipment_count = $resourceVisibilityReadableEquipment",
+  "resource_visibility_readable_inventory_array_count = $resourceVisibilityReadableInventoryArrays",
   "possible_base_health_model = $possibleBaseHealthModel",
   "terminal_zero_note = $terminalZeroNote",
   "unique_contexts_seen = $(if ($uniqueContexts.Count -gt 0) { $uniqueContexts -join ', ' } else { "none" })",
@@ -1293,6 +1365,7 @@ $summaryLines = @(
   "allowHealthProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowHealthProbes")",
   "allowIdentityProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowIdentityProbes")",
   "allowRawIdentityEvidence = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowRawIdentityEvidence")",
+  "allowResourceVisibilityProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowResourceVisibilityProbes")",
   "allowWriteProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowWriteProbes")",
   "allowRpcProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowRpcProbes")",
   "observe_context_latest_context = $(if ($null -ne $lastObserveContext) { Get-RecordValue -Record $lastObserveContext -Names @("context") } else { "not found" })",
@@ -1400,7 +1473,7 @@ if ($errorLines.Count -eq 0) {
   }
 }
 
-if ($Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch") {
+if ($Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch" -or $Mode -eq "CollectResourceVisibility") {
   $summaryLines += ""
   $summaryLines += "files_to_upload:"
   $summaryLines += " - $SummaryPath"

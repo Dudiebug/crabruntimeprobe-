@@ -8,6 +8,7 @@ Generated from imported runtime evidence under `evidence/runtime/`.
 - Evidence rows: 292
 - Health playerstate watch samples: 200
 - Identity/roster samples: 15
+- Resource visibility samples: 0
 - Objectdump symbols discovered: 0
 
 - Probe candidates doc present: yes
@@ -50,6 +51,13 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 - PlayerState identity reads are safe and redacted; PlayerName and UniqueId can be fingerprinted without emitting raw values.
 - Runtime context `solo-or-host` means local-player-present in the current detector; it is not proof of solo and cannot distinguish true solo from multiplayer host-like local context.
 - Visible player roster source is confirmed; auto-room grouping still requires matched host and joined-client runs.
+
+## Multiplayer Resource Visibility Summary
+
+- Summary: unresolved; no `multiplayer-resource-visibility-read` evidence has been imported yet.
+- Player count sampled: 0
+- Raw identity values are not emitted by this summary; PlayerName and UniqueId evidence remains fingerprint-only.
+- No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.
 
 ## Confirmed SAFE Access Rows
 

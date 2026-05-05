@@ -63,7 +63,7 @@ if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "tickDri
 if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "probeSet") -ne "shallow-core") {
   throw "default config probeSet must remain shallow-core."
 }
-foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes")) {
+foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowWriteProbes", "allowRpcProbes")) {
   if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key $key) -ne "false") {
     throw "default config expected $key = false."
   }
@@ -103,7 +103,7 @@ state = helpers.reconcileState(plan, {
   failedPhases: [],
   blockedPhases: []
 }, repoRoot);
-assert(state.nextRecommendedPhase === null, `unimplemented blocked phase should not be selected, got ${state.nextRecommendedPhase}`);
+assert(state.nextRecommendedPhase === 'multiplayer-resource-visibility-read', `expected multiplayer-resource-visibility-read, got ${state.nextRecommendedPhase}`);
 
 const defaultState = helpers.reconcileState(plan, null, repoRoot);
 assert(Array.isArray(defaultState.completedPhases), 'state initializes completedPhases');
@@ -118,11 +118,14 @@ for (const phase of plan.phases) {
   assert(gates.allowDeepArrayProbes === false, `${phase.phaseId} enabled deep arrays`);
   assert(gates.allowInventoryInfoProbes === false, `${phase.phaseId} enabled InventoryInfo`);
   assert(gates.allowRawIdentityEvidence === false, `${phase.phaseId} enabled raw identity evidence`);
-  if (!/^health-|^multiplayer-health-/.test(phase.phaseId)) {
+  if (!/^health-|^multiplayer-health-/.test(phase.phaseId) && phase.phaseId !== 'multiplayer-resource-visibility-read') {
     assert(gates.allowHealthProbes === false, `${phase.phaseId} enabled health outside health phases`);
   }
-  if (phase.phaseId !== 'multiplayer-roster-read') {
+  if (phase.phaseId !== 'multiplayer-roster-read' && phase.phaseId !== 'multiplayer-resource-visibility-read') {
     assert(gates.allowIdentityProbes === false, `${phase.phaseId} enabled identity outside roster phase`);
+  }
+  if (phase.phaseId !== 'multiplayer-resource-visibility-read') {
+    assert(gates.allowResourceVisibilityProbes === false, `${phase.phaseId} enabled resource visibility outside resource phase`);
   }
 }
 
@@ -172,6 +175,19 @@ roster = helpers.classifyRosterEvidence([
 ]);
 assert(roster.status === 'local_identity_confirmed', `candidate rows without visible players must not claim roster success, got ${roster.status}`);
 assert(roster.visibleRosterConfirmed === false, 'candidate source rows with count 0 must leave visible roster unresolved');
+
+let resources = helpers.classifyResourceVisibilityEvidence([
+  { probeName: 'ResourceVisibility.Resources.Sample', result: 'ok', sampledPlayerStateCount: 1, visiblePlayerCount: 1, readableCrystalsCount: 1, readableSlotsCount: 0, readableEquipmentCount: 0, readableInventoryArrayCount: 0, rawIdentityEvidence: false, safetyGates: { allowRawIdentityEvidence: false } }
+]);
+assert(resources.status === 'local_only_evidence', `one-player resource sample must not complete phase, got ${resources.status}`);
+resources = helpers.classifyResourceVisibilityEvidence([
+  { probeName: 'ResourceVisibility.Resources.Sample', result: 'nil', sampledPlayerStateCount: 2, visiblePlayerCount: 2, readableCrystalsCount: 0, readableSlotsCount: 0, readableEquipmentCount: 0, readableInventoryArrayCount: 0, rawIdentityEvidence: false, safetyGates: { allowRawIdentityEvidence: false } }
+]);
+assert(resources.status === 'remote_resources_unresolved', `multi-player nil resources should be unresolved, got ${resources.status}`);
+resources = helpers.classifyResourceVisibilityEvidence([
+  { probeName: 'ResourceVisibility.Resources.Sample', result: 'ok', sampledPlayerStateCount: 2, visiblePlayerCount: 2, readableCrystalsCount: 2, readableSlotsCount: 2, readableEquipmentCount: 2, readableInventoryArrayCount: 2, fieldsVisibleAcrossMultiple: ['Crystals', 'WeaponMods'], rawIdentityEvidence: false, safetyGates: { allowRawIdentityEvidence: false } }
+]);
+assert(resources.status === 'passed' && resources.classification === 'remote-visible', 'complete multi-player resource visibility should pass');
 
 const partialState = helpers.markCollected(plan, afterObserve, 'multiplayer-roster-read', {
   status: 'local_identity_confirmed',
@@ -233,6 +249,17 @@ if ($prepareRan) {
     }
     if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowHealthProbes") -ne "false") {
       throw "roster campaign phase must not enable health probes."
+    }
+  } elseif ($preparedPhase -eq "multiplayer-resource-visibility-read") {
+    foreach ($key in @("allowIdentityProbes", "allowHealthProbes", "allowResourceVisibilityProbes")) {
+      if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "true") {
+        throw "resource visibility campaign phase expected $key = true."
+      }
+    }
+    foreach ($key in @("allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowJoinedClientDeepProbes")) {
+      if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+        throw "resource visibility campaign phase expected $key = false."
+      }
     }
   }
 }

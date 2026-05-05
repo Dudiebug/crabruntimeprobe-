@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-05T06:08:57.885Z",
+  "updatedAt": "2026-05-05T06:29:13.602Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -124,7 +124,7 @@
     }
   ],
   "currentPhase": null,
-  "nextRecommendedPhase": null,
+  "nextRecommendedPhase": "multiplayer-resource-visibility-read",
   "latestSessionId": "20260505T055346Z",
   "latestCommit": "d5f22ad6f321d6734ce77d07df73129d94f962bc",
   "latestSummaryPath": "evidence/runtime/20260505T055346Z/diagnostic_summary.txt",
@@ -182,6 +182,13 @@
       "status": "complete",
       "riskTier": "confirmed-read",
       "probeSet": "health-playerstate-watch",
+      "tickDriver": "executeDelay",
+      "mode": "active"
+    },
+    "multiplayer-resource-visibility-read": {
+      "status": "pending",
+      "riskTier": "cautious-read",
+      "probeSet": "multiplayer-resource-visibility-read",
       "tickDriver": "executeDelay",
       "mode": "active"
     },

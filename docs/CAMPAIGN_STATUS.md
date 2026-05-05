@@ -1,9 +1,9 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T06:10:57.364Z
+- Updated: 2026-05-05T06:29:13.602Z
 - Current phase: none
-- Next recommended phase: none
+- Next recommended phase: `multiplayer-resource-visibility-read`
 - Latest session: 20260505T055346Z
 - Latest commit: d5f22ad6f321d6734ce77d07df73129d94f962bc
 - Latest summary: evidence/runtime/20260505T055346Z/diagnostic_summary.txt
@@ -39,7 +39,7 @@
 
 ## Pending Phases
 
-- None.
+- `multiplayer-resource-visibility-read` - Multiplayer resource visibility read
 
 ## Confirmed Safe Paths
 
@@ -62,6 +62,12 @@
 - `solo-or-host` means local-player-present in the current detector; it is not proof that the run was solo and cannot distinguish true solo from multiplayer host-like local context.
 - Visible player roster source is confirmed; future auto-room grouping still requires matched host and joined-client runs.
 
+## Multiplayer Resource Visibility
+
+- Summary: unresolved; no `multiplayer-resource-visibility-read` evidence has been imported yet.
+- Player count sampled: 0
+- No raw identity values are emitted; writes, RPCs, HUD hooks, deep arrays, `InventoryInfo`, and Enhancements remain disabled.
+
 ## Confirmed Unsafe Paths
 
 - HUD ReceiveDrawHUD tick hook remains blocked by default.
@@ -73,13 +79,15 @@
 - Vanilla multiplayer local PlayerState health visibility is confirmed only after `multiplayer-health-playerstate-watch` evidence exists; pooled/shared health is a CrabInvSync design concept, not vanilla RuntimeProbe evidence.
 - Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.
 - Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.
-- Crystals, slots, inventory arrays, `InventoryInfo`, and enhancements are placeholders until explicit probe sets are implemented.
+- Crystals, slots, equipment, and inventory array counts are only covered by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.
+- `InventoryInfo` and enhancements remain placeholders until explicit probe sets are implemented.
 - Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.
 
 ## Safety Gate Summary
 
 - Default config remains `tickDriver = none`, `probeSet = shallow-core`, and all research gates false.
 - Campaign read phases never enable writes, RPCs, or HUD hooks.
-- `allowHealthProbes` is enabled only for explicit health phases.
-- `allowIdentityProbes` is enabled only for the explicit multiplayer roster phase; `allowRawIdentityEvidence` remains false by default.
+- `allowHealthProbes` is enabled only for explicit health phases and `multiplayer-resource-visibility-read` health scalar checks.
+- `allowIdentityProbes` is enabled only for the explicit multiplayer roster and resource visibility phases; `allowRawIdentityEvidence` remains false by default.
+- `allowResourceVisibilityProbes` is enabled only for `multiplayer-resource-visibility-read`.
 - `allowDeepArrayProbes` and `allowInventoryInfoProbes` are not enabled by implemented phases.

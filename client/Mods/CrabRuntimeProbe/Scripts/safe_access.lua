@@ -175,4 +175,15 @@ function safe.forEachArrayLimited(arr, maxElements, callback)
   return count, nil
 end
 
+function safe.countArrayLimited(arr, maxElements)
+  if arr == nil then return nil, 'nil_array' end
+  if type(arr) ~= 'table' then return nil, 'not_array' end
+  local count = 0
+  for _, _ in ipairs(arr) do
+    count = count + 1
+    if count >= maxElements then break end
+  end
+  return count, nil
+end
+
 return safe

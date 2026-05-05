@@ -297,6 +297,9 @@ Use:
 - `allowDeepArrayProbes = false`
 - `allowInventoryInfoProbes = false`
 - `allowHealthProbes = false`
+- `allowIdentityProbes = false`
+- `allowRawIdentityEvidence = false`
+- `allowResourceVisibilityProbes = false`
 - `allowWriteProbes = false`
 - `allowRpcProbes = false`
 

@@ -32,7 +32,7 @@ function Assert-NotContains {
 $RepoRoot = Resolve-CrabRuntimeProbeRepoRoot -StartPath $PSScriptRoot -RequireGit
 $SourceConfigPath = Join-Path $RepoRoot "client\Mods\CrabRuntimeProbe\Scripts\config.txt"
 
-foreach ($key in @("allowIdentityProbes", "allowRawIdentityEvidence")) {
+foreach ($key in @("allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes")) {
   $value = Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key $key
   if ($value -ne "false") {
     throw "default config expected $key = false, got '$value'"
@@ -58,7 +58,7 @@ foreach ($required in @(
 if ($probeRunner -notmatch [regex]::Escape("probe.set == 'multiplayer-roster-read' and not config.allowIdentityProbes")) {
   throw "multiplayer-roster-read probes must remain gated by allowIdentityProbes."
 }
-foreach ($forbidden in @("allowWriteProbes = true", "allowRpcProbes = true", "allowHudTickHook = true", "allowDeepArrayProbes = true", "allowInventoryInfoProbes = true", "allowHealthProbes = true")) {
+foreach ($forbidden in @("allowWriteProbes = true", "allowRpcProbes = true", "allowHudTickHook = true", "allowDeepArrayProbes = true", "allowInventoryInfoProbes = true", "allowHealthProbes = true", "allowResourceVisibilityProbes = true")) {
   if ($probeRegistry -match [regex]::Escape($forbidden)) {
     throw "identity roster probes must not enable or touch forbidden path: $forbidden"
   }
@@ -73,7 +73,7 @@ Copy-Item -LiteralPath (Join-Path $RepoRoot "wiki-src") -Destination (Join-Path 
 Copy-Item -LiteralPath (Join-Path $RepoRoot "campaign") -Destination (Join-Path $WorkRoot "campaign") -Recurse
 
 $SessionDir = Join-Path $WorkRoot "evidence\runtime\identitysession"
-$safeGates = '"allowHudTickHook":false,"allowUnknownRoleProbes":false,"allowJoinedClientDeepProbes":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":false,"allowIdentityProbes":true,"allowRawIdentityEvidence":false,"allowWriteProbes":false,"allowRpcProbes":false'
+$safeGates = '"allowHudTickHook":false,"allowUnknownRoleProbes":false,"allowJoinedClientDeepProbes":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":false,"allowIdentityProbes":true,"allowRawIdentityEvidence":false,"allowResourceVisibilityProbes":false,"allowWriteProbes":false,"allowRpcProbes":false'
 Set-Content -LiteralPath (Join-Path $SessionDir "access_evidence.jsonl") -Encoding ASCII -Value @(
   ('{"timestamp":"2026-05-05T00:00:01Z","sessionId":"identitysession","probeId":"Identity.LocalPlayer.Sample","probeName":"Identity.LocalPlayer.Sample","probeSet":"multiplayer-roster-read","category":"identity","symbol":"CrabPC.PlayerState","owner":"CrabPC","member":"PlayerState","accessMethod":"GetPropertyValue","accessKind":"identity","mode":"active","tickDriver":"executeDelay","tick":100,"context":"solo","role":"solo-or-host","lifecycleState":"stable","result":"ok","runtimeStatus":"SAFE","valueKind":"identity_sample","valueSummary":"localPlayerPresent=true displayFingerprints=abc12345:len7 idFingerprints=def67890:len17 rawIdentityEvidence=false","sourcePath":"CrabPC.PlayerState","localPlayerPresent":true,"visiblePlayerCount":1,"visiblePlayerCap":1,"displayNameFingerprints":["abc12345:len7"],"stableIdFingerprints":["def67890:len17"],"identityRawRedacted":true,"rawIdentityEvidence":false,"safetyGates":{' + $safeGates + '}}'),
   ('{"timestamp":"2026-05-05T00:00:02Z","sessionId":"identitysession","probeId":"Identity.VisiblePlayers.Sample","probeName":"Identity.VisiblePlayers.Sample","probeSet":"multiplayer-roster-read","category":"identity","symbol":"GameState.PlayerArray","owner":"GameState","member":"PlayerArray","accessMethod":"GetPropertyValue","accessKind":"identityRoster","mode":"active","tickDriver":"executeDelay","tick":110,"context":"solo","role":"solo-or-host","lifecycleState":"stable","result":"ok","runtimeStatus":"SAFE","valueKind":"identity_roster","valueSummary":"visiblePlayerCount=2 cap=8 sourcePath=GameStateBase.PlayerArray displayFingerprints=abc12345:len7,feedcafe:len5 idFingerprints=def67890:len17,0123abcd:len17 rawIdentityEvidence=false","sourcePath":"GameStateBase.PlayerArray","localPlayerPresent":true,"visiblePlayerCount":2,"visiblePlayerCap":8,"displayNameFingerprints":["abc12345:len7","feedcafe:len5"],"stableIdFingerprints":["def67890:len17","0123abcd:len17"],"identityRawRedacted":true,"rawIdentityEvidence":false,"safetyGates":{' + $safeGates + '}}')

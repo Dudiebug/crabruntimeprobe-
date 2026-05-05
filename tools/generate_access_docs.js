@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { parseIdentityFromFullName, extractFullNameFromSummary } = require('./identity_helpers');
-const { hasConfirmedVisibleRosterEvidence, hasRawIdentityLeak } = require('./campaign_helpers');
+const { classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasRawIdentityLeak } = require('./campaign_helpers');
 
 function walk(dir, name) {
   if (!fs.existsSync(dir)) return [];
@@ -110,6 +110,7 @@ const diagnosticRows = diagnosticFiles.map((file) => ({
 }));
 const watchEvidenceRows = evidenceRows.filter((row) => (row.probeId || row.probeName) === 'Health.PlayerState.Sample');
 const identityEvidenceRows = evidenceRows.filter((row) => /^Identity\./.test(row.probeId || row.probeName || ''));
+const resourceVisibilityEvidenceRows = evidenceRows.filter((row) => /^ResourceVisibility\./.test(row.probeId || row.probeName || ''));
 const latestWatchDiagnostic = diagnosticRows
   .filter((row) => row.values.health_playerstate_watch_sample_count)
   .sort((a, b) => a.file.localeCompare(b.file))
@@ -190,6 +191,7 @@ index += `- Diagnostic summaries: ${diagnosticFiles.length}\n`;
 index += `- Evidence rows: ${evidenceRows.length}\n`;
 index += `- Health playerstate watch samples: ${watchEvidenceRows.length}\n`;
 index += `- Identity/roster samples: ${identityEvidenceRows.length}\n`;
+index += `- Resource visibility samples: ${resourceVisibilityEvidenceRows.length}\n`;
 index += `- Objectdump symbols discovered: ${objectdumpSymbols.size}\n\n`;
 index += `- Probe candidates doc present: ${probeCandidatesText ? 'yes' : 'no'}\n\n`;
 index += 'Objectdump discovery means a symbol exists in static dump data. It does not mean runtime access is safe.\n';
@@ -257,6 +259,22 @@ if (identityEvidenceRows.length > 0) {
     index += '- Visible player roster is still unresolved; auto-room grouping is not ready yet.\n';
   }
 }
+const resourceVisibility = classifyResourceVisibilityEvidence(evidenceRows);
+index += '\n## Multiplayer Resource Visibility Summary\n\n';
+if (!resourceVisibility.resourceVisibilityEvidenceFound) {
+  index += '- Summary: unresolved; no `multiplayer-resource-visibility-read` evidence has been imported yet.\n';
+  index += '- Player count sampled: 0\n';
+} else {
+  index += `- Summary: ${resourceVisibility.classification}\n`;
+  index += `- Player count sampled: ${resourceVisibility.sampledPlayerStateCount}\n`;
+  index += `- Fields visible across more than one PlayerState: ${resourceVisibility.fieldsVisibleAcrossMultiple.length ? resourceVisibility.fieldsVisibleAcrossMultiple.join(', ') : 'none'}\n`;
+  index += `- Fields only visible on local PlayerState: ${resourceVisibility.fieldsOnlyVisibleOnLocal.length ? resourceVisibility.fieldsOnlyVisibleOnLocal.join(', ') : 'none'}\n`;
+  index += `- Fields returning nil/errors: ${resourceVisibility.fieldsNilOrErrors.length ? resourceVisibility.fieldsNilOrErrors.join(', ') : 'none'}\n`;
+  index += `- Readable categories by candidate: crystals=${resourceVisibility.readableCrystals}, slots=${resourceVisibility.readableSlots}, equipment=${resourceVisibility.readableEquipment}, inventory array counts=${resourceVisibility.readableInventoryArrayCounts}, health=${resourceVisibility.readableHealth}\n`;
+  index += `- Supports future P2P resource merge design: ${resourceVisibility.supportsP2PResourceMerge}\n`;
+}
+index += '- Raw identity values are not emitted by this summary; PlayerName and UniqueId evidence remains fingerprint-only.\n';
+index += '- No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.\n';
 index += '\n## Confirmed SAFE Access Rows\n\n';
 const safeRows = rows.filter((row) => bestStatus(row.statuses) === 'SAFE');
 if (safeRows.length === 0) {
@@ -312,6 +330,9 @@ const defaultUntested = [
   ['CrabGS', 'identity source candidate', 'UNTESTED', 'CrabGS availability is checked only in multiplayer-roster-read and must not recurse through arbitrary fields.'],
   ['FindAllOf(PlayerState,CrabPS)', 'identity roster candidates', 'UNTESTED', 'Capped PlayerState-like discovery is gated by allowIdentityProbes and emits only redacted/fingerprinted identity values.'],
   ['FindAllOf(PlayerController,CrabPC).PlayerState', 'identity controller candidates', 'UNTESTED', 'Capped controller discovery reads only PlayerState from valid controllers.'],
+  ['FindAllOf(PlayerState,CrabPS)', 'resource visibility candidates', 'UNTESTED', 'Capped resource visibility discovery is gated by allowResourceVisibilityProbes and reads only explicitly named PlayerState fields.'],
+  ['CrabPS.Crystals', 'GetPropertyValue', 'UNTESTED', 'Resource visibility probes are disabled by default.'],
+  ['CrabPS.WeaponMods', 'GetPropertyValueCountOnly', 'UNTESTED', 'Inventory arrays are count-only in resource visibility; no element dereference.'],
   ['PlayerState.UniqueId', 'identity', 'UNTESTED', 'Stable IDs must be fingerprinted unless allowRawIdentityEvidence is explicitly enabled.'],
   ['GameplayState.*', 'write', 'UNSAFE_DISABLED', 'Writes are disabled.'],
   ['RPC.*', 'rpc', 'UNSAFE_DISABLED', 'RPC probes are disabled.']

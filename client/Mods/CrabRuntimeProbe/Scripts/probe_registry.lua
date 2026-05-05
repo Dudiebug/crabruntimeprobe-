@@ -305,6 +305,285 @@ function registry.build(safe)
     return samples, rawNames, rawIds, count, table.concat(attempted, ','), nil
   end
 
+  local function collectResourceVisibilityCandidates(ctx, cap)
+    local candidates = {}
+    local seen = {}
+    local attempted = {}
+    local function addCandidate(playerState, sourcePath)
+      if #candidates >= cap or not safe.isValidObject(playerState) then return end
+      local key = tostring(playerState)
+      if seen[key] then return end
+      seen[key] = true
+      candidates[#candidates + 1] = {
+        object = playerState,
+        sourcePath = sourcePath
+      }
+    end
+
+    local available, availabilityResult, availabilityErr = findAllAvailability()
+    if availabilityResult == 'lua_error' then return nil, '', availabilityErr end
+    if available then
+      for _, className in ipairs({ 'PlayerState', 'CrabPS' }) do
+        if #candidates >= cap then break end
+        attempted[#attempted + 1] = className
+        local arr, err = safe.findAll(className)
+        if err then return nil, table.concat(attempted, ','), err end
+        if type(arr) == 'table' then
+          safe.forEachArrayLimited(arr, cap, function(_, elem)
+            local playerState = objectFromArrayElement(elem)
+            addCandidate(playerState, 'FindAllOf(' .. className .. ')')
+          end)
+        end
+      end
+
+      for _, className in ipairs({ 'PlayerController', 'CrabPC' }) do
+        if #candidates >= cap then break end
+        attempted[#attempted + 1] = className
+        local controllers, err = safe.findAll(className)
+        if err then return nil, table.concat(attempted, ','), err end
+        if type(controllers) == 'table' then
+          safe.forEachArrayLimited(controllers, cap, function(_, elem)
+            local controller = objectFromArrayElement(elem)
+            if safe.isValidObject(controller) then
+              local playerState = safe.getProperty(controller, 'PlayerState')
+              addCandidate(playerState, 'FindAllOf(' .. className .. ').PlayerState')
+            end
+          end)
+        end
+      end
+    end
+
+    if #candidates == 0 then
+      local localPlayerState = getLocalPlayerState(ctx)
+      addCandidate(localPlayerState, 'CrabPC.PlayerState')
+    end
+    return candidates, table.concat(attempted, ','), nil
+  end
+
+  local function addReadableField(stats, fieldName, sampleIndex, isLocal)
+    stats.fieldReadableCounts[fieldName] = (stats.fieldReadableCounts[fieldName] or 0) + 1
+    if isLocal then stats.localReadableFields[fieldName] = true end
+    stats.fieldReadAttempted[fieldName] = true
+    if sampleIndex > 1 then stats.remoteReadableFields[fieldName] = true end
+  end
+
+  local function addNilOrErrorField(stats, fieldName)
+    stats.fieldsNilOrErrorsMap[fieldName] = true
+    stats.fieldReadAttempted[fieldName] = true
+  end
+
+  local function readResourceProperty(stats, playerState, fieldName, sampleIndex, isLocal)
+    local value, err = safe.getProperty(playerState, fieldName)
+    if err or value == nil then
+      addNilOrErrorField(stats, fieldName)
+      return false
+    end
+    addReadableField(stats, fieldName, sampleIndex, isLocal)
+    return true
+  end
+
+  local function readResourceStructField(stats, value, fieldName, sampleIndex, isLocal)
+    local fieldValue, err = safe.getStructField(value, fieldName)
+    if err or fieldValue == nil then
+      addNilOrErrorField(stats, 'HealthInfo.' .. fieldName)
+      return false
+    end
+    addReadableField(stats, 'HealthInfo.' .. fieldName, sampleIndex, isLocal)
+    return true
+  end
+
+  local function readInventoryArrayCount(stats, playerState, fieldName, sampleIndex, isLocal)
+    local arr, err = safe.getProperty(playerState, fieldName)
+    if err or arr == nil then
+      addNilOrErrorField(stats, fieldName)
+      return false
+    end
+    local count, countErr = safe.countArrayLimited(arr, 256)
+    if countErr then
+      addNilOrErrorField(stats, fieldName)
+      return false
+    end
+    addReadableField(stats, fieldName, sampleIndex, isLocal)
+    return true
+  end
+
+  local function keysSorted(map)
+    local out = {}
+    for key, _ in pairs(map or {}) do out[#out + 1] = key end
+    table.sort(out)
+    return out
+  end
+
+  local function buildResourceVisibilityCache(ctx)
+    if ctx.cache.ResourceVisibility ~= nil then return ctx.cache.ResourceVisibility end
+    local cap = 16
+    local localPlayerState = getLocalPlayerState(ctx)
+    local localKey = safe.isValidObject(localPlayerState) and tostring(localPlayerState) or ''
+    local candidates, attempted, err = collectResourceVisibilityCandidates(ctx, cap)
+    if err then
+      ctx.cache.ResourceVisibility = {
+        error = err,
+        attempted = attempted or '',
+        visiblePlayerCount = 0,
+        sampledPlayerStateCount = 0,
+        visiblePlayerCap = cap,
+        samples = {},
+        fieldReadableCounts = {},
+        fieldsNilOrErrorsMap = {},
+        localReadableFields = {},
+        remoteReadableFields = {},
+        rawIdentityEvidence = false,
+        identityRawRedacted = true
+      }
+      return ctx.cache.ResourceVisibility
+    end
+
+    local stats = {
+      attempted = attempted or '',
+      visiblePlayerCount = #(candidates or {}),
+      sampledPlayerStateCount = #(candidates or {}),
+      visiblePlayerCap = cap,
+      samples = {},
+      fieldReadableCounts = {},
+      fieldsNilOrErrorsMap = {},
+      fieldReadAttempted = {},
+      localReadableFields = {},
+      remoteReadableFields = {},
+      rawIdentityEvidence = false,
+      identityRawRedacted = true,
+      readableCrystalsCount = 0,
+      readableKeysCount = 0,
+      readableHealthCount = 0,
+      readableSlotsCount = 0,
+      readableEquipmentCount = 0,
+      readableInventoryArrayCount = 0
+    }
+
+    for index, candidate in ipairs(candidates or {}) do
+      local playerState = candidate.object
+      local isLocal = localKey ~= '' and tostring(playerState) == localKey
+      local identity = samplePlayerStateIdentity(playerState, { allowRawIdentityEvidence = false })
+      stats.samples[#stats.samples + 1] = identity
+
+      local healthInfo, healthInfoErr = safe.getProperty(playerState, 'HealthInfo')
+      local healthReadable = false
+      if healthInfoErr or healthInfo == nil then
+        addNilOrErrorField(stats, 'HealthInfo')
+      else
+        addReadableField(stats, 'HealthInfo', index, isLocal)
+        healthReadable = readResourceStructField(stats, healthInfo, 'CurrentHealth', index, isLocal) or healthReadable
+        healthReadable = readResourceStructField(stats, healthInfo, 'CurrentMaxHealth', index, isLocal) or healthReadable
+      end
+      healthReadable = readResourceProperty(stats, playerState, 'BaseMaxHealth', index, isLocal) or healthReadable
+      healthReadable = readResourceProperty(stats, playerState, 'MaxHealthMultiplier', index, isLocal) or healthReadable
+      if healthReadable then stats.readableHealthCount = stats.readableHealthCount + 1 end
+
+      if readResourceProperty(stats, playerState, 'Crystals', index, isLocal) then
+        stats.readableCrystalsCount = stats.readableCrystalsCount + 1
+      end
+      if readResourceProperty(stats, playerState, 'Keys', index, isLocal) then
+        stats.readableKeysCount = stats.readableKeysCount + 1
+      end
+
+      local slotsReadable = false
+      for _, fieldName in ipairs({ 'NumWeaponModSlots', 'NumAbilityModSlots', 'NumMeleeModSlots', 'NumPerkSlots' }) do
+        slotsReadable = readResourceProperty(stats, playerState, fieldName, index, isLocal) or slotsReadable
+      end
+      if slotsReadable then stats.readableSlotsCount = stats.readableSlotsCount + 1 end
+
+      local equipmentReadable = false
+      for _, fieldName in ipairs({ 'WeaponDA', 'AbilityDA', 'MeleeDA' }) do
+        equipmentReadable = readResourceProperty(stats, playerState, fieldName, index, isLocal) or equipmentReadable
+      end
+      if equipmentReadable then stats.readableEquipmentCount = stats.readableEquipmentCount + 1 end
+
+      local inventoryReadable = false
+      for _, fieldName in ipairs({ 'WeaponMods', 'AbilityMods', 'MeleeMods', 'Perks', 'Relics' }) do
+        inventoryReadable = readInventoryArrayCount(stats, playerState, fieldName, index, isLocal) or inventoryReadable
+      end
+      if inventoryReadable then stats.readableInventoryArrayCount = stats.readableInventoryArrayCount + 1 end
+    end
+
+    local fieldsVisibleAcrossMultipleMap = {}
+    local fieldsOnlyVisibleOnLocalMap = {}
+    for fieldName, count in pairs(stats.fieldReadableCounts) do
+      if count > 1 then fieldsVisibleAcrossMultipleMap[fieldName] = true end
+      if count == 1 and stats.localReadableFields[fieldName] == true then fieldsOnlyVisibleOnLocalMap[fieldName] = true end
+    end
+    stats.fieldsVisibleAcrossMultiple = keysSorted(fieldsVisibleAcrossMultipleMap)
+    stats.fieldsOnlyVisibleOnLocal = keysSorted(fieldsOnlyVisibleOnLocalMap)
+    stats.fieldsNilOrErrors = keysSorted(stats.fieldsNilOrErrorsMap)
+
+    local anyNonIdentity = stats.readableCrystalsCount > 0
+      or stats.readableKeysCount > 0
+      or stats.readableSlotsCount > 0
+      or stats.readableEquipmentCount > 0
+      or stats.readableInventoryArrayCount > 0
+      or stats.readableHealthCount > 0
+    stats.nonIdentityResourceCategoryEvaluated = anyNonIdentity
+    if stats.sampledPlayerStateCount < 2 then
+      stats.resourceVisibilityClass = anyNonIdentity and 'local-only' or 'unresolved'
+      stats.supportsP2PResourceMerge = 'no'
+    elseif stats.readableCrystalsCount > 1 and stats.readableSlotsCount > 1 and stats.readableEquipmentCount > 1 and stats.readableInventoryArrayCount > 1 then
+      stats.resourceVisibilityClass = 'remote-visible'
+      stats.supportsP2PResourceMerge = 'yes'
+    elseif #stats.fieldsVisibleAcrossMultiple > 0 then
+      stats.resourceVisibilityClass = 'partial'
+      stats.supportsP2PResourceMerge = 'partial'
+    else
+      stats.resourceVisibilityClass = 'unresolved'
+      stats.supportsP2PResourceMerge = 'no'
+    end
+
+    local identitySummary, display, ids = summarizeIdentitySamples(stats.samples, 'visiblePlayerCount=' .. tostring(stats.visiblePlayerCount) .. ' sampledPlayerStateCount=' .. tostring(stats.sampledPlayerStateCount) .. ' cap=' .. tostring(cap) .. ' sourcePath=FindAllOf(PlayerState,CrabPS)+FindAllOf(PlayerController,CrabPC).PlayerState')
+    stats.identitySummary = identitySummary
+    stats.displayNameFingerprints = display
+    stats.stableIdFingerprints = ids
+    ctx.cache.ResourceVisibility = stats
+    return stats
+  end
+
+  local function resourceVisibilityMeta(stats, note)
+    return {
+      sourceScope = 'runtime_resource_visibility',
+      sourcePath = 'FindAllOf(PlayerState,CrabPS)+FindAllOf(PlayerController,CrabPC).PlayerState',
+      sourceClass = 'PlayerState',
+      candidateClasses = { 'PlayerState', 'CrabPS', 'PlayerController', 'CrabPC' },
+      visiblePlayerCount = stats.visiblePlayerCount or 0,
+      sampledPlayerStateCount = stats.sampledPlayerStateCount or 0,
+      visiblePlayerCap = stats.visiblePlayerCap or 16,
+      displayNameFingerprints = stats.displayNameFingerprints or {},
+      stableIdFingerprints = stats.stableIdFingerprints or {},
+      identityRawRedacted = true,
+      rawIdentityEvidence = false,
+      readableCrystalsCount = stats.readableCrystalsCount or 0,
+      readableKeysCount = stats.readableKeysCount or 0,
+      readableSlotsCount = stats.readableSlotsCount or 0,
+      readableEquipmentCount = stats.readableEquipmentCount or 0,
+      readableInventoryArrayCount = stats.readableInventoryArrayCount or 0,
+      readableHealthCount = stats.readableHealthCount or 0,
+      resourceVisibilityClass = stats.resourceVisibilityClass or 'unresolved',
+      supportsP2PResourceMerge = stats.supportsP2PResourceMerge or 'no',
+      fieldsVisibleAcrossMultiple = stats.fieldsVisibleAcrossMultiple or {},
+      fieldsOnlyVisibleOnLocal = stats.fieldsOnlyVisibleOnLocal or {},
+      fieldsNilOrErrors = stats.fieldsNilOrErrors or {},
+      nonIdentityResourceCategoryEvaluated = stats.nonIdentityResourceCategoryEvaluated == true,
+      localNotes = note
+    }
+  end
+
+  local function resourceVisibilitySummary(stats, category)
+    return 'category=' .. tostring(category)
+      .. ' visiblePlayerCount=' .. tostring(stats.visiblePlayerCount or 0)
+      .. ' sampledPlayerStateCount=' .. tostring(stats.sampledPlayerStateCount or 0)
+      .. ' readableCrystals=' .. tostring(stats.readableCrystalsCount or 0)
+      .. ' readableSlots=' .. tostring(stats.readableSlotsCount or 0)
+      .. ' readableEquipment=' .. tostring(stats.readableEquipmentCount or 0)
+      .. ' readableInventoryArrayCounts=' .. tostring(stats.readableInventoryArrayCount or 0)
+      .. ' class=' .. tostring(stats.resourceVisibilityClass or 'unresolved')
+      .. ' rawIdentityEvidence=false'
+  end
+
   local function classifyCrabHCSource(fullName)
     local text = tostring(fullName or '')
     if text:find('Destructible') or text:find('Barrel') or text:find('ChaoticBarrel') then
@@ -1086,6 +1365,96 @@ function registry.build(safe)
     accessMethod = 'GetPropertyValueCapped',
     accessKind = 'identityRosterCandidate',
     sourceScope = 'runtime_roster_candidate'
+  })
+
+  probes[#probes + 1] = mk('ResourceVisibility.PlayerState.Sample', 'resource-visibility', 'multiplayer-resource-visibility-read', 'playerStateResourceVisibility', function(ctx)
+    local stats = buildResourceVisibilityCache(ctx)
+    if stats.error then return 'lua_error', nil, nil, stats.error end
+    local summary = stats.identitySummary or resourceVisibilitySummary(stats, 'identity')
+    return stats.sampledPlayerStateCount > 0 and 'ok' or 'nil', 'resource_visibility_identity', summary, nil,
+      resourceVisibilityMeta(stats, 'Capped read-only visible PlayerState/CrabPS candidate identity fingerprints; no raw names or UniqueIds emitted')
+  end, {
+    symbol = 'PlayerState.Identity',
+    owner = 'PlayerState',
+    member = 'PlayerName UniqueId',
+    accessMethod = 'GetPropertyValue',
+    accessKind = 'resourceVisibilityIdentity',
+    sourceScope = 'runtime_resource_visibility'
+  })
+
+  probes[#probes + 1] = mk('ResourceVisibility.Health.Sample', 'resource-visibility', 'multiplayer-resource-visibility-read', 'healthResourceVisibility', function(ctx)
+    local stats = buildResourceVisibilityCache(ctx)
+    if stats.error then return 'lua_error', nil, nil, stats.error end
+    return stats.readableHealthCount > 0 and 'ok' or 'nil', 'resource_visibility_health',
+      resourceVisibilitySummary(stats, 'health'), nil,
+      resourceVisibilityMeta(stats, 'Read-only HealthInfo.CurrentHealth/CurrentMaxHealth plus BaseMaxHealth/MaxHealthMultiplier checks from visible PlayerStates; no CrabHC touched')
+  end, {
+    symbol = 'CrabPS.HealthInfo',
+    owner = 'CrabPS',
+    member = 'HealthInfo',
+    accessMethod = 'RemotePlayerStateHealthSample',
+    accessKind = 'health',
+    sourceScope = 'runtime_resource_visibility'
+  })
+
+  probes[#probes + 1] = mk('ResourceVisibility.Resources.Sample', 'resource-visibility', 'multiplayer-resource-visibility-read', 'resourceScalarVisibility', function(ctx)
+    local stats = buildResourceVisibilityCache(ctx)
+    if stats.error then return 'lua_error', nil, nil, stats.error end
+    return (stats.readableCrystalsCount > 0 or stats.readableKeysCount > 0) and 'ok' or 'nil', 'resource_visibility_resources',
+      resourceVisibilitySummary(stats, 'resources'), nil,
+      resourceVisibilityMeta(stats, 'Read-only Crystals and optional Keys scalar visibility checks')
+  end, {
+    symbol = 'CrabPS.Crystals',
+    owner = 'CrabPS',
+    member = 'Crystals Keys',
+    accessMethod = 'GetPropertyValue',
+    accessKind = 'getProperty',
+    sourceScope = 'runtime_resource_visibility'
+  })
+
+  probes[#probes + 1] = mk('ResourceVisibility.Slots.Sample', 'resource-visibility', 'multiplayer-resource-visibility-read', 'slotScalarVisibility', function(ctx)
+    local stats = buildResourceVisibilityCache(ctx)
+    if stats.error then return 'lua_error', nil, nil, stats.error end
+    return stats.readableSlotsCount > 0 and 'ok' or 'nil', 'resource_visibility_slots',
+      resourceVisibilitySummary(stats, 'slots'), nil,
+      resourceVisibilityMeta(stats, 'Read-only NumWeaponModSlots/NumAbilityModSlots/NumMeleeModSlots/NumPerkSlots visibility checks')
+  end, {
+    symbol = 'CrabPS.NumWeaponModSlots',
+    owner = 'CrabPS',
+    member = 'NumWeaponModSlots NumAbilityModSlots NumMeleeModSlots NumPerkSlots',
+    accessMethod = 'GetPropertyValue',
+    accessKind = 'getProperty',
+    sourceScope = 'runtime_resource_visibility'
+  })
+
+  probes[#probes + 1] = mk('ResourceVisibility.Equipment.Sample', 'resource-visibility', 'multiplayer-resource-visibility-read', 'equipmentVisibility', function(ctx)
+    local stats = buildResourceVisibilityCache(ctx)
+    if stats.error then return 'lua_error', nil, nil, stats.error end
+    return stats.readableEquipmentCount > 0 and 'ok' or 'nil', 'resource_visibility_equipment',
+      resourceVisibilitySummary(stats, 'equipment'), nil,
+      resourceVisibilityMeta(stats, 'Read-only WeaponDA/AbilityDA/MeleeDA property visibility checks; object identities are not dereferenced or summarized in this phase')
+  end, {
+    symbol = 'CrabPS.WeaponDA',
+    owner = 'CrabPS',
+    member = 'WeaponDA AbilityDA MeleeDA',
+    accessMethod = 'GetPropertyValue',
+    accessKind = 'getProperty',
+    sourceScope = 'runtime_resource_visibility'
+  })
+
+  probes[#probes + 1] = mk('ResourceVisibility.InventoryArrays.ShallowSample', 'resource-visibility', 'multiplayer-resource-visibility-read', 'inventoryArrayShallowVisibility', function(ctx)
+    local stats = buildResourceVisibilityCache(ctx)
+    if stats.error then return 'lua_error', nil, nil, stats.error end
+    return stats.readableInventoryArrayCount > 0 and 'ok' or 'nil', 'resource_visibility_inventory_arrays',
+      resourceVisibilitySummary(stats, 'inventory-arrays'), nil,
+      resourceVisibilityMeta(stats, 'Read-only count-only checks for WeaponMods/AbilityMods/MeleeMods/Perks/Relics; no element dereference, InventoryInfo, or Enhancements')
+  end, {
+    symbol = 'CrabPS.WeaponMods',
+    owner = 'CrabPS',
+    member = 'WeaponMods AbilityMods MeleeMods Perks Relics',
+    accessMethod = 'GetPropertyValueCountOnly',
+    accessKind = 'getPropertyCountOnly',
+    sourceScope = 'runtime_resource_visibility'
   })
 
   probes[#probes + 1] = mk('FindAllOf.CrabHC.Availability', 'health', 'health-hc-discovery-read', 'findAllAvailability', function()

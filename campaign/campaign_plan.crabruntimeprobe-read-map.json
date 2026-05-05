@@ -249,6 +249,42 @@
       "riskTier": "confirmed-read",
       "status": "pending",
       "humanInstructions": "Launch Crab Champions in a multiplayer scenario, stay in world for 60 to 120 seconds without forcing pickups or sync behavior, quit, then run scripts\\quick-campaign-collect.ps1.",
+      "nextPhase": "multiplayer-resource-visibility-read"
+    },
+    {
+      "phaseId": "multiplayer-resource-visibility-read",
+      "label": "Multiplayer resource visibility read",
+      "probeSet": "multiplayer-resource-visibility-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "implemented": true,
+      "requiredGates": {
+        "allowIdentityProbes": true,
+        "allowHealthProbes": true,
+        "allowResourceVisibilityProbes": true
+      },
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowInventoryInfoProbes",
+        "allowRawIdentityEvidence",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "ResourceVisibility.PlayerState.Sample",
+        "ResourceVisibility.Health.Sample",
+        "ResourceVisibility.Resources.Sample",
+        "ResourceVisibility.Slots.Sample",
+        "ResourceVisibility.Equipment.Sample",
+        "ResourceVisibility.InventoryArrays.ShallowSample",
+        "rawIdentityEvidence = false"
+      ],
+      "riskTier": "cautious-read",
+      "status": "pending",
+      "humanInstructions": "Launch Crab Champions in a multiplayer scenario with at least two visible players if possible. Stay in the same lobby/world for 60 to 120 seconds. Do not force pickups, writes, inventory changes, or sync behavior. Quit, then run scripts\\quick-campaign-collect.ps1.",
       "nextPhase": "crystals-read"
     },
     {
