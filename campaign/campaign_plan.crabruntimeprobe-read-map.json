@@ -1,0 +1,408 @@
+{
+  "schemaVersion": 1,
+  "campaign": "crabruntimeprobe-read-map",
+  "label": "CrabRuntimeProbe read map campaign",
+  "description": "Phased read-only RuntimeProbe campaign for safe evidence collection and next-phase tracking.",
+  "defaultStatus": "pending",
+  "riskTiers": [
+    "baseline",
+    "confirmed-read",
+    "cautious-read",
+    "deep-read",
+    "write-research-placeholder"
+  ],
+  "phases": [
+    {
+      "phaseId": "smoke-startup",
+      "label": "Startup smoke",
+      "probeSet": "shallow-core",
+      "tickDriver": "none",
+      "mode": "observe",
+      "implemented": true,
+      "requiredGates": {},
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowInventoryInfoProbes",
+        "allowHealthProbes",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "Debug.StartupSmoke",
+        "session_manifest",
+        "startup_smoke_appeared = True"
+      ],
+      "riskTier": "baseline",
+      "status": "pending",
+      "humanInstructions": "Launch Crab Champions, sit at the menu for 20 to 30 seconds, quit, then run scripts\\quick-campaign-collect.ps1.",
+      "nextPhase": "executeDelay"
+    },
+    {
+      "phaseId": "executeDelay",
+      "label": "executeDelay tick driver",
+      "probeSet": "shallow-core",
+      "tickDriver": "executeDelay",
+      "mode": "observe",
+      "implemented": true,
+      "requiredGates": {},
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowInventoryInfoProbes",
+        "allowHealthProbes",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "tickDriver = executeDelay",
+        "tick_source_registered = executeDelay",
+        "Debug.StartupSmoke"
+      ],
+      "riskTier": "baseline",
+      "status": "pending",
+      "humanInstructions": "Launch Crab Champions, sit at the menu for 20 to 30 seconds, quit, then run scripts\\quick-campaign-collect.ps1.",
+      "nextPhase": "observe-context"
+    },
+    {
+      "phaseId": "observe-context",
+      "label": "Observe runtime context",
+      "probeSet": "shallow-core",
+      "tickDriver": "executeDelay",
+      "mode": "observe",
+      "implemented": true,
+      "requiredGates": {},
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowInventoryInfoProbes",
+        "allowHealthProbes",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "Observe.Context",
+        "observe_context_appeared = True",
+        "unique_contexts_seen"
+      ],
+      "riskTier": "baseline",
+      "status": "pending",
+      "humanInstructions": "Launch Crab Champions, enter a solo run or stable menu/world state for 30 to 60 seconds, quit, then run scripts\\quick-campaign-collect.ps1.",
+      "nextPhase": "equipment-property-read"
+    },
+    {
+      "phaseId": "equipment-property-read",
+      "label": "Equipment data asset property reads",
+      "probeSet": "equipment-property-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "implemented": true,
+      "requiredGates": {},
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowInventoryInfoProbes",
+        "allowHealthProbes",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "CrabPS.GetPropertyValue.WeaponDA",
+        "CrabPS.GetPropertyValue.AbilityDA",
+        "CrabPS.GetPropertyValue.MeleeDA"
+      ],
+      "riskTier": "confirmed-read",
+      "status": "pending",
+      "humanInstructions": "Launch Crab Champions, start a solo run and stay in world for 30 to 60 seconds, quit, then run scripts\\quick-campaign-collect.ps1.",
+      "nextPhase": "health-playerstate-read"
+    },
+    {
+      "phaseId": "health-playerstate-read",
+      "label": "PlayerState health scalar reads",
+      "probeSet": "health-playerstate-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "implemented": true,
+      "requiredGates": {
+        "allowHealthProbes": true
+      },
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowInventoryInfoProbes",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "CrabPS.GetPropertyValue.HealthInfo",
+        "CrabPS.HealthInfo.CurrentHealth",
+        "CrabPS.HealthInfo.CurrentMaxHealth",
+        "CrabPS.GetPropertyValue.BaseMaxHealth",
+        "CrabPS.GetPropertyValue.MaxHealthMultiplier"
+      ],
+      "riskTier": "confirmed-read",
+      "status": "pending",
+      "humanInstructions": "Launch Crab Champions, start a solo run and stay in world for 30 to 60 seconds, quit, then run scripts\\quick-campaign-collect.ps1.",
+      "nextPhase": "health-playerstate-watch"
+    },
+    {
+      "phaseId": "health-playerstate-watch",
+      "label": "Solo PlayerState health watch",
+      "probeSet": "health-playerstate-watch",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "implemented": true,
+      "requiredGates": {
+        "allowHealthProbes": true
+      },
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowInventoryInfoProbes",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "Health.PlayerState.Sample",
+        "health_playerstate_watch_sample_count",
+        "crab_hc_touched = False"
+      ],
+      "riskTier": "confirmed-read",
+      "status": "pending",
+      "humanInstructions": "Launch Crab Champions, start a solo run, stay in world for 60 to 120 seconds, optionally pick up a naturally appearing max-health-changing item, quit, then run scripts\\quick-campaign-collect.ps1.",
+      "nextPhase": "multiplayer-health-playerstate-watch"
+    },
+    {
+      "phaseId": "multiplayer-health-playerstate-watch",
+      "label": "Multiplayer PlayerState health watch",
+      "probeSet": "health-playerstate-watch",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "implemented": true,
+      "requiredGates": {
+        "allowHealthProbes": true
+      },
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowInventoryInfoProbes",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "Health.PlayerState.Sample",
+        "context = multiplayer",
+        "role = host or joined-client"
+      ],
+      "riskTier": "confirmed-read",
+      "status": "pending",
+      "humanInstructions": "Launch Crab Champions in a multiplayer scenario, stay in world for 60 to 120 seconds without forcing pickups or sync behavior, quit, then run scripts\\quick-campaign-collect.ps1.",
+      "nextPhase": "crystals-read"
+    },
+    {
+      "phaseId": "crystals-read",
+      "label": "Crystals read placeholder",
+      "probeSet": "crystals-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "implemented": false,
+      "blockedReason": "Probe set is not implemented yet.",
+      "requiredGates": {},
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowInventoryInfoProbes",
+        "allowHealthProbes",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "TBD safe crystals read evidence"
+      ],
+      "riskTier": "cautious-read",
+      "status": "pending",
+      "humanInstructions": "Do not run until the probe set exists and safety review is complete.",
+      "nextPhase": "slots-read"
+    },
+    {
+      "phaseId": "slots-read",
+      "label": "Slots read placeholder",
+      "probeSet": "slots-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "implemented": false,
+      "blockedReason": "Probe set is not implemented yet.",
+      "requiredGates": {},
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowInventoryInfoProbes",
+        "allowHealthProbes",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "TBD safe slots read evidence"
+      ],
+      "riskTier": "cautious-read",
+      "status": "pending",
+      "humanInstructions": "Do not run until the probe set exists and safety review is complete.",
+      "nextPhase": "inventory-array-shallow-read"
+    },
+    {
+      "phaseId": "inventory-array-shallow-read",
+      "label": "Inventory array shallow read placeholder",
+      "probeSet": "inventory-array-shallow-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "implemented": false,
+      "blockedReason": "Probe set is not implemented yet.",
+      "requiredGates": {},
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowInventoryInfoProbes",
+        "allowHealthProbes",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "TBD capped shallow inventory array evidence"
+      ],
+      "riskTier": "cautious-read",
+      "status": "pending",
+      "humanInstructions": "Do not run until the probe set exists and safety review is complete.",
+      "nextPhase": "inventory-array-count-read"
+    },
+    {
+      "phaseId": "inventory-array-count-read",
+      "label": "Inventory array count read placeholder",
+      "probeSet": "inventory-array-count-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "implemented": false,
+      "blockedReason": "Probe set is not implemented yet.",
+      "requiredGates": {},
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowInventoryInfoProbes",
+        "allowHealthProbes",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "TBD inventory array count evidence"
+      ],
+      "riskTier": "cautious-read",
+      "status": "pending",
+      "humanInstructions": "Do not run until the probe set exists and safety review is complete.",
+      "nextPhase": "inventory-element-da-read"
+    },
+    {
+      "phaseId": "inventory-element-da-read",
+      "label": "Inventory element data asset read placeholder",
+      "probeSet": "inventory-element-da-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "implemented": false,
+      "blockedReason": "Probe set is not implemented yet and would require explicit deep-read review.",
+      "requiredGates": {
+        "allowDeepArrayProbes": true
+      },
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowInventoryInfoProbes",
+        "allowHealthProbes",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "TBD capped inventory element DA evidence"
+      ],
+      "riskTier": "deep-read",
+      "status": "pending",
+      "humanInstructions": "Do not run until the probe set exists and deep-read safety review is complete.",
+      "nextPhase": "inventoryinfo-scalar-read"
+    },
+    {
+      "phaseId": "inventoryinfo-scalar-read",
+      "label": "InventoryInfo scalar read placeholder",
+      "probeSet": "inventoryinfo-scalar-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "implemented": false,
+      "blockedReason": "Probe set is not implemented yet and InventoryInfo remains disabled until this explicit phase.",
+      "requiredGates": {
+        "allowInventoryInfoProbes": true
+      },
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowHealthProbes",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "TBD InventoryInfo scalar evidence"
+      ],
+      "riskTier": "cautious-read",
+      "status": "pending",
+      "humanInstructions": "Do not run until the probe set exists and InventoryInfo safety review is complete.",
+      "nextPhase": "enhancements-read"
+    },
+    {
+      "phaseId": "enhancements-read",
+      "label": "Enhancements read placeholder",
+      "probeSet": "enhancements-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "implemented": false,
+      "blockedReason": "Probe set is not implemented yet.",
+      "requiredGates": {},
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowInventoryInfoProbes",
+        "allowHealthProbes",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "TBD enhancements read evidence"
+      ],
+      "riskTier": "cautious-read",
+      "status": "pending",
+      "humanInstructions": "Do not run until the probe set exists and safety review is complete.",
+      "nextPhase": null
+    }
+  ]
+}
