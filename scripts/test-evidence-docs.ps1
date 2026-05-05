@@ -68,13 +68,32 @@ if (Test-Path -LiteralPath $WorkRoot) {
   Remove-Item -LiteralPath $WorkRoot -Recurse -Force
 }
 New-Item -ItemType Directory -Force -Path $WorkRoot | Out-Null
+$IdentityTestPath = Join-Path $WorkRoot "identity-parser-test.js"
+Set-Content -LiteralPath $IdentityTestPath -Encoding ASCII -Value @'
+const { parseIdentityFromFullName } = require(process.argv[2]);
+const cases = [
+  ["CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun", "DA_Weapon_Minigun"],
+  ["CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole", "DA_Ability_BlackHole"],
+  ["CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer", "DA_Melee_Hammer"]
+];
+for (const [fullName, expected] of cases) {
+  const actual = parseIdentityFromFullName(fullName).shortName;
+  if (actual !== expected) {
+    throw new Error(`${fullName} expected ${expected}, got ${actual}`);
+  }
+}
+'@
+node $IdentityTestPath (Join-Path $RepoRoot "tools\identity_helpers.js")
+if ($LASTEXITCODE -ne 0) { throw "identity parser test failed." }
 Copy-Item -LiteralPath (Join-Path $RepoRoot "wiki-src") -Destination (Join-Path $WorkRoot "wiki-src") -Recurse
 
 $GameResults = Join-Path $WorkRoot "game-results"
 New-Item -ItemType Directory -Force -Path $GameResults | Out-Null
 $SessionId = "testsession"
 Set-Content -LiteralPath (Join-Path $GameResults "access_evidence_$SessionId.jsonl") -Encoding ASCII -Value @(
-  '{"timestamp":"2026-05-04T00:00:01Z","sessionId":"testsession","game":"Crab Champions","mod":"CrabRuntimeProbe","schemaVersion":1,"probeId":"CrabPS.GetPropertyValue.WeaponDA","probeName":"CrabPS.GetPropertyValue.WeaponDA","probeSet":"equipment-property-read","category":"equipment","symbol":"CrabPS.WeaponDA","owner":"CrabPS","member":"WeaponDA","accessMethod":"GetPropertyValue","accessKind":"getProperty","mode":"active","tickDriver":"executeDelay","tick":100,"context":"solo","role":"solo-or-host","lifecycleState":"stable","result":"ok","runtimeStatus":"SAFE","valueKind":"object","valueSummary":"exists=true isValid=true name=WeaponDA","error":"","safetyGates":{"allowHudTickHook":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":false,"allowWriteProbes":false,"allowRpcProbes":false,"allowJoinedClientDeepProbes":false,"allowUnknownRoleProbes":false}}',
+  '{"timestamp":"2026-05-04T00:00:01Z","sessionId":"testsession","game":"Crab Champions","mod":"CrabRuntimeProbe","schemaVersion":1,"probeId":"CrabPS.GetPropertyValue.WeaponDA","probeName":"CrabPS.GetPropertyValue.WeaponDA","probeSet":"equipment-property-read","category":"equipment","symbol":"CrabPS.WeaponDA","owner":"CrabPS","member":"WeaponDA","accessMethod":"GetPropertyValue","accessKind":"getProperty","mode":"active","tickDriver":"executeDelay","tick":100,"context":"solo","role":"solo-or-host","lifecycleState":"stable","result":"ok","runtimeStatus":"SAFE","valueKind":"object","valueSummary":"exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=error","error":"","safetyGates":{"allowHudTickHook":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":false,"allowWriteProbes":false,"allowRpcProbes":false,"allowJoinedClientDeepProbes":false,"allowUnknownRoleProbes":false}}',
+  '{"timestamp":"2026-05-04T00:00:01Z","sessionId":"testsession","game":"Crab Champions","mod":"CrabRuntimeProbe","schemaVersion":1,"probeId":"CrabPS.GetPropertyValue.AbilityDA","probeName":"CrabPS.GetPropertyValue.AbilityDA","probeSet":"equipment-property-read","category":"equipment","symbol":"CrabPS.AbilityDA","owner":"CrabPS","member":"AbilityDA","accessMethod":"GetPropertyValue","accessKind":"getProperty","mode":"active","tickDriver":"executeDelay","tick":101,"context":"solo","role":"solo-or-host","lifecycleState":"stable","result":"ok","runtimeStatus":"SAFE","valueKind":"object","valueSummary":"exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=error","error":"","safetyGates":{"allowHudTickHook":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":false,"allowWriteProbes":false,"allowRpcProbes":false,"allowJoinedClientDeepProbes":false,"allowUnknownRoleProbes":false}}',
+  '{"timestamp":"2026-05-04T00:00:01Z","sessionId":"testsession","game":"Crab Champions","mod":"CrabRuntimeProbe","schemaVersion":1,"probeId":"CrabPS.GetPropertyValue.MeleeDA","probeName":"CrabPS.GetPropertyValue.MeleeDA","probeSet":"equipment-property-read","category":"equipment","symbol":"CrabPS.MeleeDA","owner":"CrabPS","member":"MeleeDA","accessMethod":"GetPropertyValue","accessKind":"getProperty","mode":"active","tickDriver":"executeDelay","tick":102,"context":"solo","role":"solo-or-host","lifecycleState":"stable","result":"ok","runtimeStatus":"SAFE","valueKind":"object","valueSummary":"exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=error","error":"","safetyGates":{"allowHudTickHook":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":false,"allowWriteProbes":false,"allowRpcProbes":false,"allowJoinedClientDeepProbes":false,"allowUnknownRoleProbes":false}}',
   '{"timestamp":"2026-05-04T00:00:02Z","sessionId":"testsession","game":"Crab Champions","mod":"CrabRuntimeProbe","schemaVersion":1,"probeId":"CrabPS.DirectField.WeaponDA","probeName":"CrabPS.DirectField.WeaponDA","probeSet":"equipment-direct-field-read","category":"equipment","symbol":"CrabPS.WeaponDA","owner":"CrabPS","member":"WeaponDA","accessMethod":"DirectField","accessKind":"directField","mode":"active","tickDriver":"executeDelay","tick":110,"context":"solo","role":"solo-or-host","lifecycleState":"stable","result":"unsafe_disabled","runtimeStatus":"UNSAFE_DISABLED","valueKind":"","valueSummary":"","error":"","safetyGates":{"allowHudTickHook":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":false,"allowWriteProbes":false,"allowRpcProbes":false,"allowJoinedClientDeepProbes":false,"allowUnknownRoleProbes":false}}'
 )
 Set-Content -LiteralPath (Join-Path $GameResults "probe_results_$SessionId.jsonl") -Encoding ASCII -Value @(
@@ -92,8 +111,11 @@ try {
 }
 
 $MatrixPath = Join-Path $WorkRoot "docs\SAFE_ACCESS_MATRIX.md"
-Assert-Contains -Path $MatrixPath -Expected '| `CrabPS.WeaponDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | testsession | exists=true isValid=true name=WeaponDA |'
+Assert-Contains -Path $MatrixPath -Expected '| `CrabPS.WeaponDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | testsession | shortName=DA_Weapon_Minigun nameSource=fullNameFallback objectClass=CrabWeaponDA |'
+Assert-Contains -Path $MatrixPath -Expected '| `CrabPS.AbilityDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | testsession | shortName=DA_Ability_BlackHole nameSource=fullNameFallback objectClass=CrabAbilityDA |'
+Assert-Contains -Path $MatrixPath -Expected '| `CrabPS.MeleeDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | testsession | shortName=DA_Melee_Hammer nameSource=fullNameFallback objectClass=CrabMeleeDA |'
 Assert-Contains -Path $MatrixPath -Expected '| `CrabPS.WeaponDA` | DirectField | solo | solo-or-host | UNSAFE_DISABLED | unsafe_disabled | testsession |  |'
+Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected '| `CrabPS.WeaponDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | testsession | shortName=DA_Weapon_Minigun nameSource=fullNameFallback objectClass=CrabWeaponDA |'
 Assert-Contains -Path (Join-Path $WorkRoot "dist\wiki\Home.md") -Expected "Generated from repo docs"
 Assert-Contains -Path (Join-Path $WorkRoot "dist\wiki\Safe-Access-Matrix.md") -Expected "CrabPS.WeaponDA"
 

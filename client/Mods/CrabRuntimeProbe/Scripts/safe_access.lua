@@ -33,6 +33,11 @@ function safe.getDirectField(obj, fieldName)
   return try(function() return obj[fieldName] end)
 end
 
+function safe.getStructField(value, fieldName)
+  if value == nil then return nil, 'nil_parent' end
+  return try(function() return value[fieldName] end)
+end
+
 function safe.getFullName(obj)
   if not safe.isValidObject(obj) then return nil, 'invalid_object' end
   return try(function() return obj:GetFullName() end)
@@ -43,11 +48,45 @@ function safe.getName(obj)
   return try(function() return obj:GetName() end)
 end
 
+function safe.parseIdentityFromFullName(fullName)
+  if type(fullName) ~= 'string' or fullName == '' then
+    return '', '', 'unavailable', 'fullName unavailable'
+  end
+
+  local objectClass = fullName:match('^([^%s]+)%s+')
+  if objectClass == nil then objectClass = '' end
+
+  local shortName = fullName:match('%.([^%.%s/]+)%s*$')
+  local source = 'fullNameFallback'
+  if shortName == nil or shortName == '' then
+    shortName = fullName:match('/([^/%s]+)%s*$')
+  end
+  if shortName == nil or shortName == '' then
+    shortName = ''
+    source = 'unavailable'
+  end
+
+  return shortName, objectClass, source, nil
+end
+
 function safe.summarizeObjectIdentity(obj)
-  if obj == nil then return 'exists=false', nil end
+  if obj == nil then
+    return 'exists=false', nil, {
+      fullName = '',
+      shortName = '',
+      nameSource = 'unavailable',
+      objectClass = ''
+    }
+  end
 
   local parts = { 'exists=true' }
   local errors = {}
+  local identity = {
+    fullName = '',
+    shortName = '',
+    nameSource = 'unavailable',
+    objectClass = ''
+  }
 
   local isValid, isValidErr = try(function()
     if type(obj.IsValid) ~= 'function' then return false end
@@ -56,12 +95,12 @@ function safe.summarizeObjectIdentity(obj)
   if isValidErr then
     parts[#parts + 1] = 'isValid=error'
     errors[#errors + 1] = 'IsValid: ' .. tostring(isValidErr)
-    return table.concat(parts, ' '), table.concat(errors, '; ')
+    return table.concat(parts, ' '), table.concat(errors, '; '), identity
   end
 
   parts[#parts + 1] = 'isValid=' .. tostring(isValid == true)
   if isValid ~= true then
-    return table.concat(parts, ' '), nil
+    return table.concat(parts, ' '), nil, identity
   end
 
   local fullName, fullNameErr = safe.getFullName(obj)
@@ -69,20 +108,37 @@ function safe.summarizeObjectIdentity(obj)
     parts[#parts + 1] = 'fullName=error'
     errors[#errors + 1] = 'GetFullName: ' .. tostring(fullNameErr)
   elseif fullName ~= nil then
-    parts[#parts + 1] = 'fullName=' .. tostring(fullName)
+    identity.fullName = tostring(fullName)
+    parts[#parts + 1] = 'fullName=' .. identity.fullName
   end
 
   local name, nameErr = safe.getName(obj)
   if nameErr then
-    parts[#parts + 1] = 'name=error'
     errors[#errors + 1] = 'GetName: ' .. tostring(nameErr)
   elseif name ~= nil then
-    parts[#parts + 1] = 'name=' .. tostring(name)
+    identity.shortName = tostring(name)
+    identity.nameSource = 'GetName'
   end
+
+  if identity.shortName == '' and identity.fullName ~= '' then
+    local fallbackName, objectClass, fallbackSource, fallbackErr = safe.parseIdentityFromFullName(identity.fullName)
+    identity.shortName = fallbackName or ''
+    identity.objectClass = objectClass or ''
+    identity.nameSource = fallbackSource or 'fullNameFallback'
+    if fallbackErr then
+      errors[#errors + 1] = tostring(fallbackErr)
+    end
+  elseif identity.fullName ~= '' then
+    local _, objectClass = safe.parseIdentityFromFullName(identity.fullName)
+    identity.objectClass = objectClass or ''
+  end
+
+  parts[#parts + 1] = 'name=' .. identity.shortName
+  parts[#parts + 1] = 'nameSource=' .. identity.nameSource
 
   local err = nil
   if #errors > 0 then err = table.concat(errors, '; ') end
-  return table.concat(parts, ' '), err
+  return table.concat(parts, ' '), err, identity
 end
 
 function safe.getArray(obj, propName)

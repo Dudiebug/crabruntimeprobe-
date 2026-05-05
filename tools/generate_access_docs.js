@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
+const { parseIdentityFromFullName, extractFullNameFromSummary } = require('./identity_helpers');
 
 function walk(dir, name) {
   if (!fs.existsSync(dir)) return [];
@@ -89,6 +90,10 @@ for (const row of evidenceRows) {
       sessions: new Set(),
       lastResult: '',
       lastSummary: '',
+      fullName: '',
+      shortName: '',
+      nameSource: '',
+      objectClass: '',
       notes: new Set()
     });
   }
@@ -99,6 +104,14 @@ for (const row of evidenceRows) {
   if (row.sessionId) entry.sessions.add(row.sessionId);
   entry.lastResult = row.result || '';
   entry.lastSummary = row.valueSummary || row.error || '';
+  const fullName = row.fullName || extractFullNameFromSummary(row.valueSummary || '');
+  if (fullName) {
+    const parsed = parseIdentityFromFullName(fullName);
+    entry.fullName = fullName;
+    entry.shortName = row.shortName || parsed.shortName;
+    entry.nameSource = row.nameSource || parsed.nameSource;
+    entry.objectClass = row.objectClass || parsed.objectClass;
+  }
   if (row.localNotes) entry.notes.add(row.localNotes);
 }
 
@@ -113,7 +126,8 @@ function matrixTable(entries) {
     const status = bestStatus(entry.statuses);
     const contexts = status === 'SAFE' ? Array.from(entry.contexts).sort().join(', ') : Array.from(entry.contexts).sort().join(', ');
     const roles = status === 'SAFE' ? Array.from(entry.roles).sort().join(', ') : Array.from(entry.roles).sort().join(', ');
-    const notes = Array.from(entry.notes).sort().join('; ') || entry.lastSummary || '';
+    const identityNote = entry.shortName ? `shortName=${entry.shortName} nameSource=${entry.nameSource} objectClass=${entry.objectClass}` : '';
+    const notes = Array.from(entry.notes).sort().join('; ') || identityNote || entry.lastSummary || '';
     out += `| \`${md(entry.symbol)}\` | ${md(entry.accessMethod)} | ${md(contexts)} | ${md(roles)} | ${status} | ${md(entry.lastResult)} | ${md(Array.from(entry.sessions).sort().join(', '))} | ${md(notes)} |\n`;
   }
   return out;
@@ -127,6 +141,13 @@ index += `- Evidence rows: ${evidenceRows.length}\n`;
 index += `- Objectdump symbols discovered: ${objectdumpSymbols.size}\n\n`;
 index += `- Probe candidates doc present: ${probeCandidatesText ? 'yes' : 'no'}\n\n`;
 index += 'Objectdump discovery means a symbol exists in static dump data. It does not mean runtime access is safe.\n';
+index += '\n## Confirmed SAFE Access Rows\n\n';
+const safeRows = rows.filter((row) => bestStatus(row.statuses) === 'SAFE');
+if (safeRows.length === 0) {
+  index += '- None yet.\n';
+} else {
+  index += matrixTable(safeRows);
+}
 
 let matrix = '# Safe Access Matrix\n\n';
 matrix += 'SAFE status is scoped to the contexts, roles, lifecycle states, and access method shown in the evidence. DirectField and GetPropertyValue are separate access paths.\n\n';
@@ -161,6 +182,10 @@ const defaultUntested = [
   ['CrabPS.InventoryInfo', 'DirectField', 'UNTESTED', 'Direct field access is a separate risk class.'],
   ['CrabInventoryInfo.*', 'array traversal', 'UNTESTED', 'Deep arrays are disabled.'],
   ['CrabHC.Health', 'read', 'UNTESTED', 'Health probes are disabled.'],
+  ['CrabHC.HealthInfo.*', 'write', 'UNTESTED', 'Health writes are disabled.'],
+  ['CrabPS.HealthInfo.*', 'write', 'UNTESTED', 'Health writes are disabled.'],
+  ['CrabPS.HealthInfo.*', 'joined-client', 'UNTESTED', 'Multiplayer/joined-client health evidence does not exist yet.'],
+  ['CrabHC.HealthInfo.*', 'multiplayer', 'UNTESTED', 'Multiplayer max-health math is untested.'],
   ['GameplayState.*', 'write', 'UNSAFE_DISABLED', 'Writes are disabled.'],
   ['RPC.*', 'rpc', 'UNSAFE_DISABLED', 'RPC probes are disabled.']
 ];

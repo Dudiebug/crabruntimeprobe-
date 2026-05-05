@@ -144,6 +144,32 @@ This imports the latest game evidence into `evidence/runtime/`, regenerates the
 safe access docs, and stages generated wiki Markdown. Repo docs remain the source
 of truth; staged wiki files are derived output.
 
+After `equipment-property-read` passes, run the next read-only health baseline
+phase:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-health-baseline-prepare.ps1
+```
+
+Launch Crab Champions, start a solo run, stay in-world 30 to 60 seconds, quit,
+then collect:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-health-baseline-collect.ps1
+```
+
+Then import the resulting evidence and rebuild docs/wiki staging:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\import-latest-runtime-evidence.ps1
+```
+
+`health-baseline-read` is read-only. It exists to prove health/max-health fields
+for CrabInvSync v2 research without writing health, calling health RPCs, reading
+deep arrays, or touching `InventoryInfo`. It does not prove multiplayer
+max-health math yet; the 250 HP per player theory remains a theory until
+multiplayer evidence exists.
+
 The quick scripts use the default Steam path:
 
 ```text

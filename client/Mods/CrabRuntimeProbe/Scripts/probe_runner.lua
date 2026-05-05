@@ -55,9 +55,9 @@ function runner.new(config, safe, writer, evidenceWriter)
     return 'UNTESTED'
   end
 
-  local function writeEvidence(probe, result, kind, summary, err)
+  local function writeEvidence(probe, result, kind, summary, err, meta)
     if not evidenceWriter then return end
-    evidenceWriter:writeEvidence({
+    local record = {
       probeId = probe.id,
       probeName = probe.id,
       probeSet = probe.set or '',
@@ -78,10 +78,17 @@ function runner.new(config, safe, writer, evidenceWriter)
       valueKind = kind or '',
       valueSummary = summary or '',
       error = err or ''
-    })
+    }
+    if type(meta) == 'table' then
+      record.fullName = meta.fullName or ''
+      record.shortName = meta.shortName or ''
+      record.nameSource = meta.nameSource or ''
+      record.objectClass = meta.objectClass or ''
+    end
+    evidenceWriter:writeEvidence(record)
   end
 
-  local function emit(probe, result, kind, summary, err)
+  local function emit(probe, result, kind, summary, err, meta)
     writer:write({
       tick = state.tick,
       mode = config.mode,
@@ -98,13 +105,13 @@ function runner.new(config, safe, writer, evidenceWriter)
       error = err or '',
       durationMs = 0
     })
-    writeEvidence(probe, result, kind, summary, err)
+    writeEvidence(probe, result, kind, summary, err, meta)
   end
 
   local function allowedByConfig(probe)
     if probe.set == 'inventory-array-deep' and not config.allowDeepArrayProbes then return false, 'unsafe_disabled' end
     if probe.set == 'inventory-info' and not config.allowInventoryInfoProbes then return false, 'unsafe_disabled' end
-    if probe.set == 'health-read' and not config.allowHealthProbes then return false, 'unsafe_disabled' end
+    if (probe.set == 'health-read' or probe.set == 'health-baseline-read') and not config.allowHealthProbes then return false, 'unsafe_disabled' end
     if probe.set == 'rpc-dryrun' and not config.allowRpcProbes then return false, 'unsafe_disabled' end
     if probe.set == 'write' and not config.allowWriteProbes then return false, 'unsafe_disabled' end
     if state.role == 'unknown' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
@@ -223,7 +230,7 @@ function runner.new(config, safe, writer, evidenceWriter)
     end
 
     breadcrumb(probe.id .. ' enter')
-    local ok, result, kind, summary, err = pcall(probe.run, self)
+    local ok, result, kind, summary, err, meta = pcall(probe.run, self)
     if not ok then
       err = tostring(result)
       result = 'lua_error'
@@ -231,7 +238,7 @@ function runner.new(config, safe, writer, evidenceWriter)
       summary = nil
     end
     breadcrumb(probe.id .. ' exit')
-    emit(probe, result, kind, summary, err)
+    emit(probe, result, kind, summary, err, meta)
     self.probesRun = self.probesRun + 1
   end
 

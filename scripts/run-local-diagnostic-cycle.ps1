@@ -8,8 +8,10 @@ param(
   [ValidateSet("none", "registerTick", "executeDelay", "loopAsync", "hud")]
   [string]$PrepareTickDriver,
   [switch]$PrepareEquipmentProperty,
+  [switch]$PrepareHealthBaseline,
   [switch]$Collect,
   [switch]$CollectEquipmentProperty,
+  [switch]$CollectHealthBaseline,
   [switch]$ExpectObserveContext,
   [switch]$NoDiagnosticDebug
 )
@@ -25,12 +27,14 @@ function Get-CycleMode {
   if ($CollectSmoke) { $modes += "CollectSmoke" }
   if (-not [string]::IsNullOrWhiteSpace($PrepareTickDriver)) { $modes += "PrepareTickDriver" }
   if ($PrepareEquipmentProperty) { $modes += "PrepareEquipmentProperty" }
+  if ($PrepareHealthBaseline) { $modes += "PrepareHealthBaseline" }
   if ($Collect) { $modes += "Collect" }
   if ($CollectEquipmentProperty) { $modes += "CollectEquipmentProperty" }
+  if ($CollectHealthBaseline) { $modes += "CollectHealthBaseline" }
 
   $unique = @($modes | Sort-Object -Unique)
   if ($unique.Count -ne 1) {
-    throw "Choose exactly one mode: -PrepareSmoke, -CollectSmoke, -PrepareTickDriver <driver>, -PrepareEquipmentProperty, -Collect, or -CollectEquipmentProperty."
+    throw "Choose exactly one mode: -PrepareSmoke, -CollectSmoke, -PrepareTickDriver <driver>, -PrepareEquipmentProperty, -PrepareHealthBaseline, -Collect, -CollectEquipmentProperty, or -CollectHealthBaseline."
   }
 
   return $unique[0]
@@ -96,7 +100,8 @@ function Get-CrabRuntimeProbeConfigValueOrMissing {
 
 function Test-CrabRuntimeProbeInstalledSafety {
   param(
-    [Parameter(Mandatory = $true)][string]$ConfigPath
+    [Parameter(Mandatory = $true)][string]$ConfigPath,
+    [switch]$AllowHealthProbes
   )
 
   $errors = New-Object System.Collections.Generic.List[string]
@@ -130,6 +135,9 @@ function Test-CrabRuntimeProbeInstalledSafety {
       continue
     }
     foreach ($value in $values) {
+      if ($AllowHealthProbes -and $key -eq "allowHealthProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
+        continue
+      }
       if (-not [string]::Equals($value, "false", [System.StringComparison]::OrdinalIgnoreCase)) {
         $errors.Add("$key must be false, got '$value'") | Out-Null
       }
@@ -141,10 +149,11 @@ function Test-CrabRuntimeProbeInstalledSafety {
 
 function Assert-CrabRuntimeProbeInstalledSafety {
   param(
-    [Parameter(Mandatory = $true)][string]$ConfigPath
+    [Parameter(Mandatory = $true)][string]$ConfigPath,
+    [switch]$AllowHealthProbes
   )
 
-  $errors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $ConfigPath
+  $errors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $ConfigPath -AllowHealthProbes:$AllowHealthProbes
   if ($errors.Count -gt 0) {
     throw "Installed config safety validation failed at $ConfigPath`n$((($errors | ForEach-Object { " - $_" }) -join "`n"))"
   }
@@ -458,6 +467,28 @@ function Set-InstalledEquipmentPropertyConfig {
   }
 }
 
+function Set-InstalledHealthBaselineConfig {
+  param([string]$ConfigPath)
+
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "tickDriver" -Value "executeDelay"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "mode" -Value "active"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "probeSet" -Value "health-baseline-read"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugTickHeartbeat" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugWriterSelfTest" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "allowHealthProbes" -Value "true"
+  foreach ($key in @(
+    "allowHudTickHook",
+    "allowUnknownRoleProbes",
+    "allowJoinedClientDeepProbes",
+    "allowDeepArrayProbes",
+    "allowInventoryInfoProbes",
+    "allowWriteProbes",
+    "allowRpcProbes"
+  )) {
+    Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key $key -Value "false"
+  }
+}
+
 $Mode = Get-CycleMode
 $RepoRoot = Resolve-CrabRuntimeProbeRepoRoot -StartPath $PSScriptRoot -RequireGit
 $GameBinFull = [System.IO.Path]::GetFullPath($GameBin)
@@ -477,7 +508,7 @@ if (-not (Test-Path -LiteralPath $GameBinFull -PathType Container)) {
   throw "Game bin path does not exist: $GameBinFull"
 }
 
-if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "PrepareEquipmentProperty") {
+if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "PrepareEquipmentProperty" -or $Mode -eq "PrepareHealthBaseline") {
   & (Join-Path $PSScriptRoot "install-client-to-game.ps1") $GameBinFull
   & (Join-Path $PSScriptRoot "verify-installed-client.ps1") $GameBinFull
 
@@ -485,11 +516,13 @@ if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "Pr
     Set-InstalledSmokeConfig -ConfigPath $InstalledConfigPath
   } elseif ($Mode -eq "PrepareEquipmentProperty") {
     Set-InstalledEquipmentPropertyConfig -ConfigPath $InstalledConfigPath
+  } elseif ($Mode -eq "PrepareHealthBaseline") {
+    Set-InstalledHealthBaselineConfig -ConfigPath $InstalledConfigPath
   } else {
     Set-InstalledTickDriverConfig -ConfigPath $InstalledConfigPath -TickDriver $PrepareTickDriver -NoDebug:$NoDiagnosticDebug
   }
 
-  Assert-CrabRuntimeProbeInstalledSafety -ConfigPath $InstalledConfigPath
+  Assert-CrabRuntimeProbeInstalledSafety -ConfigPath $InstalledConfigPath -AllowHealthProbes:($Mode -eq "PrepareHealthBaseline")
   $removed = Clear-CrabRuntimeProbeRuntimeFiles -GameBinFull $GameBinFull -ScriptsRoot $InstallScriptsRoot
 
   Write-Host "CrabRuntimeProbe diagnostic prepare passed."
@@ -515,6 +548,10 @@ if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "Pr
     Write-Host " 2. Start a solo run and stay alive/in world for 30 to 60 seconds."
     Write-Host " 3. Quit the game."
     Write-Host " 4. Run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-equipment-property-collect.ps1"
+  } elseif ($Mode -eq "PrepareHealthBaseline") {
+    Write-Host " 2. Start a solo run, note current/max health if visible, and stay alive/in world for 30 to 60 seconds."
+    Write-Host " 3. Quit the game."
+    Write-Host " 4. Run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-health-baseline-collect.ps1"
   } else {
     Write-Host " 2. Sit at the menu for 20 to 30 seconds."
     Write-Host " 3. Quit the game."
@@ -523,7 +560,7 @@ if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "Pr
   exit 0
 }
 
-$safetyErrors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $InstalledConfigPath
+$safetyErrors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $InstalledConfigPath -AllowHealthProbes:($Mode -eq "CollectHealthBaseline")
 $logText = Read-TextFileOrEmpty -Path $Ue4ssLogPath
 $logLines = @()
 if (Test-Path -LiteralPath $Ue4ssLogPath -PathType Leaf) {
@@ -589,6 +626,38 @@ $equipmentPropertyMeleeRecords = @($jsonlRecords | Where-Object { (Get-RecordVal
 $latestWeaponSummary = if ($equipmentPropertyWeaponRecords.Count -gt 0) { Get-RecordValue -Record $equipmentPropertyWeaponRecords[-1] -Names @("valueSummary", "error", "result") } else { "not found" }
 $latestAbilitySummary = if ($equipmentPropertyAbilityRecords.Count -gt 0) { Get-RecordValue -Record $equipmentPropertyAbilityRecords[-1] -Names @("valueSummary", "error", "result") } else { "not found" }
 $latestMeleeSummary = if ($equipmentPropertyMeleeRecords.Count -gt 0) { Get-RecordValue -Record $equipmentPropertyMeleeRecords[-1] -Names @("valueSummary", "error", "result") } else { "not found" }
+$healthProbeRecords = @($jsonlRecords | Where-Object {
+  (Get-RecordValue -Record $_ -Names @("category")) -eq "health" -or
+  (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) -match '^(FindFirstOf\.CrabHC|CrabHC\.|CrabPS\.(HealthInfo|GetPropertyValue\.(HealthInfo|BaseMaxHealth|MaxHealthMultiplier)))'
+})
+function Get-LatestProbeSummary {
+  param(
+    [object[]]$Records,
+    [string]$ProbeName
+  )
+
+  $matches = @($Records | Where-Object { (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) -eq $ProbeName })
+  if ($matches.Count -eq 0) { return "not found" }
+  return Get-RecordValue -Record $matches[-1] -Names @("valueSummary", "error", "result")
+}
+$latestCrabHCCurrentHealth = Get-LatestProbeSummary -Records $jsonlRecords -ProbeName "CrabHC.HealthInfo.CurrentHealth"
+$latestCrabHCCurrentMaxHealth = Get-LatestProbeSummary -Records $jsonlRecords -ProbeName "CrabHC.HealthInfo.CurrentMaxHealth"
+$latestCrabHCBaseMaxHealth = Get-LatestProbeSummary -Records $jsonlRecords -ProbeName "CrabHC.GetPropertyValue.BaseMaxHealth"
+$latestCrabPSCurrentHealth = Get-LatestProbeSummary -Records $jsonlRecords -ProbeName "CrabPS.HealthInfo.CurrentHealth"
+$latestCrabPSCurrentMaxHealth = Get-LatestProbeSummary -Records $jsonlRecords -ProbeName "CrabPS.HealthInfo.CurrentMaxHealth"
+$latestCrabPSBaseMaxHealth = Get-LatestProbeSummary -Records $jsonlRecords -ProbeName "CrabPS.GetPropertyValue.BaseMaxHealth"
+$latestCrabPSMaxHealthMultiplier = Get-LatestProbeSummary -Records $jsonlRecords -ProbeName "CrabPS.GetPropertyValue.MaxHealthMultiplier"
+$healthValuesForModel = @(
+  $latestCrabHCCurrentMaxHealth,
+  $latestCrabHCBaseMaxHealth,
+  $latestCrabPSCurrentMaxHealth,
+  $latestCrabPSBaseMaxHealth
+)
+$possibleBaseHealthModel = if (@($healthValuesForModel | Where-Object { $_ -match '(^|[^0-9])250(\.0+)?([^0-9]|$)' }).Count -gt 0) {
+  "single-player base appears 250"
+} else {
+  "unknown"
+}
 
 $started = Get-TextPresence -Text $logText -Pattern '\[CrabRuntimeProbe\] started'
 $startupSmoke = Get-TextPresence -Text $jsonlText -Pattern 'Debug\.StartupSmoke'
@@ -650,6 +719,18 @@ if ($Mode -eq "CollectEquipmentProperty") {
   if ($equipmentPropertyMeleeRecords.Count -eq 0) { $failures.Add("Expected CrabPS.GetPropertyValue.MeleeDA during equipment property collection, but it did not run.") | Out-Null }
 }
 
+if ($Mode -eq "CollectHealthBaseline") {
+  if ($installedMode -ne "active") { $failures.Add("Health baseline collect expected mode = active, got '$installedMode'.") | Out-Null }
+  if ($tickDriver -ne "executeDelay") { $failures.Add("Health baseline collect expected tickDriver = executeDelay, got '$tickDriver'.") | Out-Null }
+  if ($probeSet -ne "health-baseline-read") { $failures.Add("Health baseline collect expected probeSet = health-baseline-read, got '$probeSet'.") | Out-Null }
+  if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowHealthProbes") -ne "true") {
+    $failures.Add("Health baseline collect expected allowHealthProbes = true for this explicit phase.") | Out-Null
+  }
+  if ($healthProbeRecords.Count -eq 0) {
+    $failures.Add("Expected health baseline probes to run, but no health probe evidence appeared.") | Out-Null
+  }
+}
+
 $crashSuspicion = "none"
 if (-not $startupSmoke) {
   $crashSuspicion = "startup smoke missing; crash likely occurred before or during pure file-I/O startup smoke write"
@@ -687,6 +768,15 @@ $summaryLines = @(
   "latest_WeaponDA_value_summary = $latestWeaponSummary",
   "latest_AbilityDA_value_summary = $latestAbilitySummary",
   "latest_MeleeDA_value_summary = $latestMeleeSummary",
+  "health_probe_ran = $($healthProbeRecords.Count -gt 0)",
+  "latest_CrabHC_CurrentHealth = $latestCrabHCCurrentHealth",
+  "latest_CrabHC_CurrentMaxHealth = $latestCrabHCCurrentMaxHealth",
+  "latest_CrabHC_BaseMaxHealth = $latestCrabHCBaseMaxHealth",
+  "latest_CrabPS_CurrentHealth = $latestCrabPSCurrentHealth",
+  "latest_CrabPS_CurrentMaxHealth = $latestCrabPSCurrentMaxHealth",
+  "latest_CrabPS_BaseMaxHealth = $latestCrabPSBaseMaxHealth",
+  "latest_CrabPS_MaxHealthMultiplier = $latestCrabPSMaxHealthMultiplier",
+  "possible_base_health_model = $possibleBaseHealthModel",
   "unique_contexts_seen = $(if ($uniqueContexts.Count -gt 0) { $uniqueContexts -join ', ' } else { "none" })",
   "unique_roles_seen = $(if ($uniqueRoles.Count -gt 0) { $uniqueRoles -join ', ' } else { "none" })",
   "first_context = $firstContext",

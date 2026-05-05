@@ -1,0 +1,116 @@
+CrabRuntimeProbe diagnostic summary
+timestamp = 2026-05-04T16:53:20.0321295-07:00
+collection_mode = CollectEquipmentProperty
+source_repo_path = <REDACTED_LOCAL_PATH>
+game_bin_path = <REDACTED_LOCAL_PATH>
+installed_mod_path = <REDACTED_LOCAL_PATH>
+installed_config_path = <REDACTED_LOCAL_PATH>
+ue4ss_log_path = <REDACTED_LOCAL_PATH>
+jsonl_file_count = 1
+jsonl_event_count = 5
+access_evidence_file_count = 1
+access_evidence_event_count = 3
+session_manifest_file_count = 1
+jsonl_first_timestamp = 2026-05-04T23:52:02Z
+jsonl_last_timestamp = 2026-05-04T23:52:11Z
+observe_context_count = 0
+debug_startup_smoke_count = 1
+debug_writer_self_test_count = 1
+tickDriver = executeDelay
+mode = active
+probeSet = equipment-property-read
+direct_field_probe_ran = False
+equipment_property_probe_ran = True
+equipment_property_weapon_count = 1
+equipment_property_ability_count = 1
+equipment_property_melee_count = 1
+latest_WeaponDA_value_summary = exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=error
+latest_AbilityDA_value_summary = exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=error
+latest_MeleeDA_value_summary = exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=error
+unique_contexts_seen = solo, startup
+unique_roles_seen = solo-or-host, unknown
+first_context = startup
+last_context = solo
+crabruntimeprobe_started = True
+startup_smoke_appeared = True
+writer_self_test_appeared = True
+observe_context_appeared = False
+tick_source_registered = executeDelay
+hud_receive_draw_hud_used = False
+crabinventorysync_appeared_unexpectedly = False
+last_crabruntimeprobe_log_line = [2026-05-04 23:53:08] [Lua] [CrabRuntimeProbe] tick heartbeat tick=600 mode=active
+crash_suspicion = none
+allowHudTickHook = false
+allowUnknownRoleProbes = false
+allowJoinedClientDeepProbes = false
+allowDeepArrayProbes = false
+allowInventoryInfoProbes = false
+allowHealthProbes = false
+allowWriteProbes = false
+allowRpcProbes = false
+observe_context_latest_context = not found
+observe_context_latest_role = not found
+observe_context_latest_lifecycle = not found
+observe_context_latest_world = not found
+observe_context_latest_map = not found
+observe_context_latest_player = not found
+
+installed_build_info:
+ - action = install
+ - git_commit = d15113b60b0c396b4ac1565f86896795f0c45870
+ - git_branch = main
+ - timestamp = 2026-05-04T16:51:08.9502314-07:00
+ - source_repo_path = <REDACTED_LOCAL_PATH>
+
+jsonl_event_type_counts:
+ - CrabPS.GetPropertyValue.AbilityDA: 1
+ - CrabPS.GetPropertyValue.MeleeDA: 1
+ - CrabPS.GetPropertyValue.WeaponDA: 1
+ - Debug.StartupSmoke: 1
+ - Debug.WriterSelfTest: 1
+
+probe_result_counts_by_probe_name:
+ - CrabPS.GetPropertyValue.AbilityDA: 1
+ - CrabPS.GetPropertyValue.MeleeDA: 1
+ - CrabPS.GetPropertyValue.WeaponDA: 1
+ - Debug.StartupSmoke: 1
+ - Debug.WriterSelfTest: 1
+
+access_evidence_counts_by_symbol_accessMethod:
+ - CrabPS.AbilityDA / GetPropertyValue: 1
+ - CrabPS.MeleeDA / GetPropertyValue: 1
+ - CrabPS.WeaponDA / GetPropertyValue: 1
+
+jsonl_files:
+ - <REDACTED_LOCAL_PATH>
+
+access_evidence_files:
+ - <REDACTED_LOCAL_PATH>
+
+session_manifest_files:
+ - <REDACTED_LOCAL_PATH>
+
+last_5_crabruntimeprobe_log_lines:
+ - [2026-05-04 23:52:23] [Lua] [CrabRuntimeProbe] tick heartbeat tick=200 mode=active
+ - [2026-05-04 23:52:35] [Lua] [CrabRuntimeProbe] tick heartbeat tick=300 mode=active
+ - [2026-05-04 23:52:46] [Lua] [CrabRuntimeProbe] tick heartbeat tick=400 mode=active
+ - [2026-05-04 23:52:57] [Lua] [CrabRuntimeProbe] tick heartbeat tick=500 mode=active
+ - [2026-05-04 23:53:08] [Lua] [CrabRuntimeProbe] tick heartbeat tick=600 mode=active
+
+last_5_jsonl_events:
+ - ts=2026-05-04T23:52:02Z tick=0 event=Debug.StartupSmoke result=ok context=startup role=unknown summary=startup smoke
+ - ts=2026-05-04T23:52:02Z tick=0 event=Debug.WriterSelfTest result=ok context=startup role=unknown summary=writer self-test
+ - ts=2026-05-04T23:52:09Z tick=70 event=CrabPS.GetPropertyValue.WeaponDA result=ok context=solo role=solo-or-host summary=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=error
+ - ts=2026-05-04T23:52:10Z tick=80 event=CrabPS.GetPropertyValue.AbilityDA result=ok context=solo role=solo-or-host summary=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=error
+ - ts=2026-05-04T23:52:11Z tick=90 event=CrabPS.GetPropertyValue.MeleeDA result=ok context=solo role=solo-or-host summary=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=error
+
+latest_5_access_evidence_rows:
+ - ts=2026-05-04T23:52:09Z symbol=CrabPS.WeaponDA accessMethod=GetPropertyValue status=SAFE context=solo role=solo-or-host summary=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=error
+ - ts=2026-05-04T23:52:10Z symbol=CrabPS.AbilityDA accessMethod=GetPropertyValue status=SAFE context=solo role=solo-or-host summary=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=error
+ - ts=2026-05-04T23:52:11Z symbol=CrabPS.MeleeDA accessMethod=GetPropertyValue status=SAFE context=solo role=solo-or-host summary=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=error
+
+crabruntimeprobe_error_lines:
+ - none
+
+failures:
+ - none
