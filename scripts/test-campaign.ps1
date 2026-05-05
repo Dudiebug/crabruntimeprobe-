@@ -63,7 +63,7 @@ if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "tickDri
 if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "probeSet") -ne "shallow-core") {
   throw "default config probeSet must remain shallow-core."
 }
-foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowWriteProbes", "allowRpcProbes")) {
+foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
   if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key $key) -ne "false") {
     throw "default config expected $key = false."
   }
@@ -123,6 +123,9 @@ for (const phase of plan.phases) {
   }
   if (phase.phaseId !== 'local-inventory-array-shape-confirm') {
     assert(gates.allowInventoryArrayShapeConfirmProbes === false, `${phase.phaseId} enabled local inventory shape confirm outside shape confirm phase`);
+  }
+  if (phase.phaseId !== 'local-inventory-userdata-introspection') {
+    assert(gates.allowInventoryUserdataIntrospectionProbes === false, `${phase.phaseId} enabled local inventory userdata introspection outside userdata phase`);
   }
   if (!/^health-|^multiplayer-health-/.test(phase.phaseId) && phase.phaseId !== 'multiplayer-resource-visibility-read') {
     assert(gates.allowHealthProbes === false, `${phase.phaseId} enabled health outside health phases`);
@@ -221,6 +224,19 @@ shapeConfirm = helpers.classifyLocalInventoryArrayShapeConfirmEvidence([
 ]);
 assert(shapeConfirm.status === 'failed', 'shape-confirm must fail if count/traversal/element markers or safety gates are violated');
 
+let userdata = helpers.classifyLocalInventoryUserdataIntrospectionEvidence([
+  { probeName: 'Inventory.LocalArrays.UserdataIntrospection', result: 'ok', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], valueKinds: { WeaponMods: 'userdata' }, tostringKinds: { WeaponMods: 'string' }, tostringPrefixes: { WeaponMods: 'userdata:<redacted>' }, metatableKinds: { WeaponMods: 'table' }, metatableKeys: { WeaponMods: ['__len'] }, lenOperatorAttempted: { WeaponMods: true }, lenOperatorResults: { WeaponMods: 0 }, noElementDereference: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, safetyGates: { allowInventoryUserdataIntrospectionProbes: true, allowInventoryArrayShapeConfirmProbes: false, allowInventoryArrayShallowProbes: false, allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false, allowRawIdentityEvidence: false, allowHealthProbes: false, allowIdentityProbes: false, allowResourceVisibilityProbes: false } }
+]);
+assert(userdata.status === 'local_inventory_userdata_introspection_confirmed', `userdata introspection should confirm, got ${userdata.status}`);
+userdata = helpers.classifyLocalInventoryUserdataIntrospectionEvidence([
+  { probeName: 'Inventory.LocalArrays.UserdataIntrospection', result: 'ok', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], valueKinds: { WeaponMods: 'userdata' }, lenOperatorAttempted: { WeaponMods: true }, noElementDereference: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, safetyGates: { allowInventoryUserdataIntrospectionProbes: true, allowInventoryArrayShallowProbes: false } }
+], { crashSuspect: true });
+assert(userdata.status === 'crash_suspect_local_inventory_userdata_introspection', `crash evidence should keep userdata introspection crash-suspect, got ${userdata.status}`);
+userdata = helpers.classifyLocalInventoryUserdataIntrospectionEvidence([
+  { probeName: 'Inventory.LocalArrays.UserdataIntrospection', result: 'ok', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], valueKinds: { WeaponMods: 'userdata' }, lenOperatorAttempted: { WeaponMods: true }, noElementDereference: false, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, safetyGates: { allowInventoryUserdataIntrospectionProbes: true } }
+]);
+assert(userdata.status === 'failed', 'userdata introspection must fail on element dereference marker or safety violation');
+
 const partialState = helpers.markCollected(plan, afterObserve, 'multiplayer-roster-read', {
   status: 'local_identity_confirmed',
   latestSessionId: '20260505T035239Z',
@@ -268,6 +284,15 @@ const shapeConfirmCrashSuspectState = helpers.markCollected(plan, localInventory
 });
 assert(shapeConfirmCrashSuspectState.phaseStatuses['local-inventory-array-shape-confirm'].status === 'crash_suspect_local_inventory_shape_confirmed', 'shape-confirm crash-suspect evidence should be partial, not failed or complete');
 assert(shapeConfirmCrashSuspectState.nextRecommendedPhase === 'local-inventory-array-shape-confirm', `shape-confirm crash-suspect should keep next phase at shape confirm, got ${shapeConfirmCrashSuspectState.nextRecommendedPhase}`);
+
+const shapeConfirmCompleteState = helpers.markCollected(plan, localInventoryCrashSuspectState, 'local-inventory-array-shape-confirm', {
+  status: 'local_inventory_shape_confirmed',
+  reason: 'Local inventory array fields were confirmed as property shapes.',
+  latestSessionId: '20260505T080100Z',
+  latestCommit: '591389d5f71e99e2c19f7c287290cbf853a8e496',
+  latestSummaryPath: 'evidence/runtime/20260505T080100Z/diagnostic_summary.txt'
+});
+assert(shapeConfirmCompleteState.nextRecommendedPhase === 'local-inventory-userdata-introspection', `shape-confirm completion should advance to userdata introspection, got ${shapeConfirmCompleteState.nextRecommendedPhase}`);
 '@
 node $NodeTestPath (Join-Path $RepoRoot "tools\campaign_helpers.js") $RepoRoot
 if ($LASTEXITCODE -ne 0) { throw "campaign helper tests failed." }
@@ -339,6 +364,15 @@ if ($prepareRan) {
     foreach ($key in @("allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
       if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
         throw "local inventory shape confirm campaign phase expected $key = false."
+      }
+    }
+  } elseif ($preparedPhase -eq "local-inventory-userdata-introspection") {
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowInventoryUserdataIntrospectionProbes") -ne "true") {
+      throw "local inventory userdata introspection campaign phase expected allowInventoryUserdataIntrospectionProbes = true."
+    }
+    foreach ($key in @("allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
+      if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+        throw "local inventory userdata introspection campaign phase expected $key = false."
       }
     }
   }

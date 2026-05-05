@@ -94,6 +94,9 @@ function Assert-CampaignPhaseSafety {
   if (($required.ContainsKey("allowInventoryArrayShapeConfirmProbes") -and $required["allowInventoryArrayShapeConfirmProbes"]) -and $Phase.phaseId -ne "local-inventory-array-shape-confirm") {
     throw "Campaign phase $($Phase.phaseId) may not enable allowInventoryArrayShapeConfirmProbes."
   }
+  if (($required.ContainsKey("allowInventoryUserdataIntrospectionProbes") -and $required["allowInventoryUserdataIntrospectionProbes"]) -and $Phase.phaseId -ne "local-inventory-userdata-introspection") {
+    throw "Campaign phase $($Phase.phaseId) may not enable allowInventoryUserdataIntrospectionProbes."
+  }
   if ($required.ContainsKey("allowRawIdentityEvidence") -and $required["allowRawIdentityEvidence"]) {
     throw "Campaign phase $($Phase.phaseId) may not enable allowRawIdentityEvidence by default."
   }
@@ -134,6 +137,7 @@ function Set-CampaignPhaseConfig {
     "allowResourceVisibilityProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
+    "allowInventoryUserdataIntrospectionProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -172,6 +176,7 @@ function Assert-CampaignInstalledSafety {
     [switch]$AllowResourceVisibilityProbes,
     [switch]$AllowInventoryArrayShallowProbes,
     [switch]$AllowInventoryArrayShapeConfirmProbes,
+    [switch]$AllowInventoryUserdataIntrospectionProbes,
     [switch]$AllowInventoryInfoProbes,
     [switch]$AllowDeepArrayProbes
   )
@@ -189,6 +194,7 @@ function Assert-CampaignInstalledSafety {
     "allowResourceVisibilityProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
+    "allowInventoryUserdataIntrospectionProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -199,6 +205,7 @@ function Assert-CampaignInstalledSafety {
       ($AllowResourceVisibilityProbes -and $key -eq "allowResourceVisibilityProbes") -or
       ($AllowInventoryArrayShallowProbes -and $key -eq "allowInventoryArrayShallowProbes") -or
       ($AllowInventoryArrayShapeConfirmProbes -and $key -eq "allowInventoryArrayShapeConfirmProbes") -or
+      ($AllowInventoryUserdataIntrospectionProbes -and $key -eq "allowInventoryUserdataIntrospectionProbes") -or
       ($AllowInventoryInfoProbes -and $key -eq "allowInventoryInfoProbes") -or
       ($AllowDeepArrayProbes -and $key -eq "allowDeepArrayProbes")
     if ($allowed -and $value -eq "true") { continue }
@@ -275,6 +282,7 @@ Assert-CampaignInstalledSafety `
   -AllowResourceVisibilityProbes:($phase.phaseId -eq "multiplayer-resource-visibility-read") `
   -AllowInventoryArrayShallowProbes:($phase.phaseId -eq "local-inventory-array-shallow-read") `
   -AllowInventoryArrayShapeConfirmProbes:($phase.phaseId -eq "local-inventory-array-shape-confirm") `
+  -AllowInventoryUserdataIntrospectionProbes:($phase.phaseId -eq "local-inventory-userdata-introspection") `
   -AllowInventoryInfoProbes:($phase.phaseId -eq "inventoryinfo-scalar-read") `
   -AllowDeepArrayProbes:($phase.phaseId -match 'deep|inventory-element-da-read')
 Clear-CampaignRuntimeFiles -ScriptsRoot $InstallScriptsRoot

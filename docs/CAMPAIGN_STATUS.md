@@ -1,11 +1,11 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T20:53:03.775Z
-- Current phase: none
-- Next recommended phase: none
+- Updated: 2026-05-05T21:18:09.098Z
+- Current phase: `local-inventory-userdata-introspection`
+- Next recommended phase: `local-inventory-userdata-introspection`
 - Latest session: 20260505T204615Z
-- Latest commit: 6ecc98be02bba00c3d9a7fadcd6a905a7b8c9b1f
+- Latest commit: d6b22d298690352642faf2ee497642f505cafa2c
 - Latest summary: evidence/runtime/20260505T204615Z/diagnostic_summary.txt
 
 ## Completed Phases
@@ -116,6 +116,12 @@
 - No crash dump is associated with the imported shape-confirm evidence.
 - This phase distinguishes userdata shape visibility from countable Lua table arrays; counts remain unavailable for userdata values.
 
+## Local Inventory Userdata Introspection
+
+- Summary: unresolved; no `local-inventory-userdata-introspection` evidence has been imported yet.
+- Purpose: inspect only local inventory userdata wrapper metadata after shape visibility is confirmed.
+- This phase may pcall the length operator as risky metadata, but it does not traverse arrays, dereference elements, read InventoryInfo, or read Enhancements.
+
 ## Confirmed Unsafe Paths
 
 - HUD ReceiveDrawHUD tick hook remains blocked by default.
@@ -128,7 +134,8 @@
 - Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.
 - Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.
 - Crystals, slots, equipment, and inventory array counts are only covered by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.
-- Local inventory array shallow/count visibility is covered by `local-inventory-array-shallow-read`; safer property-shape confirmation is covered separately by `local-inventory-array-shape-confirm`.
+- Local inventory array shallow/count visibility is covered by `local-inventory-array-shallow-read`; property-shape confirmation is covered by `local-inventory-array-shape-confirm`; userdata wrapper metadata is covered by `local-inventory-userdata-introspection`.
+- Item contents are still not proven; userdata metadata does not read item data asset fields or element contents.
 - `InventoryInfo` and enhancements remain placeholders until explicit probe sets are implemented.
 - Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.
 
@@ -141,4 +148,5 @@
 - `allowResourceVisibilityProbes` is enabled only for `multiplayer-resource-visibility-read`.
 - `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.
 - `allowInventoryArrayShapeConfirmProbes` is enabled only for `local-inventory-array-shape-confirm`.
+- `allowInventoryUserdataIntrospectionProbes` is enabled only for `local-inventory-userdata-introspection`.
 - `allowDeepArrayProbes` and `allowInventoryInfoProbes` are not enabled by implemented phases.

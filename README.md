@@ -486,8 +486,8 @@ Interpretation rules:
 
 - `objectdump discovered` means the symbol exists in static dump data.
 - `runtime confirmed` remains false until ProbeRunner results prove a specific access path.
-- Local inventory array visibility and remote PlayerState inventory array visibility are separate research questions. `local-inventory-array-shallow-read` only checks local `CrabPC -> PlayerState -> CrabPS` array shapes/counts and slot scalars; it does not dereference elements, read DA fields, read `InventoryInfo`, read Enhancements, write, call RPCs, use HUD hooks, or touch `CrabHC`.
-- Inventory item metadata is still untested. Remote inventory array counts remain partial/unresolved in the latest resource visibility evidence, while local inventory arrays require their own imported evidence.
+- Local inventory array visibility and remote PlayerState inventory array visibility are separate research questions. `local-inventory-array-shallow-read` checks local `CrabPC -> PlayerState -> CrabPS` array shapes/counts and slot scalars; `local-inventory-array-shape-confirm` confirms userdata shape visibility without counts; `local-inventory-userdata-introspection` is limited to wrapper metadata such as type, redacted tostring, metatable keys, and guarded length-operator metadata.
+- Inventory item metadata is still untested. A length-operator result, if present, is metadata-only and does not prove count traversal, element traversal, item contents, or item sync. Remote inventory array counts remain partial/unresolved in the latest resource visibility evidence.
 - Deep inventory, InventoryInfo, health, write, and RPC candidates stay disabled unless a later explicit runtime research pass enables the relevant safety gate.
 
 ## Crash collection

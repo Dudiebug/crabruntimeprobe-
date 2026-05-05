@@ -706,6 +706,36 @@ function registry.build(safe)
     return type(text)
   end
 
+  local function safeTostringPrefix(value)
+    local ok, text = pcall(function() return tostring(value) end)
+    if not ok then return 'error:' .. tostring(text):sub(1, 32) end
+    text = tostring(text or '')
+    if text:match('^userdata:') then return 'userdata:<redacted>' end
+    if #text > 48 then return text:sub(1, 48) end
+    return text
+  end
+
+  local function cappedMetatableKeys(value, cap)
+    cap = cap or 16
+    local ok, meta = pcall(function() return getmetatable(value) end)
+    if not ok then return 'error', {}, tostring(meta) end
+    local metaKind = type(meta)
+    if metaKind ~= 'table' then return metaKind, {}, nil end
+    local keys = {}
+    for key, _ in pairs(meta) do
+      keys[#keys + 1] = tostring(key)
+      if #keys >= cap then break end
+    end
+    table.sort(keys)
+    return 'table', keys, nil
+  end
+
+  local function safeLenOperator(value)
+    local ok, result = pcall(function() return #value end)
+    if ok then return result, nil end
+    return nil, tostring(result)
+  end
+
   local function buildLocalInventoryShapeConfirmCache(ctx)
     if ctx.cache.LocalInventoryShapeConfirm then return ctx.cache.LocalInventoryShapeConfirm end
 
@@ -815,6 +845,141 @@ function registry.build(safe)
       .. ' fieldsReadable=' .. tostring(#(stats.fieldsReadable or {}))
       .. ' fieldsNilOrUnsupported=' .. tostring(#(stats.fieldsNilOrUnsupported or {}))
       .. ' noArrayCount=true noArrayTraversal=true noElementDereference=true crashAttributionMarker=shape-confirm'
+  end
+
+  local function buildLocalInventoryUserdataIntrospectionCache(ctx)
+    if ctx.cache.LocalInventoryUserdataIntrospection then return ctx.cache.LocalInventoryUserdataIntrospection end
+
+    local playerState, playerStateErr = getCrabPlayerState(ctx)
+    if playerStateErr then
+      ctx.cache.LocalInventoryUserdataIntrospection = { error = playerStateErr }
+      return ctx.cache.LocalInventoryUserdataIntrospection
+    end
+
+    local stats = {
+      sourceScope = 'local_player_state_inventory_userdata_introspection',
+      sourcePath = 'CrabPC.PlayerState',
+      sourceClass = 'CrabPS',
+      localPlayerStatePresent = safe.isValidObject(playerState),
+      arrayFieldNames = LOCAL_INVENTORY_ARRAY_FIELDS,
+      valueKinds = {},
+      tostringKinds = {},
+      tostringPrefixes = {},
+      metatableKinds = {},
+      metatableKeys = {},
+      metatableErrors = {},
+      lenOperatorAttempted = {},
+      lenOperatorResults = {},
+      lenOperatorErrors = {},
+      fieldResults = {},
+      fieldsReadable = {},
+      fieldsNilOrUnsupported = {},
+      noElementDereference = true,
+      noArrayTraversal = true,
+      noInventoryInfo = true,
+      noEnhancements = true,
+      noWrites = true,
+      noRpcs = true,
+      noHud = true,
+      noDeepArrays = true,
+      crashAttributionMarker = 'userdata-introspection'
+    }
+
+    if not stats.localPlayerStatePresent then
+      for _, fieldName in ipairs(LOCAL_INVENTORY_ARRAY_FIELDS) do
+        stats.valueKinds[fieldName] = 'nil'
+        stats.tostringKinds[fieldName] = 'nil'
+        stats.metatableKinds[fieldName] = 'nil'
+        stats.lenOperatorAttempted[fieldName] = false
+        stats.fieldResults[fieldName] = 'no_local_player_state'
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      end
+      ctx.cache.LocalInventoryUserdataIntrospection = stats
+      return stats
+    end
+
+    for _, fieldName in ipairs(LOCAL_INVENTORY_ARRAY_FIELDS) do
+      local value, err = safe.getProperty(playerState, fieldName)
+      if err then
+        stats.valueKinds[fieldName] = 'error'
+        stats.tostringKinds[fieldName] = 'error'
+        stats.metatableKinds[fieldName] = 'not_attempted'
+        stats.lenOperatorAttempted[fieldName] = false
+        stats.fieldResults[fieldName] = 'error'
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      elseif value == nil then
+        stats.valueKinds[fieldName] = 'nil'
+        stats.tostringKinds[fieldName] = 'nil'
+        stats.metatableKinds[fieldName] = 'nil'
+        stats.lenOperatorAttempted[fieldName] = false
+        stats.fieldResults[fieldName] = 'nil'
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      else
+        local valueKind = type(value)
+        stats.valueKinds[fieldName] = valueKind
+        stats.tostringKinds[fieldName] = safeTostringKind(value)
+        stats.tostringPrefixes[fieldName] = safeTostringPrefix(value)
+        local metaKind, metaKeys, metaErr = cappedMetatableKeys(value, 16)
+        stats.metatableKinds[fieldName] = metaKind
+        stats.metatableKeys[fieldName] = metaKeys
+        if metaErr then stats.metatableErrors[fieldName] = metaErr end
+        stats.lenOperatorAttempted[fieldName] = true
+        local lenResult, lenErr = safeLenOperator(value)
+        if lenErr then
+          stats.lenOperatorErrors[fieldName] = lenErr
+        else
+          stats.lenOperatorResults[fieldName] = lenResult
+        end
+        stats.fieldResults[fieldName] = 'metadata'
+        stats.fieldsReadable[#stats.fieldsReadable + 1] = fieldName
+      end
+    end
+
+    ctx.cache.LocalInventoryUserdataIntrospection = stats
+    return stats
+  end
+
+  local function localInventoryUserdataIntrospectionMeta(stats, note)
+    return {
+      sourceScope = stats.sourceScope,
+      sourcePath = stats.sourcePath,
+      sourceClass = stats.sourceClass,
+      candidateClasses = { 'CrabPC', 'CrabPS' },
+      localPlayerStatePresent = stats.localPlayerStatePresent == true,
+      fieldNames = stats.arrayFieldNames,
+      valueKinds = stats.valueKinds,
+      tostringKinds = stats.tostringKinds,
+      tostringPrefixes = stats.tostringPrefixes,
+      metatableKinds = stats.metatableKinds,
+      metatableKeys = stats.metatableKeys,
+      metatableErrors = stats.metatableErrors,
+      lenOperatorAttempted = stats.lenOperatorAttempted,
+      lenOperatorResults = stats.lenOperatorResults,
+      lenOperatorErrors = stats.lenOperatorErrors,
+      fieldResults = stats.fieldResults,
+      fieldsReadable = stats.fieldsReadable,
+      fieldsNilOrUnsupported = stats.fieldsNilOrUnsupported,
+      noElementDereference = true,
+      noArrayTraversal = true,
+      noInventoryInfo = true,
+      noEnhancements = true,
+      noWrites = true,
+      noRpcs = true,
+      noHud = true,
+      noDeepArrays = true,
+      crashAttributionMarker = 'userdata-introspection',
+      localNotes = note
+    }
+  end
+
+  local function localInventoryUserdataIntrospectionSummary(stats)
+    return 'category=userdata-introspection'
+      .. ' localPlayerStatePresent=' .. tostring(stats.localPlayerStatePresent == true)
+      .. ' fieldsReadable=' .. tostring(#(stats.fieldsReadable or {}))
+      .. ' fieldsNilOrUnsupported=' .. tostring(#(stats.fieldsNilOrUnsupported or {}))
+      .. ' lenOperatorAttempted=true'
+      .. ' noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true'
+      .. ' crashAttributionMarker=userdata-introspection'
   end
 
   local function classifyCrabHCSource(fullName)
@@ -1756,6 +1921,21 @@ function registry.build(safe)
     accessMethod = 'GetPropertyValueShapeConfirm',
     accessKind = 'localInventoryArrayShapeConfirm',
     sourceScope = 'local_player_state_inventory_shape_confirm'
+  })
+
+  probes[#probes + 1] = mk('Inventory.LocalArrays.UserdataIntrospection', 'inventory-local-userdata-introspection', 'local-inventory-userdata-introspection', 'localInventoryUserdataIntrospection', function(ctx)
+    local stats = buildLocalInventoryUserdataIntrospectionCache(ctx)
+    if stats.error then return 'lua_error', nil, nil, stats.error end
+    return (#(stats.fieldsReadable or {}) > 0) and 'ok' or 'nil', 'local_inventory_userdata_introspection',
+      localInventoryUserdataIntrospectionSummary(stats), nil,
+      localInventoryUserdataIntrospectionMeta(stats, 'Read-only local CrabPC -> PlayerState -> CrabPS userdata wrapper metadata; no traversal, element dereference, InventoryInfo, Enhancements, writes, RPCs, HUD, or deep arrays')
+  end, {
+    symbol = 'CrabPS.WeaponMods',
+    owner = 'CrabPS',
+    member = 'WeaponMods AbilityMods MeleeMods Perks Relics',
+    accessMethod = 'GetPropertyValueUserdataMetadata',
+    accessKind = 'localInventoryUserdataIntrospection',
+    sourceScope = 'local_player_state_inventory_userdata_introspection'
   })
 
   probes[#probes + 1] = mk('FindAllOf.CrabHC.Availability', 'health', 'health-hc-discovery-read', 'findAllAvailability', function()

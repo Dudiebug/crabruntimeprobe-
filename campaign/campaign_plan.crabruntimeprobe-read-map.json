@@ -343,6 +343,7 @@
         "allowRawIdentityEvidence",
         "allowResourceVisibilityProbes",
         "allowInventoryArrayShallowProbes",
+        "allowInventoryUserdataIntrospectionProbes",
         "allowWriteProbes",
         "allowRpcProbes"
       ],
@@ -357,6 +358,49 @@
       "riskTier": "cautious-read",
       "status": "pending",
       "humanInstructions": "Launch Crab Champions locally in a stable world/lobby. This phase only confirms local inventory array property shapes and slot scalars; do not force pickups, inventory changes, writes, RPCs, HUD hooks, InventoryInfo, Enhancements, counts, traversal, or element reads. Quit, then run scripts\\quick-campaign-collect.ps1.",
+      "nextPhase": "local-inventory-userdata-introspection"
+    },
+    {
+      "phaseId": "local-inventory-userdata-introspection",
+      "label": "Local inventory userdata introspection",
+      "probeSet": "local-inventory-userdata-introspection",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "implemented": true,
+      "requiredGates": {
+        "allowInventoryUserdataIntrospectionProbes": true
+      },
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowInventoryInfoProbes",
+        "allowHealthProbes",
+        "allowIdentityProbes",
+        "allowRawIdentityEvidence",
+        "allowResourceVisibilityProbes",
+        "allowInventoryArrayShallowProbes",
+        "allowInventoryArrayShapeConfirmProbes",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "Inventory.LocalArrays.UserdataIntrospection",
+        "localPlayerStatePresent",
+        "valueKinds",
+        "metatableKinds",
+        "lenOperatorAttempted",
+        "noArrayTraversal = true",
+        "noElementDereference = true",
+        "noInventoryInfo = true",
+        "noEnhancements = true",
+        "noWrites = true",
+        "noRpcs = true"
+      ],
+      "riskTier": "cautious-read",
+      "status": "pending",
+      "humanInstructions": "Launch Crab Champions locally in a stable world/lobby. This phase only inspects local inventory userdata wrapper metadata; do not force pickups, inventory changes, writes, RPCs, HUD hooks, InventoryInfo, Enhancements, traversal, or element reads. Quit, then run scripts\\quick-campaign-collect.ps1.",
       "nextPhase": "crystals-read"
     },
     {

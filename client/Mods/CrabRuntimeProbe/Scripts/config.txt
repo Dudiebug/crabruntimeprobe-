@@ -27,6 +27,7 @@ allowRawIdentityEvidence = false
 allowResourceVisibilityProbes = false
 allowInventoryArrayShallowProbes = false
 allowInventoryArrayShapeConfirmProbes = false
+allowInventoryUserdataIntrospectionProbes = false
 allowWriteProbes = false
 allowRpcProbes = false
 

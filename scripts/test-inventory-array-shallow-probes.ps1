@@ -31,6 +31,9 @@ if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "allowIn
 if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "allowInventoryArrayShapeConfirmProbes") -ne "false") {
   throw "default config expected allowInventoryArrayShapeConfirmProbes = false."
 }
+if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "allowInventoryUserdataIntrospectionProbes") -ne "false") {
+  throw "default config expected allowInventoryUserdataIntrospectionProbes = false."
+}
 
 $plan = Get-Content -Raw -LiteralPath $PlanPath | ConvertFrom-Json -ErrorAction Stop
 $phase = @($plan.phases | Where-Object { $_.phaseId -eq "local-inventory-array-shallow-read" })[0]
@@ -39,6 +42,9 @@ if ($phase.probeSet -ne "local-inventory-array-shallow-read") { throw "local inv
 if ($phase.requiredGates.allowInventoryArrayShallowProbes -ne $true) { throw "local inventory phase must enable allowInventoryArrayShallowProbes." }
 if (($phase.requiredGates.PSObject.Properties.Name -contains "allowInventoryArrayShapeConfirmProbes") -and $phase.requiredGates.allowInventoryArrayShapeConfirmProbes -eq $true) {
   throw "local inventory shallow phase must not enable allowInventoryArrayShapeConfirmProbes."
+}
+if (($phase.requiredGates.PSObject.Properties.Name -contains "allowInventoryUserdataIntrospectionProbes") -and $phase.requiredGates.allowInventoryUserdataIntrospectionProbes -eq $true) {
+  throw "local inventory shallow phase must not enable allowInventoryUserdataIntrospectionProbes."
 }
 foreach ($gate in @("allowDeepArrayProbes", "allowInventoryInfoProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowRawIdentityEvidence")) {
   if (@($phase.forbiddenGates) -notcontains $gate) {
@@ -99,7 +105,7 @@ if (Test-Path -LiteralPath $WorkRoot) {
 New-Item -ItemType Directory -Force -Path (Join-Path $WorkRoot "evidence\runtime\localinventory") | Out-Null
 Copy-Item -LiteralPath (Join-Path $RepoRoot "campaign") -Destination (Join-Path $WorkRoot "campaign") -Recurse
 
-$safeGates = '"allowHudTickHook":false,"allowUnknownRoleProbes":false,"allowJoinedClientDeepProbes":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":false,"allowIdentityProbes":false,"allowRawIdentityEvidence":false,"allowResourceVisibilityProbes":false,"allowInventoryArrayShallowProbes":true,"allowInventoryArrayShapeConfirmProbes":false,"allowWriteProbes":false,"allowRpcProbes":false'
+$safeGates = '"allowHudTickHook":false,"allowUnknownRoleProbes":false,"allowJoinedClientDeepProbes":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":false,"allowIdentityProbes":false,"allowRawIdentityEvidence":false,"allowResourceVisibilityProbes":false,"allowInventoryArrayShallowProbes":true,"allowInventoryArrayShapeConfirmProbes":false,"allowInventoryUserdataIntrospectionProbes":false,"allowWriteProbes":false,"allowRpcProbes":false'
 $SessionDir = Join-Path $WorkRoot "evidence\runtime\localinventory"
 Set-Content -LiteralPath (Join-Path $SessionDir "access_evidence.jsonl") -Encoding ASCII -Value @(
   ('{"timestamp":"2026-05-05T00:00:01Z","sessionId":"localinventory","probeId":"Inventory.LocalArrays.Shape","probeName":"Inventory.LocalArrays.Shape","probeSet":"local-inventory-array-shallow-read","category":"inventory-local","symbol":"CrabPS.WeaponMods","owner":"CrabPS","member":"WeaponMods AbilityMods MeleeMods Perks Relics","accessMethod":"GetPropertyValueShapeOnly","accessKind":"localInventoryArrayShape","mode":"active","tickDriver":"executeDelay","tick":100,"context":"solo","role":"solo-or-host","lifecycleState":"stable","result":"ok","runtimeStatus":"SAFE","valueKind":"local_inventory_array_shape","valueSummary":"category=array-shape localPlayerStatePresent=true fieldsReadable=1 fieldsNilOrUnsupported=4 countCap=64 noElementDereference=true","sourceScope":"local_player_state_inventory_arrays","sourcePath":"CrabPC.PlayerState","sourceClass":"CrabPS","localPlayerStatePresent":true,"arrayFieldNames":["WeaponMods","AbilityMods","MeleeMods","Perks","Relics"],"arrayValueKinds":{"WeaponMods":"table","AbilityMods":"nil","MeleeMods":"nil","Perks":"nil","Relics":"nil"},"arrayCounts":{"WeaponMods":0},"arrayCountCap":64,"slotScalarValues":{"NumWeaponModSlots":3,"NumAbilityModSlots":1,"NumMeleeModSlots":1,"NumPerkSlots":2},"fieldResults":{"WeaponMods":"count","AbilityMods":"nil","MeleeMods":"nil","Perks":"nil","Relics":"nil"},"fieldsReadable":["WeaponMods"],"fieldsNilOrUnsupported":["AbilityMods","MeleeMods","Perks","Relics"],"noElementDereference":true,"safetyGates":{' + $safeGates + '}}')

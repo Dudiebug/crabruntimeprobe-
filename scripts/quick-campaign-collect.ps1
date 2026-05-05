@@ -223,6 +223,10 @@ function Invoke-CampaignCollect {
     & $cycle -GameBin $GameBinFull -CollectLocalInventoryArrayShapeConfirm
     return $LASTEXITCODE
   }
+  if ($PhaseId -eq "local-inventory-userdata-introspection") {
+    & $cycle -GameBin $GameBinFull -CollectLocalInventoryUserdataIntrospection
+    return $LASTEXITCODE
+  }
   throw "Campaign phase '$PhaseId' is not implemented and cannot be collected."
 }
 
@@ -495,7 +499,7 @@ if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "lo
       }
     }
     if (($row.PSObject.Properties.Name -contains "safetyGates") -and $null -ne $row.safetyGates) {
-      foreach ($gate in @("allowInventoryArrayShallowProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowRawIdentityEvidence", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes")) {
+      foreach ($gate in @("allowInventoryArrayShallowProbes", "allowInventoryUserdataIntrospectionProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowRawIdentityEvidence", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes")) {
         if (($row.safetyGates.PSObject.Properties.Name -contains $gate) -and $row.safetyGates.$gate -eq $true) {
           $safetyViolation = $true
         }
@@ -536,6 +540,66 @@ if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "lo
   }
 }
 
+if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "local-inventory-userdata-introspection") {
+  $rows = Read-JsonLines -Paths @(
+    $(if ($null -ne $latestProbeFile) { $latestProbeFile.FullName } else { "" }),
+    $(if ($null -ne $latestAccessFile) { $latestAccessFile.FullName } else { "" })
+  )
+  $introspectionRows = @($rows | Where-Object {
+    $name = ""
+    foreach ($field in @("probeName", "probeId", "event")) {
+      if ($_.PSObject.Properties.Name -contains $field) {
+        $name = [string]$_.$field
+        if (-not [string]::IsNullOrWhiteSpace($name)) { break }
+      }
+    }
+    $name -eq "Inventory.LocalArrays.UserdataIntrospection"
+  })
+
+  $hasMetadataEvidence = $false
+  $safetyViolation = $false
+  foreach ($row in $introspectionRows) {
+    foreach ($flag in @("noElementDereference", "noArrayTraversal", "noInventoryInfo", "noEnhancements", "noWrites", "noRpcs")) {
+      if (-not ($row.PSObject.Properties.Name -contains $flag) -or $row.$flag -ne $true) {
+        $safetyViolation = $true
+      }
+    }
+    if (($row.PSObject.Properties.Name -contains "safetyGates") -and $null -ne $row.safetyGates) {
+      foreach ($gate in @("allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowRawIdentityEvidence", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes")) {
+        if (($row.safetyGates.PSObject.Properties.Name -contains $gate) -and $row.safetyGates.$gate -eq $true) {
+          $safetyViolation = $true
+        }
+      }
+    }
+    foreach ($field in @("valueKinds", "tostringKinds", "metatableKinds", "lenOperatorAttempted")) {
+      if (($row.PSObject.Properties.Name -contains $field) -and $null -ne $row.$field) {
+        $hasMetadataEvidence = $true
+      }
+    }
+    if (($row.PSObject.Properties.Name -contains "localPlayerStatePresent") -and $row.localPlayerStatePresent -eq $true) {
+      $hasMetadataEvidence = $true
+    }
+  }
+
+  if ($introspectionRows.Count -eq 0) {
+    $status = "no_evidence"
+    $reason = "No local inventory userdata introspection probe evidence was found."
+  } elseif ($safetyViolation) {
+    $status = "failed"
+    $reason = "Local inventory userdata introspection evidence violated safety gates or attempted traversal, element dereference, InventoryInfo, Enhancements, writes, or RPCs."
+  } elseif ($hasMetadataEvidence) {
+    if ($crashAfterPrepare) {
+      $status = "crash_suspect_local_inventory_userdata_introspection"
+      $reason = "Local inventory userdata wrapper metadata was collected without traversal or element dereference, but a crash dump/folder was updated after campaign prepare/run."
+    } else {
+      $status = "local_inventory_userdata_introspection_confirmed"
+    }
+  } else {
+    $status = "no_evidence"
+    $reason = "Userdata introspection probes ran but did not produce local inventory wrapper metadata."
+  }
+}
+
 if ($null -ne $latestManifestFile) {
   try {
     & (Join-Path $PSScriptRoot "import-latest-runtime-evidence.ps1") -From $ResultsRoot
@@ -567,6 +631,6 @@ Write-Host "phaseResult = $status"
 Write-Host "phaseId = $($phase.phaseId)"
 Write-Host "nextRecommendedPhase = $($updatedState.nextRecommendedPhase)"
 
-if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved" -and $status -ne "crash_suspect_local_inventory_shape_visible" -and $status -ne "local_inventory_shape_confirmed" -and $status -ne "crash_suspect_local_inventory_shape_confirmed" -and -not ($phase.phaseId -eq "local-inventory-array-shape-confirm" -and $status -eq "no_evidence")) {
+if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved" -and $status -ne "crash_suspect_local_inventory_shape_visible" -and $status -ne "local_inventory_shape_confirmed" -and $status -ne "crash_suspect_local_inventory_shape_confirmed" -and $status -ne "local_inventory_userdata_introspection_confirmed" -and $status -ne "crash_suspect_local_inventory_userdata_introspection" -and -not ($phase.phaseId -eq "local-inventory-array-shape-confirm" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "local-inventory-userdata-introspection" -and $status -eq "no_evidence")) {
   exit 1
 }

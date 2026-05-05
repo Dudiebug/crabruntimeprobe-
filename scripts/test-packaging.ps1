@@ -34,6 +34,7 @@ function Assert-UnsafeGatesFalse {
     "allowResourceVisibilityProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
+    "allowInventoryUserdataIntrospectionProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -56,6 +57,7 @@ function Assert-HealthBaselineGates {
     "allowResourceVisibilityProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
+    "allowInventoryUserdataIntrospectionProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -129,6 +131,7 @@ function Write-TestSessionManifest {
       allowResourceVisibilityProbes = $false
       allowInventoryArrayShallowProbes = $false
       allowInventoryArrayShapeConfirmProbes = $false
+      allowInventoryUserdataIntrospectionProbes = $false
       allowWriteProbes = $false
       allowRpcProbes = $false
       allowJoinedClientDeepProbes = $false
@@ -217,6 +220,7 @@ foreach ($key in @(
   "allowInventoryInfoProbes",
   "allowInventoryArrayShallowProbes",
   "allowInventoryArrayShapeConfirmProbes",
+  "allowInventoryUserdataIntrospectionProbes",
   "allowWriteProbes",
   "allowRpcProbes"
 )) {

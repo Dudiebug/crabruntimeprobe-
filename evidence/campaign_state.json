@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-05T20:53:03.775Z",
+  "updatedAt": "2026-05-05T21:18:09.098Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -154,10 +154,10 @@
       "reason": "Probe set is not implemented yet."
     }
   ],
-  "currentPhase": null,
-  "nextRecommendedPhase": null,
+  "currentPhase": "local-inventory-userdata-introspection",
+  "nextRecommendedPhase": "local-inventory-userdata-introspection",
   "latestSessionId": "20260505T204615Z",
-  "latestCommit": "6ecc98be02bba00c3d9a7fadcd6a905a7b8c9b1f",
+  "latestCommit": "d6b22d298690352642faf2ee497642f505cafa2c",
   "latestSummaryPath": "evidence/runtime/20260505T204615Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {
@@ -236,6 +236,13 @@
       "status": "complete",
       "riskTier": "cautious-read",
       "probeSet": "local-inventory-array-shape-confirm",
+      "tickDriver": "executeDelay",
+      "mode": "active"
+    },
+    "local-inventory-userdata-introspection": {
+      "status": "current",
+      "riskTier": "cautious-read",
+      "probeSet": "local-inventory-userdata-introspection",
       "tickDriver": "executeDelay",
       "mode": "active"
     },

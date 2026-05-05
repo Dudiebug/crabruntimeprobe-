@@ -103,6 +103,12 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 - No crash dump is associated with the imported shape-confirm evidence.
 - Shape confirm distinguishes userdata shape visibility from countable Lua table arrays; counts remain unavailable for userdata values.
 
+## Local Inventory Userdata Introspection Summary
+
+- Summary: unresolved; no `local-inventory-userdata-introspection` evidence has been imported yet.
+- Userdata introspection inspects wrapper metadata only after shape visibility is confirmed.
+- It does not traverse arrays, dereference elements, read InventoryInfo, read Enhancements, write, or call RPCs.
+
 ## Confirmed SAFE Access Rows
 
 | Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |

@@ -18,6 +18,7 @@ const ALL_GATES = [
   'allowResourceVisibilityProbes',
   'allowInventoryArrayShallowProbes',
   'allowInventoryArrayShapeConfirmProbes',
+  'allowInventoryUserdataIntrospectionProbes',
   'allowWriteProbes',
   'allowRpcProbes'
 ];
@@ -241,11 +242,17 @@ function classifyResourceVisibilityEvidence(rows) {
 
 function isLocalInventoryArrayRow(row) {
   const id = row.probeName || row.probeId || row.event || '';
-  return /^Inventory\.Local(Arrays|Slots)\./.test(id) && id !== 'Inventory.LocalArrays.ShapeConfirm';
+  return /^Inventory\.Local(Arrays|Slots)\./.test(id) &&
+    id !== 'Inventory.LocalArrays.ShapeConfirm' &&
+    id !== 'Inventory.LocalArrays.UserdataIntrospection';
 }
 
 function isLocalInventoryArrayShapeConfirmRow(row) {
   return (row.probeName || row.probeId || row.event || '') === 'Inventory.LocalArrays.ShapeConfirm';
+}
+
+function isLocalInventoryUserdataIntrospectionRow(row) {
+  return (row.probeName || row.probeId || row.event || '') === 'Inventory.LocalArrays.UserdataIntrospection';
 }
 
 function classifyLocalInventoryArrayEvidence(rows, options = {}) {
@@ -361,7 +368,8 @@ function classifyLocalInventoryArrayShapeConfirmEvidence(rows, options = {}) {
     'allowIdentityProbes',
     'allowResourceVisibilityProbes',
     'allowUnknownRoleProbes',
-    'allowJoinedClientDeepProbes'
+    'allowJoinedClientDeepProbes',
+    'allowInventoryUserdataIntrospectionProbes'
   ];
   const safetyViolation = confirmRows.some((row) => {
     const gates = row && row.safetyGates ? row.safetyGates : {};
@@ -401,6 +409,109 @@ function classifyLocalInventoryArrayShapeConfirmEvidence(rows, options = {}) {
     noArrayTraversal: confirmRows.length > 0 && confirmRows.every((row) => row.noArrayTraversal === true),
     noInventoryInfo: confirmRows.length > 0 && confirmRows.every((row) => row.noInventoryInfo === true),
     noEnhancements: confirmRows.length > 0 && confirmRows.every((row) => row.noEnhancements === true),
+    safetyViolation,
+    crashSuspect: options.crashSuspect === true,
+    classification,
+    status
+  };
+}
+
+function classifyLocalInventoryUserdataIntrospectionEvidence(rows, options = {}) {
+  const introspectionRows = rows.filter(isLocalInventoryUserdataIntrospectionRow);
+  const fieldsReadable = Array.from(new Set(introspectionRows.flatMap((row) => flattenStringList(row.fieldsReadable)))).sort();
+  const fieldsNilOrUnsupported = Array.from(new Set(introspectionRows.flatMap((row) => flattenStringList(row.fieldsNilOrUnsupported)))).sort();
+  const localPlayerStatePresent = introspectionRows.some((row) => row.localPlayerStatePresent === true);
+  const valueKinds = {};
+  const tostringKinds = {};
+  const tostringPrefixes = {};
+  const metatableKinds = {};
+  const metatableKeys = {};
+  const lenOperatorAttempted = {};
+  const lenOperatorResults = {};
+  const lenOperatorErrors = {};
+  const fieldResults = {};
+  for (const row of introspectionRows) {
+    for (const [target, source] of [
+      [valueKinds, row.valueKinds],
+      [tostringKinds, row.tostringKinds],
+      [tostringPrefixes, row.tostringPrefixes],
+      [metatableKinds, row.metatableKinds],
+      [lenOperatorResults, row.lenOperatorResults],
+      [lenOperatorErrors, row.lenOperatorErrors],
+      [fieldResults, row.fieldResults]
+    ]) {
+      if (source && typeof source === 'object') {
+        for (const [name, value] of Object.entries(source)) target[name] = String(value);
+      }
+    }
+    if (row.metatableKeys && typeof row.metatableKeys === 'object') {
+      for (const [name, value] of Object.entries(row.metatableKeys)) metatableKeys[name] = flattenStringList(value).slice(0, 16);
+    }
+    if (row.lenOperatorAttempted && typeof row.lenOperatorAttempted === 'object') {
+      for (const [name, value] of Object.entries(row.lenOperatorAttempted)) lenOperatorAttempted[name] = value === true;
+    }
+  }
+  const forbiddenGateNames = [
+    'allowInventoryArrayShapeConfirmProbes',
+    'allowInventoryArrayShallowProbes',
+    'allowDeepArrayProbes',
+    'allowInventoryInfoProbes',
+    'allowWriteProbes',
+    'allowRpcProbes',
+    'allowHudTickHook',
+    'allowRawIdentityEvidence',
+    'allowHealthProbes',
+    'allowIdentityProbes',
+    'allowResourceVisibilityProbes',
+    'allowUnknownRoleProbes',
+    'allowJoinedClientDeepProbes'
+  ];
+  const safetyViolation = introspectionRows.some((row) => {
+    const gates = row && row.safetyGates ? row.safetyGates : {};
+    return forbiddenGateNames.some((gate) => gates[gate] === true) ||
+      row.noElementDereference !== true ||
+      row.noArrayTraversal !== true ||
+      row.noInventoryInfo !== true ||
+      row.noEnhancements !== true ||
+      row.noWrites !== true ||
+      row.noRpcs !== true;
+  });
+  const hasMetadataEvidence = introspectionRows.length > 0 && (
+    fieldsReadable.length > 0 ||
+    Object.keys(valueKinds).length > 0 ||
+    Object.keys(tostringKinds).length > 0 ||
+    Object.keys(metatableKinds).length > 0 ||
+    Object.keys(lenOperatorAttempted).length > 0 ||
+    localPlayerStatePresent
+  );
+  let status = 'no_evidence';
+  let classification = 'unresolved';
+  if (safetyViolation) {
+    status = 'failed';
+  } else if (hasMetadataEvidence) {
+    status = options.crashSuspect ? 'crash_suspect_local_inventory_userdata_introspection' : 'local_inventory_userdata_introspection_confirmed';
+    classification = options.crashSuspect ? 'local_inventory_userdata_introspection_crash_suspect' : 'local_inventory_userdata_introspection_confirmed';
+  }
+  return {
+    localInventoryUserdataIntrospectionEvidenceFound: introspectionRows.length > 0,
+    localPlayerStatePresent,
+    fieldsReadable,
+    fieldsNilOrUnsupported,
+    valueKinds,
+    tostringKinds,
+    tostringPrefixes,
+    metatableKinds,
+    metatableKeys,
+    lenOperatorAttempted,
+    lenOperatorResults,
+    lenOperatorErrors,
+    fieldResults,
+    noElementDereference: introspectionRows.length > 0 && introspectionRows.every((row) => row.noElementDereference === true),
+    noArrayTraversal: introspectionRows.length > 0 && introspectionRows.every((row) => row.noArrayTraversal === true),
+    noInventoryInfo: introspectionRows.length > 0 && introspectionRows.every((row) => row.noInventoryInfo === true),
+    noEnhancements: introspectionRows.length > 0 && introspectionRows.every((row) => row.noEnhancements === true),
+    noWrites: introspectionRows.length > 0 && introspectionRows.every((row) => row.noWrites === true),
+    noRpcs: introspectionRows.length > 0 && introspectionRows.every((row) => row.noRpcs === true),
     safetyViolation,
     crashSuspect: options.crashSuspect === true,
     classification,
@@ -479,6 +590,9 @@ function validatePhaseSafety(phase, gates = gateConfigForPhaseUnchecked(phase)) 
   }
   if (gates.allowInventoryArrayShapeConfirmProbes && phase.phaseId !== 'local-inventory-array-shape-confirm') {
     throw new Error(`${phase.phaseId} may not enable allowInventoryArrayShapeConfirmProbes.`);
+  }
+  if (gates.allowInventoryUserdataIntrospectionProbes && phase.phaseId !== 'local-inventory-userdata-introspection') {
+    throw new Error(`${phase.phaseId} may not enable allowInventoryUserdataIntrospectionProbes.`);
   }
   if (gates.allowHealthProbes && !/^health-|^multiplayer-health-/.test(phase.phaseId) && phase.phaseId !== 'multiplayer-resource-visibility-read') {
     throw new Error(`${phase.phaseId} may not enable allowHealthProbes.`);
@@ -685,6 +799,26 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
       latestSummaryPath: facts.latestSummaryPath || ''
     });
   }
+  const localInventoryUserdataIntrospectionSessionId = latestSessionIdForRows(facts.rows, isLocalInventoryUserdataIntrospectionRow);
+  const localInventoryUserdataIntrospection = classifyLocalInventoryUserdataIntrospectionEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, localInventoryUserdataIntrospectionSessionId)
+  });
+  if (localInventoryUserdataIntrospection.status === 'local_inventory_userdata_introspection_confirmed') {
+    add('local-inventory-userdata-introspection', 'Imported evidence contains local PlayerState inventory userdata wrapper metadata with no traversal or element dereference.');
+  } else if (localInventoryUserdataIntrospection.localInventoryUserdataIntrospectionEvidenceFound && localInventoryUserdataIntrospection.status !== 'failed') {
+    partial.push({
+      phaseId: 'local-inventory-userdata-introspection',
+      status: localInventoryUserdataIntrospection.status,
+      updatedAt: nowIso(),
+      source: 'imported-evidence',
+      reason: localInventoryUserdataIntrospection.status === 'crash_suspect_local_inventory_userdata_introspection'
+        ? 'Local inventory userdata wrapper metadata was collected without traversal or element dereference, but a crash dump exists after this run.'
+        : 'Local inventory userdata introspection did not produce usable metadata evidence.',
+      latestSessionId: localInventoryUserdataIntrospectionSessionId || facts.latestSessionId || '',
+      latestCommit: facts.latestCommit || '',
+      latestSummaryPath: facts.latestSummaryPath || ''
+    });
+  }
 
   return { completed, partial, facts };
 }
@@ -849,6 +983,17 @@ function markCollected(plan, state, phaseId, result) {
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
     });
+  } else if (phaseId === 'local-inventory-userdata-introspection' && result.status === 'local_inventory_userdata_introspection_confirmed') {
+    out.completedPhases.push({
+      phaseId,
+      status: 'complete',
+      completedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || 'Local inventory userdata wrapper metadata was collected with no traversal or element dereference.',
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
   } else if (phaseId === 'multiplayer-roster-read' && (result.status === 'local_identity_confirmed' || result.status === 'roster_source_unresolved')) {
     out.partialPhases.push({
       phaseId,
@@ -904,6 +1049,22 @@ function markCollected(plan, state, phaseId, result) {
       reason: result.reason || (result.status === 'crash_suspect_local_inventory_shape_confirmed'
         ? 'Local inventory array fields were confirmed as property shapes with no count, traversal, or element dereference, but crash evidence exists after this run.'
         : 'No local inventory shape-confirm evidence was found.'),
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
+  } else if (phaseId === 'local-inventory-userdata-introspection' && (
+    result.status === 'crash_suspect_local_inventory_userdata_introspection' ||
+    result.status === 'no_evidence'
+  )) {
+    out.partialPhases.push({
+      phaseId,
+      status: result.status,
+      updatedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || (result.status === 'crash_suspect_local_inventory_userdata_introspection'
+        ? 'Local inventory userdata wrapper metadata was collected, but crash evidence exists after this run.'
+        : 'No local inventory userdata introspection evidence was found.'),
       latestSessionId: out.latestSessionId,
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
@@ -1001,6 +1162,11 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     crashSuspect: hasCrashSuspectEvidenceForSession(facts, localInventoryShapeConfirmSessionId || state.latestSessionId || facts.latestSessionId)
   });
   if (localInventoryShapeConfirm.status === 'local_inventory_shape_confirmed') safeSignals.push('local PlayerState inventory array property shape confirmation without count, traversal, or element dereference');
+  const localInventoryUserdataIntrospectionSessionId = latestSessionIdForRows(facts.rows, isLocalInventoryUserdataIntrospectionRow);
+  const localInventoryUserdataIntrospection = classifyLocalInventoryUserdataIntrospectionEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, localInventoryUserdataIntrospectionSessionId || state.latestSessionId || facts.latestSessionId)
+  });
+  if (localInventoryUserdataIntrospection.status === 'local_inventory_userdata_introspection_confirmed') safeSignals.push('local PlayerState inventory userdata wrapper metadata without traversal or element dereference');
   if (!safeSignals.length) out += '- None imported yet.\n';
   else out += safeSignals.map((item) => `- ${item}\n`).join('');
 
@@ -1115,6 +1281,35 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     out += '- This phase distinguishes userdata shape visibility from countable Lua table arrays; counts remain unavailable for userdata values.\n';
   }
 
+  out += '\n## Local Inventory Userdata Introspection\n\n';
+  if (!localInventoryUserdataIntrospection.localInventoryUserdataIntrospectionEvidenceFound) {
+    out += '- Summary: unresolved; no `local-inventory-userdata-introspection` evidence has been imported yet.\n';
+    out += '- Purpose: inspect only local inventory userdata wrapper metadata after shape visibility is confirmed.\n';
+    out += '- This phase may pcall the length operator as risky metadata, but it does not traverse arrays, dereference elements, read InventoryInfo, or read Enhancements.\n';
+  } else {
+    out += `- Summary: ${localInventoryUserdataIntrospection.classification}\n`;
+    out += `- Local inventory userdata introspection status: ${localInventoryUserdataIntrospection.status}\n`;
+    out += `- Local PlayerState present: ${localInventoryUserdataIntrospection.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
+    out += `- Fields readable by userdata introspection: ${localInventoryUserdataIntrospection.fieldsReadable.length ? localInventoryUserdataIntrospection.fieldsReadable.join(', ') : 'none'}\n`;
+    out += `- Fields nil or unsupported: ${localInventoryUserdataIntrospection.fieldsNilOrUnsupported.length ? localInventoryUserdataIntrospection.fieldsNilOrUnsupported.join(', ') : 'none'}\n`;
+    out += `- Value kinds: ${Object.keys(localInventoryUserdataIntrospection.valueKinds).length ? Object.entries(localInventoryUserdataIntrospection.valueKinds).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Safe tostring kinds: ${Object.keys(localInventoryUserdataIntrospection.tostringKinds).length ? Object.entries(localInventoryUserdataIntrospection.tostringKinds).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Safe tostring prefixes: ${Object.keys(localInventoryUserdataIntrospection.tostringPrefixes).length ? Object.entries(localInventoryUserdataIntrospection.tostringPrefixes).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Metatable kinds: ${Object.keys(localInventoryUserdataIntrospection.metatableKinds).length ? Object.entries(localInventoryUserdataIntrospection.metatableKinds).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Length operator attempted: ${Object.keys(localInventoryUserdataIntrospection.lenOperatorAttempted).length ? Object.entries(localInventoryUserdataIntrospection.lenOperatorAttempted).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Length operator results: ${Object.keys(localInventoryUserdataIntrospection.lenOperatorResults).length ? Object.entries(localInventoryUserdataIntrospection.lenOperatorResults).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Length operator errors: ${Object.keys(localInventoryUserdataIntrospection.lenOperatorErrors).length ? Object.entries(localInventoryUserdataIntrospection.lenOperatorErrors).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Array traversal attempted: ${localInventoryUserdataIntrospection.noArrayTraversal ? 'no' : 'yes'}\n`;
+    out += `- Array elements dereferenced: ${localInventoryUserdataIntrospection.noElementDereference ? 'no' : 'yes'}\n`;
+    out += `- InventoryInfo read: ${localInventoryUserdataIntrospection.noInventoryInfo ? 'no' : 'yes'}\n`;
+    out += `- Enhancements read: ${localInventoryUserdataIntrospection.noEnhancements ? 'no' : 'yes'}\n`;
+    out += `- Writes/RPCs: ${localInventoryUserdataIntrospection.noWrites && localInventoryUserdataIntrospection.noRpcs ? 'no' : 'yes'}\n`;
+    out += localInventoryUserdataIntrospection.crashSuspect
+      ? '- A crash dump exists after this run, so this metadata path remains crash-suspect pending a repeat.\n'
+      : '- No crash dump is associated with the imported userdata introspection evidence.\n';
+    out += '- Any length operator result is metadata-only; it is not proof of count traversal or item synchronization.\n';
+  }
+
   out += '\n## Confirmed Unsafe Paths\n\n';
   out += '- HUD ReceiveDrawHUD tick hook remains blocked by default.\n';
   out += '- `FindFirstOf.CrabHC` is not confirmed as a player-health source; imported evidence has seen an unscoped destructible/barrel candidate.\n';
@@ -1125,7 +1320,8 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.\n';
   out += '- Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.\n';
   out += '- Crystals, slots, equipment, and inventory array counts are only covered by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.\n';
-  out += '- Local inventory array shallow/count visibility is covered by `local-inventory-array-shallow-read`; safer property-shape confirmation is covered separately by `local-inventory-array-shape-confirm`.\n';
+  out += '- Local inventory array shallow/count visibility is covered by `local-inventory-array-shallow-read`; property-shape confirmation is covered by `local-inventory-array-shape-confirm`; userdata wrapper metadata is covered by `local-inventory-userdata-introspection`.\n';
+  out += '- Item contents are still not proven; userdata metadata does not read item data asset fields or element contents.\n';
   out += '- `InventoryInfo` and enhancements remain placeholders until explicit probe sets are implemented.\n';
   out += '- Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.\n';
 
@@ -1137,6 +1333,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- `allowResourceVisibilityProbes` is enabled only for `multiplayer-resource-visibility-read`.\n';
   out += '- `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.\n';
   out += '- `allowInventoryArrayShapeConfirmProbes` is enabled only for `local-inventory-array-shape-confirm`.\n';
+  out += '- `allowInventoryUserdataIntrospectionProbes` is enabled only for `local-inventory-userdata-introspection`.\n';
   out += '- `allowDeepArrayProbes` and `allowInventoryInfoProbes` are not enabled by implemented phases.\n';
   return out;
 }
@@ -1149,6 +1346,7 @@ module.exports = {
   STATE_PATH,
   classifyLocalInventoryArrayEvidence,
   classifyLocalInventoryArrayShapeConfirmEvidence,
+  classifyLocalInventoryUserdataIntrospectionEvidence,
   classifyResourceVisibilityEvidence,
   classifyRosterEvidence,
   completedPhaseIds,

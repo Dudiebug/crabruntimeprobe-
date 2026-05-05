@@ -34,7 +34,7 @@ $phase = @($plan.phases | Where-Object { $_.phaseId -eq "local-inventory-array-s
 if ($null -eq $phase) { throw "campaign plan missing local-inventory-array-shape-confirm." }
 if ($phase.probeSet -ne "local-inventory-array-shape-confirm") { throw "shape confirm phase has wrong probeSet." }
 if ($phase.requiredGates.allowInventoryArrayShapeConfirmProbes -ne $true) { throw "shape confirm phase must enable allowInventoryArrayShapeConfirmProbes." }
-foreach ($gate in @("allowInventoryArrayShallowProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowRawIdentityEvidence", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes")) {
+foreach ($gate in @("allowInventoryArrayShallowProbes", "allowInventoryUserdataIntrospectionProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowRawIdentityEvidence", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes")) {
   if (@($phase.forbiddenGates) -notcontains $gate) {
     throw "shape confirm phase must forbid $gate."
   }
@@ -109,7 +109,7 @@ if (Test-Path -LiteralPath $WorkRoot) {
 New-Item -ItemType Directory -Force -Path (Join-Path $WorkRoot "evidence\runtime\shapeconfirm") | Out-Null
 Copy-Item -LiteralPath (Join-Path $RepoRoot "campaign") -Destination (Join-Path $WorkRoot "campaign") -Recurse
 
-$safeGates = '"allowHudTickHook":false,"allowUnknownRoleProbes":false,"allowJoinedClientDeepProbes":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":false,"allowIdentityProbes":false,"allowRawIdentityEvidence":false,"allowResourceVisibilityProbes":false,"allowInventoryArrayShallowProbes":false,"allowInventoryArrayShapeConfirmProbes":true,"allowWriteProbes":false,"allowRpcProbes":false'
+$safeGates = '"allowHudTickHook":false,"allowUnknownRoleProbes":false,"allowJoinedClientDeepProbes":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":false,"allowIdentityProbes":false,"allowRawIdentityEvidence":false,"allowResourceVisibilityProbes":false,"allowInventoryArrayShallowProbes":false,"allowInventoryArrayShapeConfirmProbes":true,"allowInventoryUserdataIntrospectionProbes":false,"allowWriteProbes":false,"allowRpcProbes":false'
 $SessionDir = Join-Path $WorkRoot "evidence\runtime\shapeconfirm"
 $shapeRow = ('{"timestamp":"2026-05-05T08:00:01Z","sessionId":"shapeconfirm","probeId":"Inventory.LocalArrays.ShapeConfirm","probeName":"Inventory.LocalArrays.ShapeConfirm","probeSet":"local-inventory-array-shape-confirm","category":"inventory-local-shape-confirm","symbol":"CrabPS.WeaponMods","owner":"CrabPS","member":"WeaponMods AbilityMods MeleeMods Perks Relics","accessMethod":"GetPropertyValueShapeConfirm","accessKind":"localInventoryArrayShapeConfirm","mode":"active","tickDriver":"executeDelay","tick":100,"context":"solo","role":"solo-or-host","lifecycleState":"stable","result":"ok","runtimeStatus":"SAFE","valueKind":"local_inventory_array_shape_confirm","valueSummary":"category=shape-confirm localPlayerStatePresent=true fieldsReadable=5 fieldsNilOrUnsupported=0 noArrayCount=true noArrayTraversal=true noElementDereference=true crashAttributionMarker=shape-confirm","sourceScope":"local_player_state_inventory_shape_confirm","sourcePath":"CrabPC.PlayerState","sourceClass":"CrabPS","localPlayerStatePresent":true,"arrayFieldNames":["WeaponMods","AbilityMods","MeleeMods","Perks","Relics"],"arrayValueKinds":{"WeaponMods":"userdata","AbilityMods":"userdata","MeleeMods":"userdata","Perks":"userdata","Relics":"userdata"},"arrayPropertiesPresent":{"WeaponMods":true,"AbilityMods":true,"MeleeMods":true,"Perks":true,"Relics":true},"arrayTostringKinds":{"WeaponMods":"string","AbilityMods":"string","MeleeMods":"string","Perks":"string","Relics":"string"},"slotScalarValues":{"NumWeaponModSlots":24,"NumAbilityModSlots":12,"NumMeleeModSlots":12,"NumPerkSlots":24},"fieldResults":{"WeaponMods":"present","AbilityMods":"present","MeleeMods":"present","Perks":"present","Relics":"present"},"fieldsReadable":["WeaponMods","AbilityMods","MeleeMods","Perks","Relics"],"fieldsNilOrUnsupported":[],"noElementDereference":true,"noArrayCount":true,"noArrayTraversal":true,"noInventoryInfo":true,"noEnhancements":true,"crashAttributionMarker":"shape-confirm","safetyGates":{' + $safeGates + '}}')
 Set-Content -LiteralPath (Join-Path $SessionDir "access_evidence.jsonl") -Encoding ASCII -Value @($shapeRow)
@@ -134,6 +134,7 @@ function assert(condition, message) {
 }
 const safeGates = {
   allowInventoryArrayShapeConfirmProbes: true,
+  allowInventoryUserdataIntrospectionProbes: false,
   allowInventoryArrayShallowProbes: false,
   allowDeepArrayProbes: false,
   allowInventoryInfoProbes: false,

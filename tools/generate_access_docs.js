@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { parseIdentityFromFullName, extractFullNameFromSummary } = require('./identity_helpers');
-const { classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
+const { classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
 
 function walk(dir, name) {
   if (!fs.existsSync(dir)) return [];
@@ -293,7 +293,9 @@ const localInventoryFacts = {
 const latestLocalInventorySessionId = evidenceRows
   .filter((row) => {
     const id = row.probeId || row.probeName || row.event || '';
-    return /^Inventory\.Local(Arrays|Slots)\./.test(id) && id !== 'Inventory.LocalArrays.ShapeConfirm';
+    return /^Inventory\.Local(Arrays|Slots)\./.test(id) &&
+      id !== 'Inventory.LocalArrays.ShapeConfirm' &&
+      id !== 'Inventory.LocalArrays.UserdataIntrospection';
   })
   .map((row) => row.sessionId)
   .filter(Boolean)
@@ -310,6 +312,15 @@ const latestLocalInventoryShapeConfirmSessionId = evidenceRows
   .pop();
 const localInventoryShapeConfirm = classifyLocalInventoryArrayShapeConfirmEvidence(evidenceRows, {
   crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestLocalInventoryShapeConfirmSessionId)
+});
+const latestLocalInventoryUserdataIntrospectionSessionId = evidenceRows
+  .filter((row) => (row.probeId || row.probeName || row.event || '') === 'Inventory.LocalArrays.UserdataIntrospection')
+  .map((row) => row.sessionId)
+  .filter(Boolean)
+  .sort()
+  .pop();
+const localInventoryUserdataIntrospection = classifyLocalInventoryUserdataIntrospectionEvidence(evidenceRows, {
+  crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestLocalInventoryUserdataIntrospectionSessionId)
 });
 index += '\n## Local Inventory Array Shallow/Count Visibility Summary\n\n';
 if (!localInventory.localInventoryArrayEvidenceFound) {
@@ -356,6 +367,29 @@ if (!localInventoryShapeConfirm.localInventoryShapeConfirmEvidenceFound) {
     ? '- A crash dump exists after this run, so this confirmation path remains crash-suspect pending another safer confirmation pass.\n'
     : '- No crash dump is associated with the imported shape-confirm evidence.\n';
   index += '- Shape confirm distinguishes userdata shape visibility from countable Lua table arrays; counts remain unavailable for userdata values.\n';
+}
+index += '\n## Local Inventory Userdata Introspection Summary\n\n';
+if (!localInventoryUserdataIntrospection.localInventoryUserdataIntrospectionEvidenceFound) {
+  index += '- Summary: unresolved; no `local-inventory-userdata-introspection` evidence has been imported yet.\n';
+  index += '- Userdata introspection inspects wrapper metadata only after shape visibility is confirmed.\n';
+  index += '- It does not traverse arrays, dereference elements, read InventoryInfo, read Enhancements, write, or call RPCs.\n';
+} else {
+  index += `- Summary: ${localInventoryUserdataIntrospection.classification}\n`;
+  index += `- Local inventory userdata introspection status: ${localInventoryUserdataIntrospection.status}\n`;
+  index += `- Local PlayerState present: ${localInventoryUserdataIntrospection.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
+  index += `- Fields readable by userdata introspection: ${localInventoryUserdataIntrospection.fieldsReadable.length ? localInventoryUserdataIntrospection.fieldsReadable.join(', ') : 'none'}\n`;
+  index += `- Value kinds: ${Object.keys(localInventoryUserdataIntrospection.valueKinds).length ? Object.entries(localInventoryUserdataIntrospection.valueKinds).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Safe tostring kinds: ${Object.keys(localInventoryUserdataIntrospection.tostringKinds).length ? Object.entries(localInventoryUserdataIntrospection.tostringKinds).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Metatable kinds: ${Object.keys(localInventoryUserdataIntrospection.metatableKinds).length ? Object.entries(localInventoryUserdataIntrospection.metatableKinds).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Length operator attempted: ${Object.keys(localInventoryUserdataIntrospection.lenOperatorAttempted).length ? Object.entries(localInventoryUserdataIntrospection.lenOperatorAttempted).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Length operator results: ${Object.keys(localInventoryUserdataIntrospection.lenOperatorResults).length ? Object.entries(localInventoryUserdataIntrospection.lenOperatorResults).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Length operator errors: ${Object.keys(localInventoryUserdataIntrospection.lenOperatorErrors).length ? Object.entries(localInventoryUserdataIntrospection.lenOperatorErrors).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Array traversal attempted: ${localInventoryUserdataIntrospection.noArrayTraversal ? 'no' : 'yes'}\n`;
+  index += `- Array elements dereferenced: ${localInventoryUserdataIntrospection.noElementDereference ? 'no' : 'yes'}\n`;
+  index += `- InventoryInfo read: ${localInventoryUserdataIntrospection.noInventoryInfo ? 'no' : 'yes'}\n`;
+  index += `- Enhancements read: ${localInventoryUserdataIntrospection.noEnhancements ? 'no' : 'yes'}\n`;
+  index += `- Writes/RPCs: ${localInventoryUserdataIntrospection.noWrites && localInventoryUserdataIntrospection.noRpcs ? 'no' : 'yes'}\n`;
+  index += '- Length operator results, if present, are metadata-only and do not prove count traversal, element traversal, or item sync.\n';
 }
 index += '\n## Confirmed SAFE Access Rows\n\n';
 const safeRows = rows.filter((row) => bestStatus(row.statuses) === 'SAFE');
@@ -417,6 +451,7 @@ const defaultUntested = [
   ['CrabPS.WeaponMods', 'RemotePlayerStateCountOnly', 'UNTESTED', 'Remote inventory arrays are count-only in resource visibility and remain unresolved until evidence proves visibility.'],
   ['CrabPS.WeaponMods', 'GetPropertyValueCountOnly', 'UNTESTED', 'Local inventory arrays require local-inventory-array-shallow-read; no element dereference.'],
   ['CrabPS.WeaponMods', 'GetPropertyValueShapeConfirm', 'UNTESTED', 'Local inventory shape confirm reads property presence/value kind only; no count, traversal, element dereference, InventoryInfo, or Enhancements.'],
+  ['CrabPS.WeaponMods', 'GetPropertyValueUserdataMetadata', 'UNTESTED', 'Local inventory userdata introspection reads wrapper metadata only; length operator results are metadata-only and not element traversal proof.'],
   ['PlayerState.UniqueId', 'identity', 'UNTESTED', 'Stable IDs must be fingerprinted unless allowRawIdentityEvidence is explicitly enabled.'],
   ['GameplayState.*', 'write', 'UNSAFE_DISABLED', 'Writes are disabled.'],
   ['RPC.*', 'rpc', 'UNSAFE_DISABLED', 'RPC probes are disabled.']
