@@ -1,11 +1,11 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T21:18:09.098Z
+- Updated: 2026-05-05T22:48:05.028Z
 - Current phase: `local-inventory-userdata-introspection`
 - Next recommended phase: `local-inventory-userdata-introspection`
 - Latest session: 20260505T204615Z
-- Latest commit: d6b22d298690352642faf2ee497642f505cafa2c
+- Latest commit: 079f8cb1f06ff7760f31317f12f176140fb5919c
 - Latest summary: evidence/runtime/20260505T204615Z/diagnostic_summary.txt
 
 ## Completed Phases

@@ -92,6 +92,8 @@ foreach ($required in @(
   "noEnhancements = true",
   "noWrites = true",
   "noRpcs = true",
+  "noHud = true",
+  "noDeepArrays = true",
   "crashAttributionMarker = 'userdata-introspection'"
 )) {
   if ($introspectionBlock -notmatch [regex]::Escape($required)) {
@@ -151,20 +153,20 @@ const safeGates = {
   allowJoinedClientDeepProbes: false
 };
 let result = helpers.classifyLocalInventoryUserdataIntrospectionEvidence([
-  { probeName: 'Inventory.LocalArrays.UserdataIntrospection', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], valueKinds: { WeaponMods: 'userdata' }, tostringKinds: { WeaponMods: 'string' }, metatableKinds: { WeaponMods: 'table' }, lenOperatorAttempted: { WeaponMods: true }, lenOperatorResults: { WeaponMods: 0 }, noElementDereference: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, safetyGates: safeGates }
+  { probeName: 'Inventory.LocalArrays.UserdataIntrospection', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], valueKinds: { WeaponMods: 'userdata' }, tostringKinds: { WeaponMods: 'string' }, metatableKinds: { WeaponMods: 'table' }, lenOperatorAttempted: { WeaponMods: true }, lenOperatorResults: { WeaponMods: 0 }, noElementDereference: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, safetyGates: safeGates }
 ]);
 assert(result.status === 'local_inventory_userdata_introspection_confirmed', `userdata metadata should confirm, got ${result.status}`);
 assert(result.lenOperatorResults.WeaponMods === '0', 'len operator result should be preserved as metadata');
 result = helpers.classifyLocalInventoryUserdataIntrospectionEvidence([
-  { probeName: 'Inventory.LocalArrays.UserdataIntrospection', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], valueKinds: { WeaponMods: 'userdata' }, noElementDereference: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, safetyGates: safeGates }
+  { probeName: 'Inventory.LocalArrays.UserdataIntrospection', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], valueKinds: { WeaponMods: 'userdata' }, noElementDereference: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, safetyGates: safeGates }
 ], { crashSuspect: true });
 assert(result.status === 'crash_suspect_local_inventory_userdata_introspection', `crash evidence should be crash-suspect, got ${result.status}`);
 result = helpers.classifyLocalInventoryUserdataIntrospectionEvidence([
-  { probeName: 'Inventory.LocalArrays.UserdataIntrospection', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], valueKinds: { WeaponMods: 'userdata' }, noElementDereference: true, noArrayTraversal: false, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, safetyGates: safeGates }
+  { probeName: 'Inventory.LocalArrays.UserdataIntrospection', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], valueKinds: { WeaponMods: 'userdata' }, noElementDereference: true, noArrayTraversal: false, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, safetyGates: safeGates }
 ]);
 assert(result.status === 'failed', `traversal marker should fail, got ${result.status}`);
 result = helpers.classifyLocalInventoryUserdataIntrospectionEvidence([
-  { probeName: 'Inventory.LocalArrays.UserdataIntrospection', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], valueKinds: { WeaponMods: 'userdata' }, noElementDereference: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, safetyGates: { ...safeGates, allowInventoryArrayShapeConfirmProbes: true } }
+  { probeName: 'Inventory.LocalArrays.UserdataIntrospection', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], valueKinds: { WeaponMods: 'userdata' }, noElementDereference: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, safetyGates: { ...safeGates, allowInventoryArrayShapeConfirmProbes: true } }
 ]);
 assert(result.status === 'failed', `forbidden gate should fail, got ${result.status}`);
 '@

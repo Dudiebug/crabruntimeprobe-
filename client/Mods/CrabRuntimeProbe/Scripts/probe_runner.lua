@@ -137,11 +137,24 @@ function runner.new(config, safe, writer, evidenceWriter)
       record.fieldResults = meta.fieldResults
       record.fieldsReadable = meta.fieldsReadable
       record.fieldsNilOrUnsupported = meta.fieldsNilOrUnsupported
+      record.valueKinds = meta.valueKinds
+      record.tostringKinds = meta.tostringKinds
+      record.tostringPrefixes = meta.tostringPrefixes
+      record.metatableKinds = meta.metatableKinds
+      record.metatableKeys = meta.metatableKeys
+      record.metatableErrors = meta.metatableErrors
+      record.lenOperatorAttempted = meta.lenOperatorAttempted
+      record.lenOperatorResults = meta.lenOperatorResults
+      record.lenOperatorErrors = meta.lenOperatorErrors
       record.noElementDereference = meta.noElementDereference
       record.noArrayCount = meta.noArrayCount
       record.noArrayTraversal = meta.noArrayTraversal
       record.noInventoryInfo = meta.noInventoryInfo
       record.noEnhancements = meta.noEnhancements
+      record.noWrites = meta.noWrites
+      record.noRpcs = meta.noRpcs
+      record.noHud = meta.noHud
+      record.noDeepArrays = meta.noDeepArrays
       record.crashAttributionMarker = meta.crashAttributionMarker
     end
     evidenceWriter:writeEvidence(record)
@@ -217,11 +230,24 @@ function runner.new(config, safe, writer, evidenceWriter)
       row.fieldResults = meta.fieldResults
       row.fieldsReadable = meta.fieldsReadable
       row.fieldsNilOrUnsupported = meta.fieldsNilOrUnsupported
+      row.valueKinds = meta.valueKinds
+      row.tostringKinds = meta.tostringKinds
+      row.tostringPrefixes = meta.tostringPrefixes
+      row.metatableKinds = meta.metatableKinds
+      row.metatableKeys = meta.metatableKeys
+      row.metatableErrors = meta.metatableErrors
+      row.lenOperatorAttempted = meta.lenOperatorAttempted
+      row.lenOperatorResults = meta.lenOperatorResults
+      row.lenOperatorErrors = meta.lenOperatorErrors
       row.noElementDereference = meta.noElementDereference
       row.noArrayCount = meta.noArrayCount
       row.noArrayTraversal = meta.noArrayTraversal
       row.noInventoryInfo = meta.noInventoryInfo
       row.noEnhancements = meta.noEnhancements
+      row.noWrites = meta.noWrites
+      row.noRpcs = meta.noRpcs
+      row.noHud = meta.noHud
+      row.noDeepArrays = meta.noDeepArrays
       row.crashAttributionMarker = meta.crashAttributionMarker
     end
     writer:write(row)

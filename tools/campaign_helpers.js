@@ -474,7 +474,9 @@ function classifyLocalInventoryUserdataIntrospectionEvidence(rows, options = {})
       row.noInventoryInfo !== true ||
       row.noEnhancements !== true ||
       row.noWrites !== true ||
-      row.noRpcs !== true;
+      row.noRpcs !== true ||
+      row.noHud !== true ||
+      row.noDeepArrays !== true;
   });
   const hasMetadataEvidence = introspectionRows.length > 0 && (
     fieldsReadable.length > 0 ||
@@ -512,6 +514,8 @@ function classifyLocalInventoryUserdataIntrospectionEvidence(rows, options = {})
     noEnhancements: introspectionRows.length > 0 && introspectionRows.every((row) => row.noEnhancements === true),
     noWrites: introspectionRows.length > 0 && introspectionRows.every((row) => row.noWrites === true),
     noRpcs: introspectionRows.length > 0 && introspectionRows.every((row) => row.noRpcs === true),
+    noHud: introspectionRows.length > 0 && introspectionRows.every((row) => row.noHud === true),
+    noDeepArrays: introspectionRows.length > 0 && introspectionRows.every((row) => row.noDeepArrays === true),
     safetyViolation,
     crashSuspect: options.crashSuspect === true,
     classification,
@@ -1304,6 +1308,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     out += `- InventoryInfo read: ${localInventoryUserdataIntrospection.noInventoryInfo ? 'no' : 'yes'}\n`;
     out += `- Enhancements read: ${localInventoryUserdataIntrospection.noEnhancements ? 'no' : 'yes'}\n`;
     out += `- Writes/RPCs: ${localInventoryUserdataIntrospection.noWrites && localInventoryUserdataIntrospection.noRpcs ? 'no' : 'yes'}\n`;
+    out += `- HUD/deep arrays: ${localInventoryUserdataIntrospection.noHud && localInventoryUserdataIntrospection.noDeepArrays ? 'no' : 'yes'}\n`;
     out += localInventoryUserdataIntrospection.crashSuspect
       ? '- A crash dump exists after this run, so this metadata path remains crash-suspect pending a repeat.\n'
       : '- No crash dump is associated with the imported userdata introspection evidence.\n';

@@ -559,7 +559,7 @@ if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "lo
   $hasMetadataEvidence = $false
   $safetyViolation = $false
   foreach ($row in $introspectionRows) {
-    foreach ($flag in @("noElementDereference", "noArrayTraversal", "noInventoryInfo", "noEnhancements", "noWrites", "noRpcs")) {
+    foreach ($flag in @("noElementDereference", "noArrayTraversal", "noInventoryInfo", "noEnhancements", "noWrites", "noRpcs", "noHud", "noDeepArrays")) {
       if (-not ($row.PSObject.Properties.Name -contains $flag) -or $row.$flag -ne $true) {
         $safetyViolation = $true
       }

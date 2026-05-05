@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-05T21:18:09.098Z",
+  "updatedAt": "2026-05-05T22:48:05.028Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -157,7 +157,7 @@
   "currentPhase": "local-inventory-userdata-introspection",
   "nextRecommendedPhase": "local-inventory-userdata-introspection",
   "latestSessionId": "20260505T204615Z",
-  "latestCommit": "d6b22d298690352642faf2ee497642f505cafa2c",
+  "latestCommit": "079f8cb1f06ff7760f31317f12f176140fb5919c",
   "latestSummaryPath": "evidence/runtime/20260505T204615Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {
