@@ -28,6 +28,9 @@ if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "allowRe
 if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "allowInventoryArrayShallowProbes") -ne "false") {
   throw "default config expected allowInventoryArrayShallowProbes = false."
 }
+if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "allowInventoryArrayShapeConfirmProbes") -ne "false") {
+  throw "default config expected allowInventoryArrayShapeConfirmProbes = false."
+}
 
 $probeRegistry = Get-Content -Raw -LiteralPath $ProbeRegistryPath
 $probeRunner = Get-Content -Raw -LiteralPath $ProbeRunnerPath
@@ -56,7 +59,7 @@ if (Test-Path -LiteralPath $WorkRoot) {
 New-Item -ItemType Directory -Force -Path (Join-Path $WorkRoot "evidence\runtime\resourcevisible") | Out-Null
 Copy-Item -LiteralPath (Join-Path $RepoRoot "campaign") -Destination (Join-Path $WorkRoot "campaign") -Recurse
 
-$safeGates = '"allowHudTickHook":false,"allowUnknownRoleProbes":false,"allowJoinedClientDeepProbes":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":true,"allowIdentityProbes":true,"allowRawIdentityEvidence":false,"allowResourceVisibilityProbes":true,"allowInventoryArrayShallowProbes":false,"allowWriteProbes":false,"allowRpcProbes":false'
+$safeGates = '"allowHudTickHook":false,"allowUnknownRoleProbes":false,"allowJoinedClientDeepProbes":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":true,"allowIdentityProbes":true,"allowRawIdentityEvidence":false,"allowResourceVisibilityProbes":true,"allowInventoryArrayShallowProbes":false,"allowInventoryArrayShapeConfirmProbes":false,"allowWriteProbes":false,"allowRpcProbes":false'
 $SessionDir = Join-Path $WorkRoot "evidence\runtime\resourcevisible"
 Set-Content -LiteralPath (Join-Path $SessionDir "access_evidence.jsonl") -Encoding ASCII -Value @(
   ('{"timestamp":"2026-05-05T00:00:01Z","sessionId":"resourcevisible","probeId":"ResourceVisibility.PlayerState.Sample","probeName":"ResourceVisibility.PlayerState.Sample","probeSet":"multiplayer-resource-visibility-read","category":"resource-visibility","symbol":"PlayerState.Identity","owner":"PlayerState","member":"PlayerName UniqueId","accessMethod":"GetPropertyValue","accessKind":"resourceVisibilityIdentity","mode":"active","tickDriver":"executeDelay","tick":100,"context":"multiplayer","role":"joined-client","lifecycleState":"stable","result":"ok","runtimeStatus":"SAFE","valueKind":"resource_visibility_identity","valueSummary":"visiblePlayerCount=2 sampledPlayerStateCount=2 rawIdentityEvidence=false","visiblePlayerCount":2,"sampledPlayerStateCount":2,"visiblePlayerCap":16,"displayNameFingerprints":["abc12345:len7","feedcafe:len5"],"stableIdFingerprints":["def67890:len17","0123abcd:len17"],"identityRawRedacted":true,"rawIdentityEvidence":false,"readableCrystalsCount":2,"readableSlotsCount":2,"readableEquipmentCount":2,"readableInventoryArrayCount":2,"readableHealthCount":2,"resourceVisibilityClass":"remote-visible","supportsP2PResourceMerge":"yes","fieldsVisibleAcrossMultiple":["Crystals","NumWeaponModSlots","WeaponDA","WeaponMods"],"fieldsOnlyVisibleOnLocal":[],"fieldsNilOrErrors":["Keys"],"nonIdentityResourceCategoryEvaluated":true,"safetyGates":{' + $safeGates + '}}'),

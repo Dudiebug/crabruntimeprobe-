@@ -1,9 +1,9 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T20:16:13.036Z
+- Updated: 2026-05-05T20:41:23.725Z
 - Current phase: none
-- Next recommended phase: `local-inventory-array-shallow-read`
+- Next recommended phase: `local-inventory-array-shape-confirm`
 - Latest session: 20260505T072250Z
 - Latest commit: 591389d5f71e99e2c19f7c287290cbf853a8e496
 - Latest summary: evidence/runtime/20260505T072250Z/diagnostic_summary.txt
@@ -40,7 +40,7 @@
 
 ## Pending Phases
 
-- None.
+- `local-inventory-array-shape-confirm` - Local inventory array shape confirm
 
 ## Confirmed Safe Paths
 
@@ -80,7 +80,7 @@
 - Raw IDs/names emitted: no, redacted/fingerprinted by default
 - No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.
 
-## Local Inventory Array Visibility
+## Local Inventory Array Shallow/Count Visibility
 
 - Summary: local_inventory_shape_visible_crash_suspect
 - Local inventory array status: crash_suspect_local_inventory_shape_visible
@@ -95,6 +95,12 @@
 - A crash dump exists after this run, so this path remains crash-suspect pending another safer confirmation pass.
 - Remote inventory array visibility remains unresolved separately.
 
+## Local Inventory Array Shape Confirm
+
+- Summary: unresolved; no `local-inventory-array-shape-confirm` evidence has been imported yet.
+- Purpose: repeat only local CrabPC -> PlayerState slot scalar and inventory array property shape reads.
+- This confirmation phase does not count arrays, traverse arrays, dereference userdata, read InventoryInfo, or read Enhancements.
+
 ## Confirmed Unsafe Paths
 
 - HUD ReceiveDrawHUD tick hook remains blocked by default.
@@ -107,7 +113,7 @@
 - Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.
 - Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.
 - Crystals, slots, equipment, and inventory array counts are only covered by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.
-- Local inventory array visibility is separate from remote PlayerState resource visibility and is covered only by `local-inventory-array-shallow-read` after imported evidence exists.
+- Local inventory array shallow/count visibility is covered by `local-inventory-array-shallow-read`; safer property-shape confirmation is covered separately by `local-inventory-array-shape-confirm`.
 - `InventoryInfo` and enhancements remain placeholders until explicit probe sets are implemented.
 - Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.
 
@@ -119,4 +125,5 @@
 - `allowIdentityProbes` is enabled only for the explicit multiplayer roster and resource visibility phases; `allowRawIdentityEvidence` remains false by default.
 - `allowResourceVisibilityProbes` is enabled only for `multiplayer-resource-visibility-read`.
 - `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.
+- `allowInventoryArrayShapeConfirmProbes` is enabled only for `local-inventory-array-shape-confirm`.
 - `allowDeepArrayProbes` and `allowInventoryInfoProbes` are not enabled by implemented phases.

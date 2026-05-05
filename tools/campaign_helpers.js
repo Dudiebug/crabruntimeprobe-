@@ -17,6 +17,7 @@ const ALL_GATES = [
   'allowRawIdentityEvidence',
   'allowResourceVisibilityProbes',
   'allowInventoryArrayShallowProbes',
+  'allowInventoryArrayShapeConfirmProbes',
   'allowWriteProbes',
   'allowRpcProbes'
 ];
@@ -239,7 +240,12 @@ function classifyResourceVisibilityEvidence(rows) {
 }
 
 function isLocalInventoryArrayRow(row) {
-  return /^Inventory\.Local(Arrays|Slots)\./.test(row.probeName || row.probeId || row.event || '');
+  const id = row.probeName || row.probeId || row.event || '';
+  return /^Inventory\.Local(Arrays|Slots)\./.test(id) && id !== 'Inventory.LocalArrays.ShapeConfirm';
+}
+
+function isLocalInventoryArrayShapeConfirmRow(row) {
+  return (row.probeName || row.probeId || row.event || '') === 'Inventory.LocalArrays.ShapeConfirm';
 }
 
 function classifyLocalInventoryArrayEvidence(rows, options = {}) {
@@ -316,6 +322,92 @@ function classifyLocalInventoryArrayEvidence(rows, options = {}) {
   };
 }
 
+function classifyLocalInventoryArrayShapeConfirmEvidence(rows, options = {}) {
+  const confirmRows = rows.filter(isLocalInventoryArrayShapeConfirmRow);
+  const fieldsReadable = Array.from(new Set(confirmRows.flatMap((row) => flattenStringList(row.fieldsReadable)))).sort();
+  const fieldsNilOrUnsupported = Array.from(new Set(confirmRows.flatMap((row) => flattenStringList(row.fieldsNilOrUnsupported)))).sort();
+  const localPlayerStatePresent = confirmRows.some((row) => row.localPlayerStatePresent === true);
+  const arrayValueKinds = {};
+  const arrayPropertiesPresent = {};
+  const arrayTostringKinds = {};
+  const slotScalarValues = {};
+  const fieldResults = {};
+  for (const row of confirmRows) {
+    if (row.arrayValueKinds && typeof row.arrayValueKinds === 'object') {
+      for (const [name, value] of Object.entries(row.arrayValueKinds)) arrayValueKinds[name] = String(value);
+    }
+    if (row.arrayPropertiesPresent && typeof row.arrayPropertiesPresent === 'object') {
+      for (const [name, value] of Object.entries(row.arrayPropertiesPresent)) arrayPropertiesPresent[name] = value === true;
+    }
+    if (row.arrayTostringKinds && typeof row.arrayTostringKinds === 'object') {
+      for (const [name, value] of Object.entries(row.arrayTostringKinds)) arrayTostringKinds[name] = String(value);
+    }
+    if (row.slotScalarValues && typeof row.slotScalarValues === 'object') {
+      for (const [name, value] of Object.entries(row.slotScalarValues)) slotScalarValues[name] = value;
+    }
+    if (row.fieldResults && typeof row.fieldResults === 'object') {
+      for (const [name, value] of Object.entries(row.fieldResults)) fieldResults[name] = String(value);
+    }
+  }
+  const forbiddenGateNames = [
+    'allowInventoryArrayShallowProbes',
+    'allowDeepArrayProbes',
+    'allowInventoryInfoProbes',
+    'allowWriteProbes',
+    'allowRpcProbes',
+    'allowHudTickHook',
+    'allowRawIdentityEvidence',
+    'allowHealthProbes',
+    'allowIdentityProbes',
+    'allowResourceVisibilityProbes',
+    'allowUnknownRoleProbes',
+    'allowJoinedClientDeepProbes'
+  ];
+  const safetyViolation = confirmRows.some((row) => {
+    const gates = row && row.safetyGates ? row.safetyGates : {};
+    return forbiddenGateNames.some((gate) => gates[gate] === true) ||
+      row.noElementDereference !== true ||
+      row.noArrayCount !== true ||
+      row.noArrayTraversal !== true ||
+      row.noInventoryInfo !== true ||
+      row.noEnhancements !== true;
+  });
+  const hasShapeEvidence = confirmRows.length > 0 && (
+    fieldsReadable.length > 0 ||
+    Object.keys(arrayValueKinds).length > 0 ||
+    Object.keys(arrayPropertiesPresent).length > 0 ||
+    localPlayerStatePresent
+  );
+  let status = 'no_evidence';
+  let classification = 'unresolved';
+  if (safetyViolation) {
+    status = 'failed';
+  } else if (hasShapeEvidence) {
+    status = options.crashSuspect ? 'crash_suspect_local_inventory_shape_confirmed' : 'local_inventory_shape_confirmed';
+    classification = options.crashSuspect ? 'local_inventory_shape_confirmed_crash_suspect' : 'local_inventory_shape_confirmed';
+  }
+  return {
+    localInventoryShapeConfirmEvidenceFound: confirmRows.length > 0,
+    localPlayerStatePresent,
+    fieldsReadable,
+    fieldsNilOrUnsupported,
+    arrayValueKinds,
+    arrayPropertiesPresent,
+    arrayTostringKinds,
+    slotScalarValues,
+    fieldResults,
+    noElementDereference: confirmRows.length > 0 && confirmRows.every((row) => row.noElementDereference === true),
+    noArrayCount: confirmRows.length > 0 && confirmRows.every((row) => row.noArrayCount === true),
+    noArrayTraversal: confirmRows.length > 0 && confirmRows.every((row) => row.noArrayTraversal === true),
+    noInventoryInfo: confirmRows.length > 0 && confirmRows.every((row) => row.noInventoryInfo === true),
+    noEnhancements: confirmRows.length > 0 && confirmRows.every((row) => row.noEnhancements === true),
+    safetyViolation,
+    crashSuspect: options.crashSuspect === true,
+    classification,
+    status
+  };
+}
+
 function hasCrashSuspectEvidenceForSession(facts, sessionId) {
   const text = facts && facts.text ? facts.text : '';
   if (!text) return false;
@@ -373,6 +465,9 @@ function validatePhaseSafety(phase, gates = gateConfigForPhaseUnchecked(phase)) 
   }
   if (gates.allowInventoryArrayShallowProbes && phase.phaseId !== 'local-inventory-array-shallow-read') {
     throw new Error(`${phase.phaseId} may not enable allowInventoryArrayShallowProbes.`);
+  }
+  if (gates.allowInventoryArrayShapeConfirmProbes && phase.phaseId !== 'local-inventory-array-shape-confirm') {
+    throw new Error(`${phase.phaseId} may not enable allowInventoryArrayShapeConfirmProbes.`);
   }
   if (gates.allowHealthProbes && !/^health-|^multiplayer-health-/.test(phase.phaseId) && phase.phaseId !== 'multiplayer-resource-visibility-read') {
     throw new Error(`${phase.phaseId} may not enable allowHealthProbes.`);
@@ -558,6 +653,25 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
       latestSummaryPath: facts.latestSummaryPath || ''
     });
   }
+  const localInventoryShapeConfirm = classifyLocalInventoryArrayShapeConfirmEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, facts.latestSessionId)
+  });
+  if (localInventoryShapeConfirm.status === 'local_inventory_shape_confirmed') {
+    add('local-inventory-array-shape-confirm', 'Imported evidence contains local PlayerState inventory array property shape confirmation with no count, traversal, or element dereference.');
+  } else if (localInventoryShapeConfirm.localInventoryShapeConfirmEvidenceFound && localInventoryShapeConfirm.status !== 'failed') {
+    partial.push({
+      phaseId: 'local-inventory-array-shape-confirm',
+      status: localInventoryShapeConfirm.status,
+      updatedAt: nowIso(),
+      source: 'imported-evidence',
+      reason: localInventoryShapeConfirm.status === 'crash_suspect_local_inventory_shape_confirmed'
+        ? 'Local inventory array fields were confirmed as property shapes with no count, traversal, or element dereference, but a crash dump exists after this run; keep the phase crash-suspect pending another safer confirmation.'
+        : 'Local inventory array shape confirmation did not produce usable evidence.',
+      latestSessionId: facts.latestSessionId || '',
+      latestCommit: facts.latestCommit || '',
+      latestSummaryPath: facts.latestSummaryPath || ''
+    });
+  }
 
   return { completed, partial, facts };
 }
@@ -576,7 +690,7 @@ function blockedPhaseIds(state) {
 
 function advanceablePartialPhaseIds(state) {
   return new Set((state.partialPhases || [])
-    .filter((entry) => entry.status === 'remote_resources_partial')
+    .filter((entry) => entry.status === 'remote_resources_partial' || entry.status === 'crash_suspect_local_inventory_shape_visible')
     .map((entry) => entry.phaseId || entry));
 }
 
@@ -711,6 +825,17 @@ function markCollected(plan, state, phaseId, result) {
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
     });
+  } else if (phaseId === 'local-inventory-array-shape-confirm' && result.status === 'local_inventory_shape_confirmed') {
+    out.completedPhases.push({
+      phaseId,
+      status: 'complete',
+      completedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || 'Local inventory array property shapes were confirmed with no count, traversal, or element dereference.',
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
   } else if (phaseId === 'multiplayer-roster-read' && (result.status === 'local_identity_confirmed' || result.status === 'roster_source_unresolved')) {
     out.partialPhases.push({
       phaseId,
@@ -750,6 +875,22 @@ function markCollected(plan, state, phaseId, result) {
       reason: result.reason || (result.status === 'crash_suspect_local_inventory_shape_visible'
         ? 'Local inventory array fields were visible as shallow shapes, but a crash dump exists after this run; keep the phase crash-suspect pending safer confirmation.'
         : 'Local inventory arrays were nil or unsupported in shallow reads.'),
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
+  } else if (phaseId === 'local-inventory-array-shape-confirm' && (
+    result.status === 'crash_suspect_local_inventory_shape_confirmed' ||
+    result.status === 'no_evidence'
+  )) {
+    out.partialPhases.push({
+      phaseId,
+      status: result.status,
+      updatedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || (result.status === 'crash_suspect_local_inventory_shape_confirmed'
+        ? 'Local inventory array fields were confirmed as property shapes with no count, traversal, or element dereference, but crash evidence exists after this run.'
+        : 'No local inventory shape-confirm evidence was found.'),
       latestSessionId: out.latestSessionId,
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
@@ -801,7 +942,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '## Completed Phases\n\n';
   out += renderList(listByStatus(plan, state, 'complete'));
   out += '\n## Partial Phases\n\n';
-  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$|^local_inventory_unresolved$|^crash_suspect_local_inventory_shape_visible$/.test(phaseStatus(state, phase.phaseId)));
+  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$|^local_inventory_unresolved$|^crash_suspect_local_inventory_shape_visible$|^crash_suspect_local_inventory_shape_confirmed$|^no_evidence$/.test(phaseStatus(state, phase.phaseId)));
   if (!partial.length) {
     out += '- None.\n';
   } else {
@@ -841,6 +982,10 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     crashSuspect: hasCrashSuspectEvidenceForSession(facts, state.latestSessionId || facts.latestSessionId)
   });
   if (localInventory.status === 'passed') safeSignals.push('local PlayerState inventory array shallow shape/count reads');
+  const localInventoryShapeConfirm = classifyLocalInventoryArrayShapeConfirmEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, state.latestSessionId || facts.latestSessionId)
+  });
+  if (localInventoryShapeConfirm.status === 'local_inventory_shape_confirmed') safeSignals.push('local PlayerState inventory array property shape confirmation without count, traversal, or element dereference');
   if (!safeSignals.length) out += '- None imported yet.\n';
   else out += safeSignals.map((item) => `- ${item}\n`).join('');
 
@@ -907,7 +1052,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     out += '- No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.\n';
   }
 
-  out += '\n## Local Inventory Array Visibility\n\n';
+  out += '\n## Local Inventory Array Shallow/Count Visibility\n\n';
   if (!localInventory.localInventoryArrayEvidenceFound) {
     out += '- Summary: unresolved; no `local-inventory-array-shallow-read` evidence has been imported yet.\n';
     out += '- Local PlayerState present: not proven\n';
@@ -929,6 +1074,32 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     out += '- Remote inventory array visibility remains unresolved separately.\n';
   }
 
+  out += '\n## Local Inventory Array Shape Confirm\n\n';
+  if (!localInventoryShapeConfirm.localInventoryShapeConfirmEvidenceFound) {
+    out += '- Summary: unresolved; no `local-inventory-array-shape-confirm` evidence has been imported yet.\n';
+    out += '- Purpose: repeat only local CrabPC -> PlayerState slot scalar and inventory array property shape reads.\n';
+    out += '- This confirmation phase does not count arrays, traverse arrays, dereference userdata, read InventoryInfo, or read Enhancements.\n';
+  } else {
+    out += `- Summary: ${localInventoryShapeConfirm.classification}\n`;
+    out += `- Local inventory shape confirm status: ${localInventoryShapeConfirm.status}\n`;
+    out += `- Local PlayerState present: ${localInventoryShapeConfirm.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
+    out += `- Fields readable by property shape confirm: ${localInventoryShapeConfirm.fieldsReadable.length ? localInventoryShapeConfirm.fieldsReadable.join(', ') : 'none'}\n`;
+    out += `- Fields nil or unsupported: ${localInventoryShapeConfirm.fieldsNilOrUnsupported.length ? localInventoryShapeConfirm.fieldsNilOrUnsupported.join(', ') : 'none'}\n`;
+    out += `- Property present map: ${Object.keys(localInventoryShapeConfirm.arrayPropertiesPresent).length ? Object.entries(localInventoryShapeConfirm.arrayPropertiesPresent).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Array value kinds: ${Object.keys(localInventoryShapeConfirm.arrayValueKinds).length ? Object.entries(localInventoryShapeConfirm.arrayValueKinds).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Safe tostring kinds: ${Object.keys(localInventoryShapeConfirm.arrayTostringKinds).length ? Object.entries(localInventoryShapeConfirm.arrayTostringKinds).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Slot scalar values: ${Object.keys(localInventoryShapeConfirm.slotScalarValues).length ? Object.entries(localInventoryShapeConfirm.slotScalarValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Array counts attempted: ${localInventoryShapeConfirm.noArrayCount ? 'no' : 'yes'}\n`;
+    out += `- Array traversal attempted: ${localInventoryShapeConfirm.noArrayTraversal ? 'no' : 'yes'}\n`;
+    out += `- Array elements dereferenced: ${localInventoryShapeConfirm.noElementDereference ? 'no' : 'yes'}\n`;
+    out += `- InventoryInfo read: ${localInventoryShapeConfirm.noInventoryInfo ? 'no' : 'yes'}\n`;
+    out += `- Enhancements read: ${localInventoryShapeConfirm.noEnhancements ? 'no' : 'yes'}\n`;
+    out += localInventoryShapeConfirm.crashSuspect
+      ? '- A crash dump exists after this run, so this confirmation path remains crash-suspect pending another safer confirmation pass.\n'
+      : '- No crash dump is associated with the imported shape-confirm evidence.\n';
+    out += '- This phase distinguishes userdata shape visibility from countable Lua table arrays; counts remain unavailable for userdata values.\n';
+  }
+
   out += '\n## Confirmed Unsafe Paths\n\n';
   out += '- HUD ReceiveDrawHUD tick hook remains blocked by default.\n';
   out += '- `FindFirstOf.CrabHC` is not confirmed as a player-health source; imported evidence has seen an unscoped destructible/barrel candidate.\n';
@@ -939,7 +1110,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.\n';
   out += '- Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.\n';
   out += '- Crystals, slots, equipment, and inventory array counts are only covered by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.\n';
-  out += '- Local inventory array visibility is separate from remote PlayerState resource visibility and is covered only by `local-inventory-array-shallow-read` after imported evidence exists.\n';
+  out += '- Local inventory array shallow/count visibility is covered by `local-inventory-array-shallow-read`; safer property-shape confirmation is covered separately by `local-inventory-array-shape-confirm`.\n';
   out += '- `InventoryInfo` and enhancements remain placeholders until explicit probe sets are implemented.\n';
   out += '- Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.\n';
 
@@ -950,6 +1121,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- `allowIdentityProbes` is enabled only for the explicit multiplayer roster and resource visibility phases; `allowRawIdentityEvidence` remains false by default.\n';
   out += '- `allowResourceVisibilityProbes` is enabled only for `multiplayer-resource-visibility-read`.\n';
   out += '- `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.\n';
+  out += '- `allowInventoryArrayShapeConfirmProbes` is enabled only for `local-inventory-array-shape-confirm`.\n';
   out += '- `allowDeepArrayProbes` and `allowInventoryInfoProbes` are not enabled by implemented phases.\n';
   return out;
 }
@@ -961,6 +1133,7 @@ module.exports = {
   PLAN_PATH,
   STATE_PATH,
   classifyLocalInventoryArrayEvidence,
+  classifyLocalInventoryArrayShapeConfirmEvidence,
   classifyResourceVisibilityEvidence,
   classifyRosterEvidence,
   completedPhaseIds,

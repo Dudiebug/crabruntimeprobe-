@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-05T20:16:13.036Z",
+  "updatedAt": "2026-05-05T20:41:23.725Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -145,7 +145,7 @@
     }
   ],
   "currentPhase": null,
-  "nextRecommendedPhase": "local-inventory-array-shallow-read",
+  "nextRecommendedPhase": "local-inventory-array-shape-confirm",
   "latestSessionId": "20260505T072250Z",
   "latestCommit": "591389d5f71e99e2c19f7c287290cbf853a8e496",
   "latestSummaryPath": "evidence/runtime/20260505T072250Z/diagnostic_summary.txt",
@@ -221,6 +221,13 @@
       "tickDriver": "executeDelay",
       "mode": "active",
       "reason": "Local inventory array fields were visible as shallow userdata shapes, but crash_2026_05_05_07_24_18.dmp exists after prepare/run; keep the phase crash-suspect pending safer confirmation."
+    },
+    "local-inventory-array-shape-confirm": {
+      "status": "pending",
+      "riskTier": "cautious-read",
+      "probeSet": "local-inventory-array-shape-confirm",
+      "tickDriver": "executeDelay",
+      "mode": "active"
     },
     "crystals-read": {
       "status": "blocked",

@@ -320,6 +320,43 @@
       "riskTier": "cautious-read",
       "status": "pending",
       "humanInstructions": "Launch Crab Champions locally in a stable world/lobby. Do not force pickups, inventory changes, writes, RPCs, HUD hooks, InventoryInfo, Enhancements, or element reads. Quit, then run scripts\\quick-campaign-collect.ps1.",
+      "nextPhase": "local-inventory-array-shape-confirm"
+    },
+    {
+      "phaseId": "local-inventory-array-shape-confirm",
+      "label": "Local inventory array shape confirm",
+      "probeSet": "local-inventory-array-shape-confirm",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "implemented": true,
+      "requiredGates": {
+        "allowInventoryArrayShapeConfirmProbes": true
+      },
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowInventoryInfoProbes",
+        "allowHealthProbes",
+        "allowIdentityProbes",
+        "allowRawIdentityEvidence",
+        "allowResourceVisibilityProbes",
+        "allowInventoryArrayShallowProbes",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "Inventory.LocalArrays.ShapeConfirm",
+        "localPlayerStatePresent",
+        "noArrayCount = true",
+        "noArrayTraversal = true",
+        "noElementDereference = true",
+        "crashAttributionMarker = shape-confirm"
+      ],
+      "riskTier": "cautious-read",
+      "status": "pending",
+      "humanInstructions": "Launch Crab Champions locally in a stable world/lobby. This phase only confirms local inventory array property shapes and slot scalars; do not force pickups, inventory changes, writes, RPCs, HUD hooks, InventoryInfo, Enhancements, counts, traversal, or element reads. Quit, then run scripts\\quick-campaign-collect.ps1.",
       "nextPhase": "crystals-read"
     },
     {

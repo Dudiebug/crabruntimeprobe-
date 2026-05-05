@@ -68,7 +68,7 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 - Raw identity values are not emitted by this summary; PlayerName and UniqueId evidence remains fingerprint-only.
 - No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.
 
-## Local Inventory Array Visibility Summary
+## Local Inventory Array Shallow/Count Visibility Summary
 
 - Summary: local_inventory_shape_visible_crash_suspect
 - Local inventory array status: crash_suspect_local_inventory_shape_visible
@@ -83,6 +83,12 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 - Local inventory array visibility is separate from remote PlayerState inventory array visibility.
 - InventoryInfo and Enhancements were not read; writes/RPCs/HUD hooks/deep arrays were disabled.
 - Remote inventory array visibility remains unresolved separately.
+
+## Local Inventory Array Shape Confirm Summary
+
+- Summary: unresolved; no `local-inventory-array-shape-confirm` evidence has been imported yet.
+- Shape confirm repeats only local CrabPC -> PlayerState slot scalar and inventory array property shape reads.
+- It does not count arrays, traverse arrays, dereference userdata, read InventoryInfo, or read Enhancements.
 
 ## Confirmed SAFE Access Rows
 

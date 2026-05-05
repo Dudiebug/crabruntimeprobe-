@@ -131,11 +131,18 @@ function runner.new(config, safe, writer, evidenceWriter)
       record.arrayCount = meta.arrayCount
       record.arrayCounts = meta.arrayCounts
       record.arrayCountCap = meta.arrayCountCap
+      record.arrayPropertiesPresent = meta.arrayPropertiesPresent
+      record.arrayTostringKinds = meta.arrayTostringKinds
       record.slotScalarValues = meta.slotScalarValues
       record.fieldResults = meta.fieldResults
       record.fieldsReadable = meta.fieldsReadable
       record.fieldsNilOrUnsupported = meta.fieldsNilOrUnsupported
       record.noElementDereference = meta.noElementDereference
+      record.noArrayCount = meta.noArrayCount
+      record.noArrayTraversal = meta.noArrayTraversal
+      record.noInventoryInfo = meta.noInventoryInfo
+      record.noEnhancements = meta.noEnhancements
+      record.crashAttributionMarker = meta.crashAttributionMarker
     end
     evidenceWriter:writeEvidence(record)
   end
@@ -204,11 +211,18 @@ function runner.new(config, safe, writer, evidenceWriter)
       row.arrayCount = meta.arrayCount
       row.arrayCounts = meta.arrayCounts
       row.arrayCountCap = meta.arrayCountCap
+      row.arrayPropertiesPresent = meta.arrayPropertiesPresent
+      row.arrayTostringKinds = meta.arrayTostringKinds
       row.slotScalarValues = meta.slotScalarValues
       row.fieldResults = meta.fieldResults
       row.fieldsReadable = meta.fieldsReadable
       row.fieldsNilOrUnsupported = meta.fieldsNilOrUnsupported
       row.noElementDereference = meta.noElementDereference
+      row.noArrayCount = meta.noArrayCount
+      row.noArrayTraversal = meta.noArrayTraversal
+      row.noInventoryInfo = meta.noInventoryInfo
+      row.noEnhancements = meta.noEnhancements
+      row.crashAttributionMarker = meta.crashAttributionMarker
     end
     writer:write(row)
     writeEvidence(probe, result, kind, summary, err, meta)
@@ -221,10 +235,11 @@ function runner.new(config, safe, writer, evidenceWriter)
     if probe.set == 'multiplayer-roster-read' and not config.allowIdentityProbes then return false, 'unsafe_disabled' end
     if probe.set == 'multiplayer-resource-visibility-read' and not (config.allowIdentityProbes and config.allowHealthProbes and config.allowResourceVisibilityProbes) then return false, 'unsafe_disabled' end
     if probe.set == 'local-inventory-array-shallow-read' and not config.allowInventoryArrayShallowProbes then return false, 'unsafe_disabled' end
+    if probe.set == 'local-inventory-array-shape-confirm' and not config.allowInventoryArrayShapeConfirmProbes then return false, 'unsafe_disabled' end
     if probe.set == 'rpc-dryrun' and not config.allowRpcProbes then return false, 'unsafe_disabled' end
     if probe.set == 'write' and not config.allowWriteProbes then return false, 'unsafe_disabled' end
-    if state.role == 'unknown' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'local-inventory-array-shallow-read' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
-    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'local-inventory-array-shallow-read' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
+    if state.role == 'unknown' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
+    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
     if probe.set ~= config.probeSet and config.probeSet ~= 'all-readonly' then return false, 'skipped_by_config' end
     return true
   end

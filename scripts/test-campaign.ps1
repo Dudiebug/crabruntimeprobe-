@@ -63,7 +63,7 @@ if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "tickDri
 if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "probeSet") -ne "shallow-core") {
   throw "default config probeSet must remain shallow-core."
 }
-foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowInventoryArrayShallowProbes", "allowWriteProbes", "allowRpcProbes")) {
+foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowWriteProbes", "allowRpcProbes")) {
   if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key $key) -ne "false") {
     throw "default config expected $key = false."
   }
@@ -120,6 +120,9 @@ for (const phase of plan.phases) {
   assert(gates.allowRawIdentityEvidence === false, `${phase.phaseId} enabled raw identity evidence`);
   if (phase.phaseId !== 'local-inventory-array-shallow-read') {
     assert(gates.allowInventoryArrayShallowProbes === false, `${phase.phaseId} enabled local inventory arrays outside local phase`);
+  }
+  if (phase.phaseId !== 'local-inventory-array-shape-confirm') {
+    assert(gates.allowInventoryArrayShapeConfirmProbes === false, `${phase.phaseId} enabled local inventory shape confirm outside shape confirm phase`);
   }
   if (!/^health-|^multiplayer-health-/.test(phase.phaseId) && phase.phaseId !== 'multiplayer-resource-visibility-read') {
     assert(gates.allowHealthProbes === false, `${phase.phaseId} enabled health outside health phases`);
@@ -205,6 +208,19 @@ localInventory = helpers.classifyLocalInventoryArrayEvidence([
 ]);
 assert(localInventory.status === 'failed', 'element dereference or unsafe gates must fail local inventory evidence');
 
+let shapeConfirm = helpers.classifyLocalInventoryArrayShapeConfirmEvidence([
+  { probeName: 'Inventory.LocalArrays.ShapeConfirm', result: 'ok', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], arrayValueKinds: { WeaponMods: 'userdata' }, arrayPropertiesPresent: { WeaponMods: true }, slotScalarValues: { NumWeaponModSlots: 24 }, noElementDereference: true, noArrayCount: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, safetyGates: { allowInventoryArrayShapeConfirmProbes: true, allowInventoryArrayShallowProbes: false, allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false, allowRawIdentityEvidence: false, allowHealthProbes: false, allowIdentityProbes: false, allowResourceVisibilityProbes: false } }
+]);
+assert(shapeConfirm.status === 'local_inventory_shape_confirmed', `shape-confirm userdata evidence should confirm, got ${shapeConfirm.status}`);
+shapeConfirm = helpers.classifyLocalInventoryArrayShapeConfirmEvidence([
+  { probeName: 'Inventory.LocalArrays.ShapeConfirm', result: 'ok', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], arrayValueKinds: { WeaponMods: 'userdata' }, arrayPropertiesPresent: { WeaponMods: true }, noElementDereference: true, noArrayCount: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, safetyGates: { allowInventoryArrayShapeConfirmProbes: true, allowInventoryArrayShallowProbes: false, allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false, allowRawIdentityEvidence: false, allowHealthProbes: false, allowIdentityProbes: false, allowResourceVisibilityProbes: false } }
+], { crashSuspect: true });
+assert(shapeConfirm.status === 'crash_suspect_local_inventory_shape_confirmed', `crash evidence should keep shape-confirm crash-suspect, got ${shapeConfirm.status}`);
+shapeConfirm = helpers.classifyLocalInventoryArrayShapeConfirmEvidence([
+  { probeName: 'Inventory.LocalArrays.ShapeConfirm', result: 'ok', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], arrayValueKinds: { WeaponMods: 'userdata' }, noElementDereference: true, noArrayCount: false, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, safetyGates: { allowInventoryArrayShapeConfirmProbes: true, allowInventoryArrayShallowProbes: false } }
+]);
+assert(shapeConfirm.status === 'failed', 'shape-confirm must fail if count/traversal/element markers or safety gates are violated');
+
 const partialState = helpers.markCollected(plan, afterObserve, 'multiplayer-roster-read', {
   status: 'local_identity_confirmed',
   latestSessionId: '20260505T035239Z',
@@ -241,7 +257,17 @@ const localInventoryCrashSuspectState = helpers.markCollected(plan, remotePartia
 });
 assert(localInventoryCrashSuspectState.phaseStatuses['local-inventory-array-shallow-read'].status === 'crash_suspect_local_inventory_shape_visible', 'local inventory crash-suspect evidence should be partial, not failed or complete');
 assert(localInventoryCrashSuspectState.failedPhases.every((entry) => entry.phaseId !== 'local-inventory-array-shallow-read'), 'local inventory crash-suspect evidence must not be stored as hard failed');
-assert(localInventoryCrashSuspectState.nextRecommendedPhase === 'local-inventory-array-shallow-read', `local inventory crash-suspect should keep next phase at local inventory, got ${localInventoryCrashSuspectState.nextRecommendedPhase}`);
+assert(localInventoryCrashSuspectState.nextRecommendedPhase === 'local-inventory-array-shape-confirm', `local inventory crash-suspect should advance only to safer shape confirm, got ${localInventoryCrashSuspectState.nextRecommendedPhase}`);
+
+const shapeConfirmCrashSuspectState = helpers.markCollected(plan, localInventoryCrashSuspectState, 'local-inventory-array-shape-confirm', {
+  status: 'crash_suspect_local_inventory_shape_confirmed',
+  reason: 'Local inventory array fields were confirmed as property shapes, but crash evidence exists.',
+  latestSessionId: '20260505T080000Z',
+  latestCommit: '591389d5f71e99e2c19f7c287290cbf853a8e496',
+  latestSummaryPath: 'evidence/runtime/20260505T080000Z/diagnostic_summary.txt'
+});
+assert(shapeConfirmCrashSuspectState.phaseStatuses['local-inventory-array-shape-confirm'].status === 'crash_suspect_local_inventory_shape_confirmed', 'shape-confirm crash-suspect evidence should be partial, not failed or complete');
+assert(shapeConfirmCrashSuspectState.nextRecommendedPhase === 'local-inventory-array-shape-confirm', `shape-confirm crash-suspect should keep next phase at shape confirm, got ${shapeConfirmCrashSuspectState.nextRecommendedPhase}`);
 '@
 node $NodeTestPath (Join-Path $RepoRoot "tools\campaign_helpers.js") $RepoRoot
 if ($LASTEXITCODE -ne 0) { throw "campaign helper tests failed." }
@@ -304,6 +330,15 @@ if ($prepareRan) {
     foreach ($key in @("allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
       if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
         throw "local inventory campaign phase expected $key = false."
+      }
+    }
+  } elseif ($preparedPhase -eq "local-inventory-array-shape-confirm") {
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowInventoryArrayShapeConfirmProbes") -ne "true") {
+      throw "local inventory array shape confirm campaign phase expected allowInventoryArrayShapeConfirmProbes = true."
+    }
+    foreach ($key in @("allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
+      if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+        throw "local inventory shape confirm campaign phase expected $key = false."
       }
     }
   }

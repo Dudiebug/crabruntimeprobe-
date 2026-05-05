@@ -700,6 +700,123 @@ function registry.build(safe)
       .. ' noElementDereference=true'
   end
 
+  local function safeTostringKind(value)
+    local ok, text = pcall(function() return tostring(value) end)
+    if not ok then return 'error' end
+    return type(text)
+  end
+
+  local function buildLocalInventoryShapeConfirmCache(ctx)
+    if ctx.cache.LocalInventoryShapeConfirm then return ctx.cache.LocalInventoryShapeConfirm end
+
+    local playerState, playerStateErr = getCrabPlayerState(ctx)
+    if playerStateErr then
+      ctx.cache.LocalInventoryShapeConfirm = { error = playerStateErr }
+      return ctx.cache.LocalInventoryShapeConfirm
+    end
+
+    local stats = {
+      sourceScope = 'local_player_state_inventory_shape_confirm',
+      sourcePath = 'CrabPC.PlayerState',
+      sourceClass = 'CrabPS',
+      localPlayerStatePresent = safe.isValidObject(playerState),
+      arrayFieldNames = LOCAL_INVENTORY_ARRAY_FIELDS,
+      arrayValueKinds = {},
+      arrayPropertiesPresent = {},
+      arrayTostringKinds = {},
+      slotScalarValues = {},
+      fieldResults = {},
+      fieldsReadable = {},
+      fieldsNilOrUnsupported = {},
+      noElementDereference = true,
+      noArrayCount = true,
+      noArrayTraversal = true,
+      noInventoryInfo = true,
+      noEnhancements = true,
+      crashAttributionMarker = 'shape-confirm'
+    }
+
+    if not stats.localPlayerStatePresent then
+      for _, fieldName in ipairs(LOCAL_INVENTORY_ARRAY_FIELDS) do
+        stats.arrayValueKinds[fieldName] = 'nil'
+        stats.arrayPropertiesPresent[fieldName] = false
+        stats.fieldResults[fieldName] = 'no_local_player_state'
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      end
+      ctx.cache.LocalInventoryShapeConfirm = stats
+      return stats
+    end
+
+    for _, fieldName in ipairs(LOCAL_INVENTORY_SLOT_FIELDS) do
+      local value, err = safe.getProperty(playerState, fieldName)
+      if err then
+        stats.slotScalarValues[fieldName] = 'error:' .. tostring(err)
+      elseif value == nil then
+        stats.slotScalarValues[fieldName] = nil
+      else
+        stats.slotScalarValues[fieldName] = value
+      end
+    end
+
+    for _, fieldName in ipairs(LOCAL_INVENTORY_ARRAY_FIELDS) do
+      local value, err = safe.getProperty(playerState, fieldName)
+      if err then
+        stats.arrayValueKinds[fieldName] = 'error'
+        stats.arrayPropertiesPresent[fieldName] = false
+        stats.fieldResults[fieldName] = 'error'
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      elseif value == nil then
+        stats.arrayValueKinds[fieldName] = 'nil'
+        stats.arrayPropertiesPresent[fieldName] = false
+        stats.fieldResults[fieldName] = 'nil'
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      else
+        local kind = type(value)
+        stats.arrayValueKinds[fieldName] = kind
+        stats.arrayPropertiesPresent[fieldName] = true
+        stats.arrayTostringKinds[fieldName] = safeTostringKind(value)
+        stats.fieldResults[fieldName] = 'present'
+        stats.fieldsReadable[#stats.fieldsReadable + 1] = fieldName
+      end
+    end
+
+    ctx.cache.LocalInventoryShapeConfirm = stats
+    return stats
+  end
+
+  local function localInventoryShapeConfirmMeta(stats, note)
+    return {
+      sourceScope = stats.sourceScope,
+      sourcePath = stats.sourcePath,
+      sourceClass = stats.sourceClass,
+      candidateClasses = { 'CrabPC', 'CrabPS' },
+      localPlayerStatePresent = stats.localPlayerStatePresent == true,
+      arrayFieldNames = stats.arrayFieldNames,
+      arrayValueKinds = stats.arrayValueKinds,
+      arrayPropertiesPresent = stats.arrayPropertiesPresent,
+      arrayTostringKinds = stats.arrayTostringKinds,
+      slotScalarValues = stats.slotScalarValues,
+      fieldResults = stats.fieldResults,
+      fieldsReadable = stats.fieldsReadable,
+      fieldsNilOrUnsupported = stats.fieldsNilOrUnsupported,
+      noElementDereference = true,
+      noArrayCount = true,
+      noArrayTraversal = true,
+      noInventoryInfo = true,
+      noEnhancements = true,
+      crashAttributionMarker = 'shape-confirm',
+      localNotes = note
+    }
+  end
+
+  local function localInventoryShapeConfirmSummary(stats)
+    return 'category=shape-confirm'
+      .. ' localPlayerStatePresent=' .. tostring(stats.localPlayerStatePresent == true)
+      .. ' fieldsReadable=' .. tostring(#(stats.fieldsReadable or {}))
+      .. ' fieldsNilOrUnsupported=' .. tostring(#(stats.fieldsNilOrUnsupported or {}))
+      .. ' noArrayCount=true noArrayTraversal=true noElementDereference=true crashAttributionMarker=shape-confirm'
+  end
+
   local function classifyCrabHCSource(fullName)
     local text = tostring(fullName or '')
     if text:find('Destructible') or text:find('Barrel') or text:find('ChaoticBarrel') then
@@ -1624,6 +1741,21 @@ function registry.build(safe)
     accessMethod = 'GetPropertyValueCountOnly',
     accessKind = 'localInventoryArrayCountOnly',
     sourceScope = 'local_player_state_inventory_arrays'
+  })
+
+  probes[#probes + 1] = mk('Inventory.LocalArrays.ShapeConfirm', 'inventory-local-shape-confirm', 'local-inventory-array-shape-confirm', 'localInventoryArrayShapeConfirm', function(ctx)
+    local stats = buildLocalInventoryShapeConfirmCache(ctx)
+    if stats.error then return 'lua_error', nil, nil, stats.error end
+    return (#(stats.fieldsReadable or {}) > 0) and 'ok' or 'nil', 'local_inventory_array_shape_confirm',
+      localInventoryShapeConfirmSummary(stats), nil,
+      localInventoryShapeConfirmMeta(stats, 'Read-only local CrabPC -> PlayerState -> CrabPS property shape confirm; no count, traversal, element dereference, InventoryInfo, Enhancements, writes, or RPCs')
+  end, {
+    symbol = 'CrabPS.WeaponMods',
+    owner = 'CrabPS',
+    member = 'WeaponMods AbilityMods MeleeMods Perks Relics',
+    accessMethod = 'GetPropertyValueShapeConfirm',
+    accessKind = 'localInventoryArrayShapeConfirm',
+    sourceScope = 'local_player_state_inventory_shape_confirm'
   })
 
   probes[#probes + 1] = mk('FindAllOf.CrabHC.Availability', 'health', 'health-hc-discovery-read', 'findAllAvailability', function()

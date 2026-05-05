@@ -219,6 +219,10 @@ function Invoke-CampaignCollect {
     & $cycle -GameBin $GameBinFull -CollectLocalInventoryArrayShallow
     return $LASTEXITCODE
   }
+  if ($PhaseId -eq "local-inventory-array-shape-confirm") {
+    & $cycle -GameBin $GameBinFull -CollectLocalInventoryArrayShapeConfirm
+    return $LASTEXITCODE
+  }
   throw "Campaign phase '$PhaseId' is not implemented and cannot be collected."
 }
 
@@ -466,6 +470,72 @@ if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "lo
   }
 }
 
+if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "local-inventory-array-shape-confirm") {
+  $rows = Read-JsonLines -Paths @(
+    $(if ($null -ne $latestProbeFile) { $latestProbeFile.FullName } else { "" }),
+    $(if ($null -ne $latestAccessFile) { $latestAccessFile.FullName } else { "" })
+  )
+  $confirmRows = @($rows | Where-Object {
+    $name = ""
+    foreach ($field in @("probeName", "probeId", "event")) {
+      if ($_.PSObject.Properties.Name -contains $field) {
+        $name = [string]$_.$field
+        if (-not [string]::IsNullOrWhiteSpace($name)) { break }
+      }
+    }
+    $name -eq "Inventory.LocalArrays.ShapeConfirm"
+  })
+
+  $hasShapeEvidence = $false
+  $safetyViolation = $false
+  foreach ($row in $confirmRows) {
+    foreach ($flag in @("noElementDereference", "noArrayCount", "noArrayTraversal", "noInventoryInfo", "noEnhancements")) {
+      if (-not ($row.PSObject.Properties.Name -contains $flag) -or $row.$flag -ne $true) {
+        $safetyViolation = $true
+      }
+    }
+    if (($row.PSObject.Properties.Name -contains "safetyGates") -and $null -ne $row.safetyGates) {
+      foreach ($gate in @("allowInventoryArrayShallowProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowRawIdentityEvidence", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes")) {
+        if (($row.safetyGates.PSObject.Properties.Name -contains $gate) -and $row.safetyGates.$gate -eq $true) {
+          $safetyViolation = $true
+        }
+      }
+    }
+    if (($row.PSObject.Properties.Name -contains "localPlayerStatePresent") -and $row.localPlayerStatePresent -eq $true) {
+      $hasShapeEvidence = $true
+    }
+    if (($row.PSObject.Properties.Name -contains "fieldsReadable") -and @($row.fieldsReadable).Count -gt 0) {
+      $hasShapeEvidence = $true
+    }
+    if (($row.PSObject.Properties.Name -contains "arrayValueKinds") -and $null -ne $row.arrayValueKinds) {
+      foreach ($property in $row.arrayValueKinds.PSObject.Properties) {
+        if ($property.Value -in @("nil", "userdata", "table", "other")) { $hasShapeEvidence = $true }
+      }
+    }
+    if (($row.PSObject.Properties.Name -contains "arrayPropertiesPresent") -and $null -ne $row.arrayPropertiesPresent) {
+      $hasShapeEvidence = $true
+    }
+  }
+
+  if ($confirmRows.Count -eq 0) {
+    $status = "no_evidence"
+    $reason = "No local inventory array shape-confirm probe evidence was found."
+  } elseif ($safetyViolation) {
+    $status = "failed"
+    $reason = "Local inventory array shape-confirm evidence violated safety gates or attempted count, traversal, element dereference, InventoryInfo, or Enhancements."
+  } elseif ($hasShapeEvidence) {
+    if ($crashAfterPrepare) {
+      $status = "crash_suspect_local_inventory_shape_confirmed"
+      $reason = "Local inventory array fields were confirmed as property shapes with no count/traversal/element dereference, but a crash dump/folder was updated after campaign prepare/run."
+    } else {
+      $status = "local_inventory_shape_confirmed"
+    }
+  } else {
+    $status = "no_evidence"
+    $reason = "Shape-confirm probes ran but did not produce local inventory shape evidence."
+  }
+}
+
 if ($null -ne $latestManifestFile) {
   try {
     & (Join-Path $PSScriptRoot "import-latest-runtime-evidence.ps1") -From $ResultsRoot
@@ -497,6 +567,6 @@ Write-Host "phaseResult = $status"
 Write-Host "phaseId = $($phase.phaseId)"
 Write-Host "nextRecommendedPhase = $($updatedState.nextRecommendedPhase)"
 
-if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved" -and $status -ne "crash_suspect_local_inventory_shape_visible") {
+if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved" -and $status -ne "crash_suspect_local_inventory_shape_visible" -and $status -ne "local_inventory_shape_confirmed" -and $status -ne "crash_suspect_local_inventory_shape_confirmed" -and -not ($phase.phaseId -eq "local-inventory-array-shape-confirm" -and $status -eq "no_evidence")) {
   exit 1
 }

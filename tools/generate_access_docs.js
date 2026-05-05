@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { parseIdentityFromFullName, extractFullNameFromSummary } = require('./identity_helpers');
-const { classifyLocalInventoryArrayEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
+const { classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
 
 function walk(dir, name) {
   if (!fs.existsSync(dir)) return [];
@@ -299,7 +299,16 @@ const latestLocalInventorySessionId = evidenceRows
 const localInventory = classifyLocalInventoryArrayEvidence(evidenceRows, {
   crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestLocalInventorySessionId)
 });
-index += '\n## Local Inventory Array Visibility Summary\n\n';
+const latestLocalInventoryShapeConfirmSessionId = evidenceRows
+  .filter((row) => (row.probeId || row.probeName || row.event || '') === 'Inventory.LocalArrays.ShapeConfirm')
+  .map((row) => row.sessionId)
+  .filter(Boolean)
+  .sort()
+  .pop();
+const localInventoryShapeConfirm = classifyLocalInventoryArrayShapeConfirmEvidence(evidenceRows, {
+  crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestLocalInventoryShapeConfirmSessionId)
+});
+index += '\n## Local Inventory Array Shallow/Count Visibility Summary\n\n';
 if (!localInventory.localInventoryArrayEvidenceFound) {
   index += '- Summary: unresolved; no `local-inventory-array-shallow-read` evidence has been imported yet.\n';
   index += '- Local PlayerState present: not proven\n';
@@ -320,6 +329,31 @@ if (!localInventory.localInventoryArrayEvidenceFound) {
 index += '- Local inventory array visibility is separate from remote PlayerState inventory array visibility.\n';
 index += '- InventoryInfo and Enhancements were not read; writes/RPCs/HUD hooks/deep arrays were disabled.\n';
 index += '- Remote inventory array visibility remains unresolved separately.\n';
+index += '\n## Local Inventory Array Shape Confirm Summary\n\n';
+if (!localInventoryShapeConfirm.localInventoryShapeConfirmEvidenceFound) {
+  index += '- Summary: unresolved; no `local-inventory-array-shape-confirm` evidence has been imported yet.\n';
+  index += '- Shape confirm repeats only local CrabPC -> PlayerState slot scalar and inventory array property shape reads.\n';
+  index += '- It does not count arrays, traverse arrays, dereference userdata, read InventoryInfo, or read Enhancements.\n';
+} else {
+  index += `- Summary: ${localInventoryShapeConfirm.classification}\n`;
+  index += `- Local inventory shape confirm status: ${localInventoryShapeConfirm.status}\n`;
+  index += `- Local PlayerState present: ${localInventoryShapeConfirm.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
+  index += `- Fields readable by property shape confirm: ${localInventoryShapeConfirm.fieldsReadable.length ? localInventoryShapeConfirm.fieldsReadable.join(', ') : 'none'}\n`;
+  index += `- Fields nil or unsupported: ${localInventoryShapeConfirm.fieldsNilOrUnsupported.length ? localInventoryShapeConfirm.fieldsNilOrUnsupported.join(', ') : 'none'}\n`;
+  index += `- Property present map: ${Object.keys(localInventoryShapeConfirm.arrayPropertiesPresent).length ? Object.entries(localInventoryShapeConfirm.arrayPropertiesPresent).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Array value kinds: ${Object.keys(localInventoryShapeConfirm.arrayValueKinds).length ? Object.entries(localInventoryShapeConfirm.arrayValueKinds).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Safe tostring kinds: ${Object.keys(localInventoryShapeConfirm.arrayTostringKinds).length ? Object.entries(localInventoryShapeConfirm.arrayTostringKinds).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Slot scalar values: ${Object.keys(localInventoryShapeConfirm.slotScalarValues).length ? Object.entries(localInventoryShapeConfirm.slotScalarValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Array counts attempted: ${localInventoryShapeConfirm.noArrayCount ? 'no' : 'yes'}\n`;
+  index += `- Array traversal attempted: ${localInventoryShapeConfirm.noArrayTraversal ? 'no' : 'yes'}\n`;
+  index += `- Array elements dereferenced: ${localInventoryShapeConfirm.noElementDereference ? 'no' : 'yes'}\n`;
+  index += `- InventoryInfo read: ${localInventoryShapeConfirm.noInventoryInfo ? 'no' : 'yes'}\n`;
+  index += `- Enhancements read: ${localInventoryShapeConfirm.noEnhancements ? 'no' : 'yes'}\n`;
+  index += localInventoryShapeConfirm.crashSuspect
+    ? '- A crash dump exists after this run, so this confirmation path remains crash-suspect pending another safer confirmation pass.\n'
+    : '- No crash dump is associated with the imported shape-confirm evidence.\n';
+  index += '- Shape confirm distinguishes userdata shape visibility from countable Lua table arrays; counts remain unavailable for userdata values.\n';
+}
 index += '\n## Confirmed SAFE Access Rows\n\n';
 const safeRows = rows.filter((row) => bestStatus(row.statuses) === 'SAFE');
 if (safeRows.length === 0) {
@@ -379,6 +413,7 @@ const defaultUntested = [
   ['CrabPS.Crystals', 'GetPropertyValue', 'UNTESTED', 'Resource visibility probes are disabled by default.'],
   ['CrabPS.WeaponMods', 'RemotePlayerStateCountOnly', 'UNTESTED', 'Remote inventory arrays are count-only in resource visibility and remain unresolved until evidence proves visibility.'],
   ['CrabPS.WeaponMods', 'GetPropertyValueCountOnly', 'UNTESTED', 'Local inventory arrays require local-inventory-array-shallow-read; no element dereference.'],
+  ['CrabPS.WeaponMods', 'GetPropertyValueShapeConfirm', 'UNTESTED', 'Local inventory shape confirm reads property presence/value kind only; no count, traversal, element dereference, InventoryInfo, or Enhancements.'],
   ['PlayerState.UniqueId', 'identity', 'UNTESTED', 'Stable IDs must be fingerprinted unless allowRawIdentityEvidence is explicitly enabled.'],
   ['GameplayState.*', 'write', 'UNSAFE_DISABLED', 'Writes are disabled.'],
   ['RPC.*', 'rpc', 'UNSAFE_DISABLED', 'RPC probes are disabled.']

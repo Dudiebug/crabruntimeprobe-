@@ -18,6 +18,7 @@ param(
   [switch]$CollectHealthPlayerStateWatch,
   [switch]$CollectResourceVisibility,
   [switch]$CollectLocalInventoryArrayShallow,
+  [switch]$CollectLocalInventoryArrayShapeConfirm,
   [switch]$ExpectObserveContext,
   [switch]$AllowIdentityProbes,
   [switch]$AllowResourceVisibilityProbes,
@@ -45,10 +46,11 @@ function Get-CycleMode {
   if ($CollectHealthPlayerStateWatch) { $modes += "CollectHealthPlayerStateWatch" }
   if ($CollectResourceVisibility) { $modes += "CollectResourceVisibility" }
   if ($CollectLocalInventoryArrayShallow) { $modes += "CollectLocalInventoryArrayShallow" }
+  if ($CollectLocalInventoryArrayShapeConfirm) { $modes += "CollectLocalInventoryArrayShapeConfirm" }
 
   $unique = @($modes | Sort-Object -Unique)
   if ($unique.Count -ne 1) {
-    throw "Choose exactly one mode: -PrepareSmoke, -CollectSmoke, -PrepareTickDriver <driver>, -PrepareEquipmentProperty, -PrepareHealthBaseline, -PrepareHealthPlayerState, -PrepareHealthPlayerStateWatch, -Collect, -CollectEquipmentProperty, -CollectHealthBaseline, -CollectHealthPlayerState, -CollectHealthPlayerStateWatch, -CollectResourceVisibility, or -CollectLocalInventoryArrayShallow."
+    throw "Choose exactly one mode: -PrepareSmoke, -CollectSmoke, -PrepareTickDriver <driver>, -PrepareEquipmentProperty, -PrepareHealthBaseline, -PrepareHealthPlayerState, -PrepareHealthPlayerStateWatch, -Collect, -CollectEquipmentProperty, -CollectHealthBaseline, -CollectHealthPlayerState, -CollectHealthPlayerStateWatch, -CollectResourceVisibility, -CollectLocalInventoryArrayShallow, or -CollectLocalInventoryArrayShapeConfirm."
   }
 
   return $unique[0]
@@ -118,7 +120,8 @@ function Test-CrabRuntimeProbeInstalledSafety {
     [switch]$AllowHealthProbes,
     [switch]$AllowIdentityProbes,
     [switch]$AllowResourceVisibilityProbes,
-    [switch]$AllowInventoryArrayShallowProbes
+    [switch]$AllowInventoryArrayShallowProbes,
+    [switch]$AllowInventoryArrayShapeConfirmProbes
   )
 
   $errors = New-Object System.Collections.Generic.List[string]
@@ -145,6 +148,7 @@ function Test-CrabRuntimeProbeInstalledSafety {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowInventoryArrayShallowProbes",
+    "allowInventoryArrayShapeConfirmProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )
@@ -168,6 +172,9 @@ function Test-CrabRuntimeProbeInstalledSafety {
       if ($AllowInventoryArrayShallowProbes -and $key -eq "allowInventoryArrayShallowProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
         continue
       }
+      if ($AllowInventoryArrayShapeConfirmProbes -and $key -eq "allowInventoryArrayShapeConfirmProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
+        continue
+      }
       if (-not [string]::Equals($value, "false", [System.StringComparison]::OrdinalIgnoreCase)) {
         $errors.Add("$key must be false, got '$value'") | Out-Null
       }
@@ -183,10 +190,11 @@ function Assert-CrabRuntimeProbeInstalledSafety {
     [switch]$AllowHealthProbes,
     [switch]$AllowIdentityProbes,
     [switch]$AllowResourceVisibilityProbes,
-    [switch]$AllowInventoryArrayShallowProbes
+    [switch]$AllowInventoryArrayShallowProbes,
+    [switch]$AllowInventoryArrayShapeConfirmProbes
   )
 
-  $errors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $ConfigPath -AllowHealthProbes:$AllowHealthProbes -AllowIdentityProbes:$AllowIdentityProbes -AllowResourceVisibilityProbes:$AllowResourceVisibilityProbes -AllowInventoryArrayShallowProbes:$AllowInventoryArrayShallowProbes
+  $errors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $ConfigPath -AllowHealthProbes:$AllowHealthProbes -AllowIdentityProbes:$AllowIdentityProbes -AllowResourceVisibilityProbes:$AllowResourceVisibilityProbes -AllowInventoryArrayShallowProbes:$AllowInventoryArrayShallowProbes -AllowInventoryArrayShapeConfirmProbes:$AllowInventoryArrayShapeConfirmProbes
   if ($errors.Count -gt 0) {
     throw "Installed config safety validation failed at $ConfigPath`n$((($errors | ForEach-Object { " - $_" }) -join "`n"))"
   }
@@ -310,6 +318,29 @@ function Read-CrabRuntimeProbeJsonFileOrNull {
   }
 }
 
+function Find-LatestCrabChampionsCrashFolder {
+  param([string]$GameBinFull)
+
+  $savedCrashPath = [System.IO.Path]::GetFullPath((Join-Path $GameBinFull "..\CrabChampions\Saved\Crashes"))
+  $candidates = @()
+  $localAppData = [Environment]::GetFolderPath("LocalApplicationData")
+  if (-not [string]::IsNullOrWhiteSpace($localAppData)) {
+    $candidates += Join-Path $localAppData "CrabChampions\Saved\Crashes"
+    $candidates += Join-Path $localAppData "Crab Champions\Saved\Crashes"
+  }
+  $candidates += $savedCrashPath
+
+  $folders = @()
+  foreach ($candidate in $candidates) {
+    if (Test-Path -LiteralPath $candidate -PathType Container) {
+      $folders += @(Get-ChildItem -LiteralPath $candidate -Directory -Force -ErrorAction SilentlyContinue)
+    }
+  }
+
+  if ($folders.Count -eq 0) { return $null }
+  return @($folders | Sort-Object LastWriteTimeUtc, FullName -Descending | Select-Object -First 1)
+}
+
 function Get-CrabRuntimeProbeBuildInfoValue {
   param(
     [string]$BuildInfoText,
@@ -421,6 +452,15 @@ function Get-RecordValue {
     }
   }
   return ""
+}
+
+function Format-RecordObjectMap {
+  param([object]$Value)
+
+  if ($null -eq $Value) { return "none" }
+  $properties = @($Value.PSObject.Properties | Where-Object { $null -ne $_.Value })
+  if ($properties.Count -eq 0) { return "none" }
+  return (($properties | Sort-Object Name | ForEach-Object { "$($_.Name)=$($_.Value)" }) -join ", ")
 }
 
 function Format-JsonlEventSummary {
@@ -573,6 +613,7 @@ function Set-InstalledSmokeConfig {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowInventoryArrayShallowProbes",
+    "allowInventoryArrayShapeConfirmProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -608,6 +649,7 @@ function Set-InstalledTickDriverConfig {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowInventoryArrayShallowProbes",
+    "allowInventoryArrayShapeConfirmProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -635,6 +677,7 @@ function Set-InstalledEquipmentPropertyConfig {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowInventoryArrayShallowProbes",
+    "allowInventoryArrayShapeConfirmProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -662,6 +705,7 @@ function Set-InstalledHealthBaselineConfig {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowInventoryArrayShallowProbes",
+    "allowInventoryArrayShapeConfirmProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -689,6 +733,7 @@ function Set-InstalledHealthPlayerStateConfig {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowInventoryArrayShallowProbes",
+    "allowInventoryArrayShapeConfirmProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -717,6 +762,7 @@ function Set-InstalledHealthPlayerStateWatchConfig {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowInventoryArrayShallowProbes",
+    "allowInventoryArrayShapeConfirmProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -822,7 +868,8 @@ $safetyErrors = Test-CrabRuntimeProbeInstalledSafety `
   -AllowHealthProbes:($Mode -eq "CollectHealthBaseline" -or $Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch" -or $Mode -eq "CollectResourceVisibility") `
   -AllowIdentityProbes:($AllowIdentityProbes -or $Mode -eq "CollectResourceVisibility") `
   -AllowResourceVisibilityProbes:($AllowResourceVisibilityProbes -or $Mode -eq "CollectResourceVisibility") `
-  -AllowInventoryArrayShallowProbes:($Mode -eq "CollectLocalInventoryArrayShallow")
+  -AllowInventoryArrayShallowProbes:($Mode -eq "CollectLocalInventoryArrayShallow") `
+  -AllowInventoryArrayShapeConfirmProbes:($Mode -eq "CollectLocalInventoryArrayShapeConfirm")
 $logText = Read-TextFileOrEmpty -Path $Ue4ssLogPath
 $logLines = @()
 if (Test-Path -LiteralPath $Ue4ssLogPath -PathType Leaf) {
@@ -932,6 +979,14 @@ $localInventoryProbeNames = @(
 $localInventoryRecords = @($jsonlRecords | Where-Object { $localInventoryProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) })
 $localInventoryAllRecords = @($localInventoryRecords + @($accessEvidenceRecords | Where-Object { $localInventoryProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) }))
 $localInventoryElementDereference = @($localInventoryAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "noElementDereference") -and $_.noElementDereference -eq $false }).Count -gt 0
+$localInventoryShapeConfirmProbeNames = @("Inventory.LocalArrays.ShapeConfirm")
+$localInventoryShapeConfirmRecords = @($jsonlRecords | Where-Object { $localInventoryShapeConfirmProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) })
+$localInventoryShapeConfirmAllRecords = @($localInventoryShapeConfirmRecords + @($accessEvidenceRecords | Where-Object { $localInventoryShapeConfirmProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) }))
+$localInventoryShapeConfirmElementDereference = @($localInventoryShapeConfirmAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "noElementDereference") -and $_.noElementDereference -eq $false }).Count -gt 0
+$localInventoryShapeConfirmArrayCount = @($localInventoryShapeConfirmAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "noArrayCount") -and $_.noArrayCount -ne $true }).Count -gt 0
+$localInventoryShapeConfirmArrayTraversal = @($localInventoryShapeConfirmAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "noArrayTraversal") -and $_.noArrayTraversal -ne $true }).Count -gt 0
+$latestLocalInventoryShapeConfirmRecord = if ($localInventoryShapeConfirmAllRecords.Count -gt 0) { $localInventoryShapeConfirmAllRecords[-1] } else { $null }
+$localInventoryShapeConfirmArrayValueKinds = if ($null -ne $latestLocalInventoryShapeConfirmRecord -and ($latestLocalInventoryShapeConfirmRecord.PSObject.Properties.Name -contains "arrayValueKinds")) { Format-RecordObjectMap -Value $latestLocalInventoryShapeConfirmRecord.arrayValueKinds } else { "none" }
 $healthPlayerStateWatchCurrentHealthStats = Get-NumericSeriesStats -Records $healthPlayerStateWatchRecords -Name "currentHealth"
 $healthPlayerStateWatchCurrentMaxHealthStats = Get-NumericSeriesStats -Records $healthPlayerStateWatchRecords -Name "currentMaxHealth"
 $healthPlayerStateWatchBaseMaxHealthStats = Get-NumericSeriesStats -Records $healthPlayerStateWatchRecords -Name "baseMaxHealth"
@@ -1022,6 +1077,11 @@ if ($prepareMarkerPreparedAt -ne "not found") {
   if ([datetime]::TryParse($prepareMarkerPreparedAt, [ref]$parsedPrepareTime)) {
     $prepareMarkerTime = $parsedPrepareTime.ToUniversalTime()
   }
+}
+$latestCrashFolder = Find-LatestCrabChampionsCrashFolder -GameBinFull $GameBinFull
+$crashAfterPrepare = $false
+if ($null -ne $prepareMarkerTime -and $null -ne $latestCrashFolder -and $latestCrashFolder.LastWriteTimeUtc -gt $prepareMarkerTime.AddSeconds(-2)) {
+  $crashAfterPrepare = $true
 }
 
 $latestSessionManifestFile = if ($sessionManifestFiles.Count -gt 0) { @($sessionManifestFiles | Sort-Object LastWriteTimeUtc, Name -Descending | Select-Object -First 1)[0] } else { $null }
@@ -1265,12 +1325,41 @@ if ($Mode -eq "CollectLocalInventoryArrayShallow") {
   }
 }
 
+if ($Mode -eq "CollectLocalInventoryArrayShapeConfirm") {
+  if ($installedMode -ne "active") { $failures.Add("Local inventory array shape confirm collect expected mode = active, got '$installedMode'.") | Out-Null }
+  if ($tickDriver -ne "executeDelay") { $failures.Add("Local inventory array shape confirm collect expected tickDriver = executeDelay, got '$tickDriver'.") | Out-Null }
+  if ($probeSet -ne "local-inventory-array-shape-confirm") { $failures.Add("Local inventory array shape confirm collect expected probeSet = local-inventory-array-shape-confirm, got '$probeSet'.") | Out-Null }
+  if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryArrayShapeConfirmProbes") -ne "true") {
+    $failures.Add("Local inventory array shape confirm collect expected allowInventoryArrayShapeConfirmProbes = true.") | Out-Null
+  }
+  foreach ($key in @("allowInventoryArrayShallowProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowRawIdentityEvidence", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes")) {
+    if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+      $failures.Add("Local inventory array shape confirm collect expected $key = false.") | Out-Null
+    }
+  }
+  foreach ($probeName in $localInventoryShapeConfirmProbeNames) {
+    if (@($localInventoryShapeConfirmRecords | Where-Object { (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) -eq $probeName }).Count -eq 0) {
+      $failures.Add("Expected $probeName during local inventory array shape confirm collection, but it did not run.") | Out-Null
+    }
+  }
+  if ($localInventoryShapeConfirmElementDereference) {
+    $failures.Add("Local inventory array shape confirm collection dereferenced an array element.") | Out-Null
+  }
+  if ($localInventoryShapeConfirmArrayCount) {
+    $failures.Add("Local inventory array shape confirm collection attempted or omitted the no-array-count marker.") | Out-Null
+  }
+  if ($localInventoryShapeConfirmArrayTraversal) {
+    $failures.Add("Local inventory array shape confirm collection attempted or omitted the no-array-traversal marker.") | Out-Null
+  }
+}
+
 $crashSuspicion = "none"
 if (-not $startupSmoke) {
   $crashSuspicion = "startup smoke missing; crash likely occurred before or during pure file-I/O startup smoke write"
 } elseif ($tickDriver -ne "none" -and $tickSource -eq "not found") {
   $crashSuspicion = "startup smoke present but selected tick source did not register; inspect last CrabRuntimeProbe log line for risky driver phase"
 }
+$crashSuspect = $crashAfterPrepare -or $crashSuspicion -ne "none"
 
 $startupCompleteReached = Get-TextPresence -Text $logText -Pattern 'boot phase: startup complete'
 $tickRegistrationHappened = Get-TextPresence -Text $logText -Pattern 'boot phase: tick registration begin|tick driver register begin|tick source registered'
@@ -1386,6 +1475,12 @@ $summaryLines = @(
   "local_inventory_array_shallow_probe_ran = $($localInventoryRecords.Count -gt 0)",
   "local_inventory_array_shallow_sample_count = $($localInventoryRecords.Count)",
   "local_inventory_array_element_dereference = $localInventoryElementDereference",
+  "local_inventory_shape_confirm_probe_ran = $($localInventoryShapeConfirmRecords.Count -gt 0)",
+  "local_inventory_shape_confirm_array_value_kinds = $localInventoryShapeConfirmArrayValueKinds",
+  "local_inventory_shape_confirm_sample_count = $($localInventoryShapeConfirmRecords.Count)",
+  "local_inventory_shape_confirm_no_array_count = $(-not $localInventoryShapeConfirmArrayCount)",
+  "local_inventory_shape_confirm_no_array_traversal = $(-not $localInventoryShapeConfirmArrayTraversal)",
+  "local_inventory_shape_confirm_no_element_dereference = $(-not $localInventoryShapeConfirmElementDereference)",
   "possible_base_health_model = $possibleBaseHealthModel",
   "terminal_zero_note = $terminalZeroNote",
   "unique_contexts_seen = $(if ($uniqueContexts.Count -gt 0) { $uniqueContexts -join ', ' } else { "none" })",
@@ -1401,6 +1496,9 @@ $summaryLines = @(
   "crabinventorysync_appeared_unexpectedly = $crabInventorySync",
   "last_crabruntimeprobe_log_line = $($lastCrabRuntimeProbeLogLine[0])",
   "crash_suspicion = $crashSuspicion",
+  "crash_after_prepare = $crashAfterPrepare",
+  "crash_suspect = $crashSuspect",
+  "latest_crash_folder = $(if ($null -ne $latestCrashFolder) { $latestCrashFolder.FullName } else { "not found" })",
   "startup_complete_reached = $startupCompleteReached",
   "tick_registration_happened = $tickRegistrationHappened",
   "probe_breadcrumbs_appeared = $probeBreadcrumbsAppeared",
@@ -1415,6 +1513,7 @@ $summaryLines = @(
   "allowRawIdentityEvidence = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowRawIdentityEvidence")",
   "allowResourceVisibilityProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowResourceVisibilityProbes")",
   "allowInventoryArrayShallowProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryArrayShallowProbes")",
+  "allowInventoryArrayShapeConfirmProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryArrayShapeConfirmProbes")",
   "allowWriteProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowWriteProbes")",
   "allowRpcProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowRpcProbes")",
   "observe_context_latest_context = $(if ($null -ne $lastObserveContext) { Get-RecordValue -Record $lastObserveContext -Names @("context") } else { "not found" })",
@@ -1522,7 +1621,7 @@ if ($errorLines.Count -eq 0) {
   }
 }
 
-if ($Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch" -or $Mode -eq "CollectResourceVisibility" -or $Mode -eq "CollectLocalInventoryArrayShallow") {
+if ($Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch" -or $Mode -eq "CollectResourceVisibility" -or $Mode -eq "CollectLocalInventoryArrayShallow" -or $Mode -eq "CollectLocalInventoryArrayShapeConfirm") {
   $summaryLines += ""
   $summaryLines += "files_to_upload:"
   $summaryLines += " - $SummaryPath"

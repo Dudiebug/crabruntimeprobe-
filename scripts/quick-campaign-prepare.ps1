@@ -49,7 +49,7 @@ function Select-NextCampaignPhase {
   $completed = @(Get-CampaignPhaseIds -Entries @($State.completedPhases))
   $failed = @(Get-CampaignPhaseIds -Entries @($State.failedPhases))
   $blocked = @(Get-CampaignPhaseIds -Entries @($State.blockedPhases))
-  $advanceablePartial = @($State.partialPhases | Where-Object { $_.status -eq "remote_resources_partial" } | ForEach-Object { [string]$_.phaseId })
+  $advanceablePartial = @($State.partialPhases | Where-Object { $_.status -eq "remote_resources_partial" -or $_.status -eq "crash_suspect_local_inventory_shape_visible" } | ForEach-Object { [string]$_.phaseId })
 
   foreach ($phase in @($Plan.phases)) {
     if ($completed -contains $phase.phaseId) { continue }
@@ -91,6 +91,9 @@ function Assert-CampaignPhaseSafety {
   if (($required.ContainsKey("allowInventoryArrayShallowProbes") -and $required["allowInventoryArrayShallowProbes"]) -and $Phase.phaseId -ne "local-inventory-array-shallow-read") {
     throw "Campaign phase $($Phase.phaseId) may not enable allowInventoryArrayShallowProbes."
   }
+  if (($required.ContainsKey("allowInventoryArrayShapeConfirmProbes") -and $required["allowInventoryArrayShapeConfirmProbes"]) -and $Phase.phaseId -ne "local-inventory-array-shape-confirm") {
+    throw "Campaign phase $($Phase.phaseId) may not enable allowInventoryArrayShapeConfirmProbes."
+  }
   if ($required.ContainsKey("allowRawIdentityEvidence") -and $required["allowRawIdentityEvidence"]) {
     throw "Campaign phase $($Phase.phaseId) may not enable allowRawIdentityEvidence by default."
   }
@@ -130,6 +133,7 @@ function Set-CampaignPhaseConfig {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowInventoryArrayShallowProbes",
+    "allowInventoryArrayShapeConfirmProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -167,6 +171,7 @@ function Assert-CampaignInstalledSafety {
     [switch]$AllowIdentityProbes,
     [switch]$AllowResourceVisibilityProbes,
     [switch]$AllowInventoryArrayShallowProbes,
+    [switch]$AllowInventoryArrayShapeConfirmProbes,
     [switch]$AllowInventoryInfoProbes,
     [switch]$AllowDeepArrayProbes
   )
@@ -182,6 +187,8 @@ function Assert-CampaignInstalledSafety {
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
+    "allowInventoryArrayShallowProbes",
+    "allowInventoryArrayShapeConfirmProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -191,6 +198,7 @@ function Assert-CampaignInstalledSafety {
       ($AllowIdentityProbes -and $key -eq "allowIdentityProbes") -or
       ($AllowResourceVisibilityProbes -and $key -eq "allowResourceVisibilityProbes") -or
       ($AllowInventoryArrayShallowProbes -and $key -eq "allowInventoryArrayShallowProbes") -or
+      ($AllowInventoryArrayShapeConfirmProbes -and $key -eq "allowInventoryArrayShapeConfirmProbes") -or
       ($AllowInventoryInfoProbes -and $key -eq "allowInventoryInfoProbes") -or
       ($AllowDeepArrayProbes -and $key -eq "allowDeepArrayProbes")
     if ($allowed -and $value -eq "true") { continue }
@@ -266,6 +274,7 @@ Assert-CampaignInstalledSafety `
   -AllowIdentityProbes:($phase.phaseId -eq "multiplayer-roster-read" -or $phase.phaseId -eq "multiplayer-resource-visibility-read") `
   -AllowResourceVisibilityProbes:($phase.phaseId -eq "multiplayer-resource-visibility-read") `
   -AllowInventoryArrayShallowProbes:($phase.phaseId -eq "local-inventory-array-shallow-read") `
+  -AllowInventoryArrayShapeConfirmProbes:($phase.phaseId -eq "local-inventory-array-shape-confirm") `
   -AllowInventoryInfoProbes:($phase.phaseId -eq "inventoryinfo-scalar-read") `
   -AllowDeepArrayProbes:($phase.phaseId -match 'deep|inventory-element-da-read')
 Clear-CampaignRuntimeFiles -ScriptsRoot $InstallScriptsRoot
