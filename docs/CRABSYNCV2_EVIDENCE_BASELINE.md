@@ -10,7 +10,7 @@ Current generated evidence confirms `CrabPC.PlayerState` through `GetPropertyVal
 
 Slot scalar visibility is confirmed for fields such as `NumWeaponModSlots`, with related slot fields visible in resource evidence. These are scalar reads only.
 
-`CrabPS.Crystals` is confirmed visible through `GetPropertyValue`; resource evidence also mentions keys visibility, but keys policy remains unresolved.
+`CrabPS.Crystals` is confirmed visible through `GetPropertyValue`. Resource evidence may mention keys visibility, but keys visibility is diagnostic only: keys are local-only progression/unlock currency and must not be synced. Readable does not mean syncable.
 
 `CrabPC -> PlayerState -> CrabPS -> HealthInfo` is the currently confirmed player health path. Evidence includes `CurrentHealth`, `CurrentMaxHealth`, `BaseMaxHealth`, and `MaxHealthMultiplier` in player-state-scoped health phases.
 
@@ -41,13 +41,12 @@ The local inventory shallow shape/count phase has crash-suspect history. Later s
 - Joined-client apply/write behavior.
 - Official RPC/OnRep call strategy.
 - Armor plate sync.
-- Keys sync.
 - Player-owned `CrabHC` discovery.
 
 ## D. CrabSyncV2 Design Implication
 
-P2P-style merge appears plausible for crystals, slots, equipment, and possibly health inputs because current evidence shows those categories can be read from visible PlayerState/resource paths.
+P2P-style merge appears plausible for proven resources such as crystals, slots, equipment, and possibly health inputs because current evidence shows those categories can be read from visible PlayerState/resource paths. A future research path should investigate whether a proven player/health/resource sharing path can safely carry additional CrabSyncV2 state.
 
-Inventory sync is not proven by current PlayerState evidence. Inventory may require a relay/server or another safe carrier until item metadata visibility is proven.
+Inventory sync is not proven by current PlayerState evidence. P2P piggybacking is a preferred research direction if evidence supports it, but it remains a hypothesis until a safe carrier and payload model are proven. Inventory may still require a relay/server fallback or another safe carrier until item metadata visibility is proven.
 
 CrabSyncV2 should not be built around name-only item sync. Once item reads are proven, CrabSyncV2 should preserve full per-item metadata rather than collapsing items to DA names.

@@ -10,7 +10,7 @@ This is a future architecture plan, not an implementation request. RuntimeProbe 
 - Health reader: starts at `CrabPC -> PlayerState -> CrabPS -> HealthInfo`.
 - Resource reader: reads crystals, slots, equipment, and other scalar resources only from proven paths.
 - Identity/session mapper: maps local/remote players using fingerprinted identity and session context.
-- Merge engine: combines local, remote, and relay/server state without blind stale overwrites.
+- Merge engine: combines local, remote, P2P carrier, and relay/server fallback state without blind stale overwrites.
 - Apply planner: computes a plan before any write and marks skips with reasons.
 - Apply executor: future gated write/RPC layer, separate from RuntimeProbe.
 - Rollback/skip safety layer: aborts applies on instability and keeps local state safe.
@@ -32,7 +32,8 @@ This is a future architecture plan, not an implementation request. RuntimeProbe 
 
 - Player identity fingerprint.
 - Equipment: weapon, ability, melee DA identity.
-- Resources: crystals and unresolved resource fields such as keys.
+- Resources: crystals and proven shared run resources.
+- Local-only progression fields: keys are excluded from sync payloads.
 - Slots: weapon/ability/melee/perk slot scalars.
 - Health snapshot: current, max, base max, multiplier, source path, timestamp.
 - Inventory items with full metadata: DA short name, preferred full DA identity/path, `Level`, `AccumulatedBuff`, `Enhancements`, category, index, and source proof.
@@ -52,8 +53,11 @@ This is a future architecture plan, not an implementation request. RuntimeProbe 
 
 - Clamp values to objectdump-backed property ranges.
 - Preserve item metadata.
+- Exclude keys from merge; key visibility is diagnostic only.
 - Do not blindly overwrite safer local runtime state with stale client state.
 - Separate local-only, shared, and unresolved fields.
+- Architecture option: P2P piggyback carrier, preferred if proven safe.
+- Architecture option: external relay/server fallback if no P2P carrier can safely transmit inventory metadata.
 
 ## Migration Policy
 

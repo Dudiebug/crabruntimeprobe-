@@ -40,6 +40,8 @@ RuntimeProbe behavior:
 [Implementation Blueprint](docs/CRABSYNCV2_IMPLEMENTATION_BLUEPRINT.md),
 [Research Roadmap](docs/CRABSYNCV2_RESEARCH_ROADMAP.md), and
 [Glossary](docs/CRABSYNCV2_GLOSSARY.md).
+These planning docs treat keys as local-only progression currency and P2P
+piggybacking as a preferred research direction, not proven behavior.
 
 ## Install
 

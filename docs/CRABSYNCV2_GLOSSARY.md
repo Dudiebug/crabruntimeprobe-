@@ -38,7 +38,17 @@
 
 `stable generation`: A repeated, unchanged read generation over multiple ticks before trust/apply.
 
+`local-only field`: Runtime-visible state that CrabSyncV2 may diagnose but must not include in shared merge/apply payloads.
+
+`progression currency`: Currency tied to permanent or new-content unlocks rather than the current shared run.
+
+`keys`: Local-only progression/unlock currency that must not be included in CrabSyncV2 shared state.
+
 `relay/server`: External or host-mediated carrier/merge authority that may be needed if P2P inventory metadata is not visible.
+
+`P2P piggyback carrier`: A hypothesized safe path for attaching additional CrabSyncV2 state to a proven player/health/resource sharing path without an external relay.
+
+`external relay fallback`: The architecture fallback where inventory/resource metadata is exchanged through an external or host-mediated relay if no safe P2P piggyback carrier is proven.
 
 `P2P merge`: Peer-to-peer state merge using visible PlayerState/resource evidence without a dedicated relay.
 

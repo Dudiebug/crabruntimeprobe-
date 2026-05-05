@@ -32,11 +32,16 @@ These are future CrabSyncV2 constraints. They do not authorize RuntimeProbe writ
 
 - Slot fields are byte range and must clamp to `0..255`.
 - Crystals are UInt32 range and must clamp to `0..4294967295`.
-- Keys policy is unresolved.
+- Do not sync keys.
+- Keys are player progression/unlock currency used to unlock new content, not a shared run resource.
+- `CrabPS.Keys` may be readable, but CrabSyncV2 must treat keys as local-only and exclude them from merge/apply payloads.
 
 ## Networking/Merge
 
-- Server/relay merge must preserve metadata.
+- P2P-style sync is a preferred research direction if evidence supports it.
+- It may be possible to piggyback additional CrabSyncV2 state onto a proven player/health/resource sharing path so players can exchange inventory/resource info without an external relay.
+- This is a hypothesis, not current proof. Keep relay/server fallback in the architecture until a safe P2P carrier and payload model are proven.
+- Server/relay fallback merge must preserve metadata.
 - Do not emit values outside objectdump-backed property ranges.
 - Do not let one stale client overwrite safer local runtime state.
 - Prefer generation/timestamp/role-aware merge policy over blind last-write-wins.

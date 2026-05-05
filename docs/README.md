@@ -21,6 +21,10 @@
 
 ## CrabSyncV2 Planning Docs
 
+CrabSyncV2 planning treats keys as local-only progression currency. P2P
+piggybacking is documented as a research direction that still needs a proven
+carrier and relay/server fallback.
+
 - [CrabSyncV2 Evidence Baseline](CRABSYNCV2_EVIDENCE_BASELINE.md)
 - [CrabSyncV2 Design Rules](CRABSYNCV2_DESIGN_RULES.md)
 - [CrabSyncV2 Open Questions](CRABSYNCV2_OPEN_QUESTIONS.md)
