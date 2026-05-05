@@ -127,6 +127,12 @@ Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "activ
 Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "health-baseline-read"
 Assert-HealthBaselineGates -ConfigPath $InstalledConfigPath
 
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareHealthPlayerState
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected "executeDelay"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "active"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "health-playerstate-read"
+Assert-HealthBaselineGates -ConfigPath $InstalledConfigPath
+
 $gameplayPrepareScript = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "quick-gameplay-observe-prepare.ps1")
 if ($gameplayPrepareScript -notmatch 'PrepareTickDriver executeDelay') {
   throw "quick-gameplay-observe-prepare.ps1 must prepare executeDelay explicitly."
@@ -145,13 +151,20 @@ if ($healthBaselinePrepareScript -notmatch 'PrepareHealthBaseline') {
   throw "quick-health-baseline-prepare.ps1 must use the health baseline prepare path."
 }
 
+$healthPlayerStatePrepareScript = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "quick-health-playerstate-prepare.ps1")
+if ($healthPlayerStatePrepareScript -notmatch 'PrepareHealthPlayerState') {
+  throw "quick-health-playerstate-prepare.ps1 must use the health playerstate prepare path."
+}
+
 $probeRegistry = Get-Content -Raw -LiteralPath (Join-Path $SourceModRoot "Scripts\probe_registry.lua")
 foreach ($required in @(
   "CrabPS.GetPropertyValue.",
   "equipment-property-read",
   "CrabPS.DirectField.",
-  "equipment-direct-field-read"
-  "health-baseline-read"
+  "equipment-direct-field-read",
+  "health-baseline-read",
+  "health-playerstate-read",
+  "health-hc-discovery-read"
 )) {
   if ($probeRegistry -notmatch [regex]::Escape($required)) {
     throw "probe_registry.lua missing expected equipment probe registry content: $required"
@@ -162,6 +175,9 @@ if ($probeRegistry -match "CrabPS\.DirectField\.[\s\S]*equipment-property-read")
 }
 if ($equipmentPropertyPrepareScript -match "equipment-direct-field-read") {
   throw "quick-equipment-property-prepare.ps1 must not select equipment-direct-field-read."
+}
+if ($healthPlayerStatePrepareScript -match "FindFirstOf.CrabHC") {
+  throw "quick-health-playerstate-prepare.ps1 must not mention FindFirstOf.CrabHC."
 }
 
 $hudFailed = $false
@@ -312,7 +328,7 @@ foreach ($required in @(
   "latest_CrabHC_CurrentHealth = 250",
   "latest_CrabHC_CurrentMaxHealth = 250",
   "latest_CrabPS_BaseMaxHealth = 250",
-  "possible_base_health_model = single-player base appears 250",
+  "possible_base_health_model = solo player CrabPS base appears 250",
   "failures:",
   " - none"
 )) {
@@ -325,6 +341,75 @@ Set-TestConfigValue -ConfigPath $InstalledConfigPath -Key "allowWriteProbes" -Va
 & $powerShellExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -CollectHealthBaseline | Out-Host
 if ($LASTEXITCODE -eq 0) {
   throw "health baseline collection must fail when allowWriteProbes is true."
+}
+
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareHealthPlayerState
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected "executeDelay"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "active"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "health-playerstate-read"
+Assert-HealthBaselineGates -ConfigPath $InstalledConfigPath
+
+New-Item -ItemType Directory -Force -Path $resultsRoot | Out-Null
+Set-Content -LiteralPath (Join-Path $TestGameBin "UE4SS.log") -Encoding ASCII -Value @(
+  "[CrabRuntimeProbe] boot phase: config loaded",
+  "[CrabRuntimeProbe] started session=test mode=active",
+  "[CrabRuntimeProbe] tickDriver=executeDelay",
+  "[CrabRuntimeProbe] tick driver register begin: executeDelay",
+  "[CrabRuntimeProbe] tick source registered: executeDelay",
+  "[CrabRuntimeProbe] tick heartbeat tick=100 mode=active"
+)
+Set-Content -LiteralPath (Join-Path $resultsRoot "probe_results_health_playerstate.jsonl") -Encoding ASCII -Value @(
+  '{"timestamp":"2026-05-04T00:00:01Z","event":"Debug.StartupSmoke","probeId":"Debug.StartupSmoke","probeName":"Debug.StartupSmoke","result":"ok"}',
+  '{"timestamp":"2026-05-04T00:00:02Z","event":"Debug.WriterSelfTest","probeId":"Debug.WriterSelfTest","probeName":"Debug.WriterSelfTest","result":"ok"}',
+  '{"timestamp":"2026-05-04T00:00:03Z","probeId":"CrabPS.GetPropertyValue.HealthInfo","probeName":"CrabPS.GetPropertyValue.HealthInfo","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"HealthInfo obtained"}',
+  '{"timestamp":"2026-05-04T00:00:04Z","probeId":"CrabPS.HealthInfo.CurrentHealth","probeName":"CrabPS.HealthInfo.CurrentHealth","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"250.0"}',
+  '{"timestamp":"2026-05-04T00:00:05Z","probeId":"CrabPS.HealthInfo.CurrentMaxHealth","probeName":"CrabPS.HealthInfo.CurrentMaxHealth","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"250.0"}',
+  '{"timestamp":"2026-05-04T00:00:06Z","probeId":"CrabPS.GetPropertyValue.BaseMaxHealth","probeName":"CrabPS.GetPropertyValue.BaseMaxHealth","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"250.0"}',
+  '{"timestamp":"2026-05-04T00:00:07Z","probeId":"CrabPS.GetPropertyValue.MaxHealthMultiplier","probeName":"CrabPS.GetPropertyValue.MaxHealthMultiplier","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"1.0"}'
+)
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -CollectHealthPlayerState
+
+$playerStateHealthSummary = Get-Content -Raw -LiteralPath $summaryPath
+foreach ($required in @(
+  "probeSet = health-playerstate-read",
+  "allowHealthProbes = true",
+  "playerstate_health_probe_ran = True",
+  "ambiguous_crabhc_detected = False",
+  "playerstate_current_health = 250.0",
+  "playerstate_current_max_health = 250.0",
+  "playerstate_base_max_health = 250.0",
+  "playerstate_max_health_multiplier = 1.0",
+  "possible_base_health_model = solo player CrabPS base appears 250",
+  "failures:",
+  " - none"
+)) {
+  if ($playerStateHealthSummary -notmatch [regex]::Escape($required)) {
+    throw "health playerstate diagnostic_summary.txt missing expected content: $required"
+  }
+}
+
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareHealthPlayerState
+New-Item -ItemType Directory -Force -Path $resultsRoot | Out-Null
+Set-Content -LiteralPath (Join-Path $TestGameBin "UE4SS.log") -Encoding ASCII -Value @(
+  "[CrabRuntimeProbe] boot phase: config loaded",
+  "[CrabRuntimeProbe] started session=test mode=active",
+  "[CrabRuntimeProbe] tickDriver=executeDelay",
+  "[CrabRuntimeProbe] tick driver register begin: executeDelay",
+  "[CrabRuntimeProbe] tick source registered: executeDelay"
+)
+Set-Content -LiteralPath (Join-Path $resultsRoot "probe_results_health_playerstate_crabhc_fail.jsonl") -Encoding ASCII -Value @(
+  '{"timestamp":"2026-05-04T00:00:01Z","event":"Debug.StartupSmoke","probeId":"Debug.StartupSmoke","probeName":"Debug.StartupSmoke","result":"ok"}',
+  '{"timestamp":"2026-05-04T00:00:02Z","event":"Debug.WriterSelfTest","probeId":"Debug.WriterSelfTest","probeName":"Debug.WriterSelfTest","result":"ok"}',
+  '{"timestamp":"2026-05-04T00:00:03Z","probeId":"FindFirstOf.CrabHC","probeName":"FindFirstOf.CrabHC","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"CrabHC found"}',
+  '{"timestamp":"2026-05-04T00:00:04Z","probeId":"CrabPS.GetPropertyValue.HealthInfo","probeName":"CrabPS.GetPropertyValue.HealthInfo","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"HealthInfo obtained"}',
+  '{"timestamp":"2026-05-04T00:00:05Z","probeId":"CrabPS.HealthInfo.CurrentHealth","probeName":"CrabPS.HealthInfo.CurrentHealth","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"250.0"}',
+  '{"timestamp":"2026-05-04T00:00:06Z","probeId":"CrabPS.HealthInfo.CurrentMaxHealth","probeName":"CrabPS.HealthInfo.CurrentMaxHealth","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"250.0"}',
+  '{"timestamp":"2026-05-04T00:00:07Z","probeId":"CrabPS.GetPropertyValue.BaseMaxHealth","probeName":"CrabPS.GetPropertyValue.BaseMaxHealth","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"250.0"}',
+  '{"timestamp":"2026-05-04T00:00:08Z","probeId":"CrabPS.GetPropertyValue.MaxHealthMultiplier","probeName":"CrabPS.GetPropertyValue.MaxHealthMultiplier","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"1.0"}'
+)
+& $powerShellExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -CollectHealthPlayerState | Out-Host
+if ($LASTEXITCODE -eq 0) {
+  throw "health playerstate collection must fail when FindFirstOf.CrabHC evidence appears."
 }
 
 Write-Host "CrabRuntimeProbe packaging checks passed."

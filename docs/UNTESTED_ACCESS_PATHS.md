@@ -9,6 +9,7 @@ The following areas remain UNTESTED or UNSAFE_DISABLED unless explicit runtime e
 | `CrabInventoryInfo.*` | array traversal | UNTESTED | Deep arrays are disabled. |
 | `CrabHC.Health` | read | UNTESTED | Health probes are disabled. |
 | `CrabHC.HealthInfo.*` | write | UNTESTED | Health writes are disabled. |
+| `CrabHC.PlayerOwnership` | discovery | UNTESTED | Player-owned CrabHC discovery is not proven yet; unscoped FindFirstOf.CrabHC is ambiguous. |
 | `CrabPS.HealthInfo.*` | write | UNTESTED | Health writes are disabled. |
 | `CrabPS.HealthInfo.*` | joined-client | UNTESTED | Multiplayer/joined-client health evidence does not exist yet. |
 | `CrabHC.HealthInfo.*` | multiplayer | UNTESTED | Multiplayer max-health math is untested. |

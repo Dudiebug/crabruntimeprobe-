@@ -13,7 +13,8 @@ local function mk(id, category, setName, step, fn, opts)
     owner = opts.owner or '',
     member = opts.member or '',
     accessMethod = opts.accessMethod or step,
-    accessKind = opts.accessKind or step
+    accessKind = opts.accessKind or step,
+    sourceScope = opts.sourceScope or ''
   }
 end
 
@@ -37,6 +38,14 @@ function registry.build(safe)
   local function readScalar(value)
     if value == nil then return 'nil' end
     return 'ok', type(value), tostring(value)
+  end
+
+  local function classifyCrabHCSource(fullName)
+    local text = tostring(fullName or '')
+    if text:find('Destructible') or text:find('Barrel') or text:find('ChaoticBarrel') then
+      return 'non_player', 'unscoped CrabHC appears non-player/destructible; do not use as player health'
+    end
+    return 'ambiguous', 'unscoped CrabHC; ownership not established'
   end
 
   probes[#probes + 1] = mk('FindFirstOf.CrabPC', 'core', 'shallow-core', 'findFirst', function(ctx)
@@ -156,13 +165,21 @@ function registry.build(safe)
     ctx.cache.CrabHC = obj
     if err then return 'lua_error', nil, err end
     if obj == nil then return 'nil' end
-    return 'ok', 'object', 'CrabHC found'
+    local fullName = safe.getFullName(obj)
+    local sourceScope, sourceNote = classifyCrabHCSource(fullName)
+    local summary = fullName and ('CrabHC found fullName=' .. tostring(fullName)) or 'CrabHC found'
+    return 'ok', 'object', summary, nil, {
+      fullName = fullName or '',
+      sourceScope = sourceScope,
+      localNotes = sourceNote
+    }
   end, {
     symbol = 'CrabHC',
     owner = 'Runtime',
     member = 'CrabHC',
     accessMethod = 'FindFirstOf',
-    accessKind = 'findFirst'
+    accessKind = 'findFirst',
+    sourceScope = 'ambiguous'
   })
 
   probes[#probes + 1] = mk('CrabHC.IsValid', 'health', 'health-baseline-read', 'isValid', function(ctx)
@@ -173,20 +190,27 @@ function registry.build(safe)
     owner = 'CrabHC',
     member = 'IsValid',
     accessMethod = 'IsValid',
-    accessKind = 'isValid'
+    accessKind = 'isValid',
+    sourceScope = 'ambiguous'
   })
 
   probes[#probes + 1] = mk('CrabHC.GetFullName', 'health', 'health-baseline-read', 'fullname', function(ctx)
     local v, err = safe.getFullName(ctx.cache.CrabHC)
     if err then return 'lua_error', nil, err end
     if not v then return 'nil' end
-    return 'ok', 'string', v
+    local sourceScope, sourceNote = classifyCrabHCSource(v)
+    return 'ok', 'string', v, nil, {
+      fullName = v,
+      sourceScope = sourceScope,
+      localNotes = sourceNote
+    }
   end, {
     symbol = 'CrabHC',
     owner = 'CrabHC',
     member = 'GetFullName',
     accessMethod = 'GetFullName',
-    accessKind = 'getFullName'
+    accessKind = 'getFullName',
+    sourceScope = 'ambiguous'
   })
 
   probes[#probes + 1] = mk('CrabHC.GetPropertyValue.HealthInfo', 'health', 'health-baseline-read', 'healthInfo', function(ctx)
@@ -200,7 +224,8 @@ function registry.build(safe)
     owner = 'CrabHC',
     member = 'HealthInfo',
     accessMethod = 'GetPropertyValue',
-    accessKind = 'getProperty'
+    accessKind = 'getProperty',
+    sourceScope = 'ambiguous'
   })
 
   for _, field in ipairs({ 'CurrentHealth', 'CurrentMaxHealth' }) do
@@ -214,7 +239,8 @@ function registry.build(safe)
       owner = 'CrabHC.HealthInfo',
       member = fieldName,
       accessMethod = 'HealthInfoStructField',
-      accessKind = 'health'
+      accessKind = 'health',
+      sourceScope = 'ambiguous'
     })
   end
 
@@ -227,7 +253,8 @@ function registry.build(safe)
     owner = 'CrabHC',
     member = 'BaseMaxHealth',
     accessMethod = 'GetPropertyValue',
-    accessKind = 'health'
+    accessKind = 'health',
+    sourceScope = 'ambiguous'
   })
 
   probes[#probes + 1] = mk('CrabPS.GetPropertyValue.HealthInfo', 'health', 'health-baseline-read', 'healthInfo', function(ctx)
@@ -243,7 +270,8 @@ function registry.build(safe)
     owner = 'CrabPS',
     member = 'HealthInfo',
     accessMethod = 'GetPropertyValue',
-    accessKind = 'getProperty'
+    accessKind = 'getProperty',
+    sourceScope = 'player_state_scoped'
   })
 
   for _, field in ipairs({ 'CurrentHealth', 'CurrentMaxHealth' }) do
@@ -257,7 +285,8 @@ function registry.build(safe)
       owner = 'CrabPS.HealthInfo',
       member = fieldName,
       accessMethod = 'HealthInfoStructField',
-      accessKind = 'health'
+      accessKind = 'health',
+      sourceScope = 'player_state_scoped'
     })
   end
 
@@ -274,9 +303,94 @@ function registry.build(safe)
       owner = 'CrabPS',
       member = fieldName,
       accessMethod = 'GetPropertyValue',
-      accessKind = 'health'
+      accessKind = 'health',
+      sourceScope = 'player_state_scoped'
     })
   end
+
+  probes[#probes + 1] = mk('CrabPS.GetPropertyValue.HealthInfo', 'health', 'health-playerstate-read', 'healthInfo', function(ctx)
+    local crabPs, crabPsErr = getCrabPlayerState(ctx)
+    if crabPsErr then return 'lua_error', nil, crabPsErr end
+    local v, err = safe.getProperty(crabPs, 'HealthInfo')
+    ctx.cache.CrabPSHealthInfo = v
+    if err then return 'lua_error', nil, err end
+    if not v then return 'nil' end
+    return 'ok', type(v), 'HealthInfo obtained', nil, {
+      sourceScope = 'player_state_scoped',
+      localNotes = 'CrabPC -> PlayerState -> CrabPS health path'
+    }
+  end, {
+    symbol = 'CrabPS.HealthInfo',
+    owner = 'CrabPS',
+    member = 'HealthInfo',
+    accessMethod = 'GetPropertyValue',
+    accessKind = 'getProperty',
+    sourceScope = 'player_state_scoped'
+  })
+
+  for _, field in ipairs({ 'CurrentHealth', 'CurrentMaxHealth' }) do
+    local fieldName = field
+    probes[#probes + 1] = mk('CrabPS.HealthInfo.' .. fieldName, 'health', 'health-playerstate-read', 'healthInfoScalar', function(ctx)
+      local v, err = safe.getStructField(ctx.cache.CrabPSHealthInfo, fieldName)
+      if err then return 'lua_error', nil, err end
+      local result, kind, summary = readScalar(v)
+      return result, kind, summary, nil, {
+        sourceScope = 'player_state_scoped',
+        localNotes = 'CrabPC -> PlayerState -> CrabPS health path'
+      }
+    end, {
+      symbol = 'CrabPS.HealthInfo.' .. fieldName,
+      owner = 'CrabPS.HealthInfo',
+      member = fieldName,
+      accessMethod = 'HealthInfoStructField',
+      accessKind = 'health',
+      sourceScope = 'player_state_scoped'
+    })
+  end
+
+  for _, field in ipairs({ 'BaseMaxHealth', 'MaxHealthMultiplier' }) do
+    local fieldName = field
+    probes[#probes + 1] = mk('CrabPS.GetPropertyValue.' .. fieldName, 'health', 'health-playerstate-read', 'healthProperty', function(ctx)
+      local crabPs, crabPsErr = getCrabPlayerState(ctx)
+      if crabPsErr then return 'lua_error', nil, crabPsErr end
+      local v, err = safe.getProperty(crabPs, fieldName)
+      if err then return 'lua_error', nil, err end
+      local result, kind, summary = readScalar(v)
+      return result, kind, summary, nil, {
+        sourceScope = 'player_state_scoped',
+        localNotes = 'CrabPC -> PlayerState -> CrabPS health path'
+      }
+    end, {
+      symbol = 'CrabPS.' .. fieldName,
+      owner = 'CrabPS',
+      member = fieldName,
+      accessMethod = 'GetPropertyValue',
+      accessKind = 'health',
+      sourceScope = 'player_state_scoped'
+    })
+  end
+
+  probes[#probes + 1] = mk('FindAllOf.CrabHC.Availability', 'health', 'health-hc-discovery-read', 'findAllAvailability', function()
+    local ok, value = pcall(function() return type(FindAllOf) end)
+    if not ok then return 'lua_error', nil, tostring(value) end
+    if value ~= 'function' then
+      return 'nil', 'string', 'FindAllOf unavailable; candidate traversal deferred', nil, {
+        sourceScope = 'ambiguous',
+        localNotes = 'availability check only; no CrabHC candidates traversed'
+      }
+    end
+    return 'ok', 'string', 'FindAllOf available; CrabHC candidate traversal intentionally deferred until capped ownership probes are reviewed', nil, {
+      sourceScope = 'ambiguous',
+      localNotes = 'availability check only; no CrabHC candidates traversed'
+    }
+  end, {
+    symbol = 'CrabHC',
+    owner = 'Runtime',
+    member = 'CrabHC',
+    accessMethod = 'FindAllOfAvailability',
+    accessKind = 'findAll',
+    sourceScope = 'ambiguous'
+  })
 
   return probes
 end

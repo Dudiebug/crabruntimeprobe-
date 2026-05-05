@@ -64,6 +64,26 @@ local function hasUnsafeGate(config)
   return false
 end
 
+local function activeResearchGates(config)
+  local gates = safetyGates(config)
+  local active = {}
+  for _, key in ipairs({
+    'allowHudTickHook',
+    'allowDeepArrayProbes',
+    'allowInventoryInfoProbes',
+    'allowHealthProbes',
+    'allowWriteProbes',
+    'allowRpcProbes',
+    'allowJoinedClientDeepProbes',
+    'allowUnknownRoleProbes'
+  }) do
+    if gates[key] == true then
+      active[#active + 1] = key
+    end
+  end
+  return active
+end
+
 local function parseBuildInfo(lines)
   local info = {}
   for _, line in ipairs(lines or {}) do
@@ -156,7 +176,8 @@ function evidenceWriter.new(sessionId, config)
       probeSet = tostring(self.config.probeSet),
       tickDriver = tostring(self.config.tickDriver),
       safetyGates = safetyGates(self.config),
-      warning = hasUnsafeGate(self.config) and 'one or more unsafe gates are true' or ''
+      activeResearchGates = activeResearchGates(self.config),
+      warning = hasUnsafeGate(self.config) and ('research gates enabled: ' .. table.concat(activeResearchGates(self.config), ', ')) or ''
     }
     local text = json.encode(manifest)
     if writeFile(self.manifestPath, text) then return true end

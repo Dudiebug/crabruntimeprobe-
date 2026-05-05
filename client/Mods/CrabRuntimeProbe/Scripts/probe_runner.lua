@@ -77,13 +77,16 @@ function runner.new(config, safe, writer, evidenceWriter)
       runtimeStatus = runtimeStatus(result),
       valueKind = kind or '',
       valueSummary = summary or '',
-      error = err or ''
+      error = err or '',
+      sourceScope = probe.sourceScope or ''
     }
     if type(meta) == 'table' then
       record.fullName = meta.fullName or ''
       record.shortName = meta.shortName or ''
       record.nameSource = meta.nameSource or ''
       record.objectClass = meta.objectClass or ''
+      record.sourceScope = meta.sourceScope or record.sourceScope
+      record.localNotes = meta.localNotes or nil
     end
     evidenceWriter:writeEvidence(record)
   end
@@ -111,7 +114,7 @@ function runner.new(config, safe, writer, evidenceWriter)
   local function allowedByConfig(probe)
     if probe.set == 'inventory-array-deep' and not config.allowDeepArrayProbes then return false, 'unsafe_disabled' end
     if probe.set == 'inventory-info' and not config.allowInventoryInfoProbes then return false, 'unsafe_disabled' end
-    if (probe.set == 'health-read' or probe.set == 'health-baseline-read') and not config.allowHealthProbes then return false, 'unsafe_disabled' end
+    if (probe.set == 'health-read' or probe.set == 'health-baseline-read' or probe.set == 'health-playerstate-read' or probe.set == 'health-hc-discovery-read') and not config.allowHealthProbes then return false, 'unsafe_disabled' end
     if probe.set == 'rpc-dryrun' and not config.allowRpcProbes then return false, 'unsafe_disabled' end
     if probe.set == 'write' and not config.allowWriteProbes then return false, 'unsafe_disabled' end
     if state.role == 'unknown' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end

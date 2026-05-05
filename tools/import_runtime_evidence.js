@@ -70,6 +70,19 @@ function assertImportable(file) {
   return text.replace(/[A-Z]:\\(?!Users\\)[^\r\n"]+/g, '<REDACTED_LOCAL_PATH>');
 }
 
+function normalizeManifestText(text) {
+  try {
+    const manifest = JSON.parse(text);
+    const gates = manifest.safetyGates || {};
+    const active = Object.keys(gates).filter((key) => gates[key] === true);
+    manifest.activeResearchGates = active;
+    manifest.warning = active.length > 0 ? `research gates enabled: ${active.join(', ')}` : '';
+    return JSON.stringify(manifest);
+  } catch {
+    return text;
+  }
+}
+
 const fromArg = arg('--from');
 if (!fromArg) fail('Usage: node tools/import_runtime_evidence.js --from "<path to Mods/CrabRuntimeProbe/Scripts/results>"');
 
@@ -129,7 +142,10 @@ for (const [sessionId, sessionFiles] of sessions.entries()) {
   for (const file of sessionFiles) {
     const destName = destinationName(file);
     if (!destName) continue;
-    const text = assertImportable(file);
+    let text = assertImportable(file);
+    if (destName === 'session_manifest.json') {
+      text = normalizeManifestText(text);
+    }
     fs.writeFileSync(path.join(sessionDir, destName), text);
   }
 }

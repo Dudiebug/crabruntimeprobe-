@@ -166,9 +166,42 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\import-latest-runtim
 
 `health-baseline-read` is read-only. It exists to prove health/max-health fields
 for CrabInvSync v2 research without writing health, calling health RPCs, reading
-deep arrays, or touching `InventoryInfo`. It does not prove multiplayer
-max-health math yet; the 250 HP per player theory remains a theory until
-multiplayer evidence exists.
+deep arrays, or touching `InventoryInfo`. The first health baseline evidence
+showed that unscoped `FindFirstOf.CrabHC` can point at non-player health
+components: session `20260505T002614Z` found
+`BP_Destructible_ChaoticBarrel10.HC`. Do not use unscoped `CrabHC` as the
+CrabInvSync v2 player health source.
+
+The safer player-scoped health path is currently `CrabPC -> PlayerState ->
+CrabPS`. In solo evidence, `CrabPS.HealthInfo.CurrentHealth`,
+`CrabPS.HealthInfo.CurrentMaxHealth`, and `CrabPS.BaseMaxHealth` returned
+`250.0`, while `CrabPS.MaxHealthMultiplier` returned `1.0`. This supports a
+solo base-health value of 250, but it does not prove multiplayer max-health math
+yet; the 250 HP per player theory still needs multiplayer evidence.
+
+After the broad baseline phase, prefer the player-state-only health phase:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-health-playerstate-prepare.ps1
+```
+
+Launch Crab Champions, start a solo run, stay in-world 30 to 60 seconds, quit,
+then collect:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-health-playerstate-collect.ps1
+```
+
+Then import the resulting evidence and rebuild docs/wiki staging:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\import-latest-runtime-evidence.ps1
+```
+
+Player-owned `CrabHC` discovery is a separate research phase. The
+`health-hc-discovery-read` probe set currently records `FindAllOf` availability
+only; capped candidate traversal and ownership linkage stay deferred until that
+path is reviewed as its own explicit read-only test.
 
 The quick scripts use the default Steam path:
 
