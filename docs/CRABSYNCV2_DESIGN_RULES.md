@@ -40,6 +40,7 @@ These are future CrabSyncV2 constraints. They do not authorize RuntimeProbe writ
 - Do not emit values outside objectdump-backed property ranges.
 - Do not let one stale client overwrite safer local runtime state.
 - Prefer generation/timestamp/role-aware merge policy over blind last-write-wins.
+- It may be possible to do P2P Syncing by piggybacking off of health data share and adding info ontop of that, sharing inventory and other info between players instead of doing it through a external relay.
 
 ## RPCs/Writes
 
