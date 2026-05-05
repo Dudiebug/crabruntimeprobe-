@@ -1,12 +1,12 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T22:48:05.028Z
-- Current phase: `local-inventory-userdata-introspection`
-- Next recommended phase: `local-inventory-userdata-introspection`
-- Latest session: 20260505T204615Z
-- Latest commit: 079f8cb1f06ff7760f31317f12f176140fb5919c
-- Latest summary: evidence/runtime/20260505T204615Z/diagnostic_summary.txt
+- Updated: 2026-05-05T23:00:35.704Z
+- Current phase: none
+- Next recommended phase: none
+- Latest session: 20260505T225501Z
+- Latest commit: 763e5e9cee9ddf039770315c40837ceb133e8e2f
+- Latest summary: evidence/runtime/20260505T225501Z/diagnostic_summary.txt
 
 ## Completed Phases
 
@@ -19,6 +19,7 @@
 - `multiplayer-roster-read` - Multiplayer roster identity read
 - `multiplayer-health-playerstate-watch` - Multiplayer PlayerState health watch
 - `local-inventory-array-shape-confirm` - Local inventory array shape confirm
+- `local-inventory-userdata-introspection` - Local inventory userdata introspection
 
 ## Partial Phases
 
@@ -53,6 +54,7 @@
 - confirmed visible multiplayer roster reads
 - partial remote multiplayer PlayerState resource reads for crystals, slots, equipment, and health scalars
 - local PlayerState inventory array property shape confirmation without count, traversal, or element dereference
+- local PlayerState inventory userdata wrapper metadata without traversal or element dereference
 
 ## Identity And Roster Notes
 
@@ -118,9 +120,26 @@
 
 ## Local Inventory Userdata Introspection
 
-- Summary: unresolved; no `local-inventory-userdata-introspection` evidence has been imported yet.
-- Purpose: inspect only local inventory userdata wrapper metadata after shape visibility is confirmed.
-- This phase may pcall the length operator as risky metadata, but it does not traverse arrays, dereference elements, read InventoryInfo, or read Enhancements.
+- Summary: local_inventory_userdata_introspection_confirmed
+- Local inventory userdata introspection status: local_inventory_userdata_introspection_confirmed
+- Local PlayerState present: yes
+- Fields readable by userdata introspection: AbilityMods, MeleeMods, Perks, Relics, WeaponMods
+- Fields nil or unsupported: none
+- Value kinds: AbilityMods=userdata, MeleeMods=userdata, Perks=userdata, Relics=userdata, WeaponMods=userdata
+- Safe tostring kinds: AbilityMods=string, MeleeMods=string, Perks=string, Relics=string, WeaponMods=string
+- Safe tostring prefixes: AbilityMods=TArray: 0000020DB6F93D18, MeleeMods=TArray: 0000020DB6F94598, Perks=TArray: 0000020DB6F946A8, Relics=TArray: 0000020DB6F93C08, WeaponMods=TArray: 0000020DB6F94488
+- Metatable kinds: AbilityMods=boolean, MeleeMods=boolean, Perks=boolean, Relics=boolean, WeaponMods=boolean
+- Length operator attempted: AbilityMods=true, MeleeMods=true, Perks=true, Relics=true, WeaponMods=true
+- Length operator results: AbilityMods=0, MeleeMods=0, Perks=0, Relics=0, WeaponMods=1
+- Length operator errors: none
+- Array traversal attempted: no
+- Array elements dereferenced: no
+- InventoryInfo read: no
+- Enhancements read: no
+- Writes/RPCs: no
+- HUD/deep arrays: no
+- No crash dump is associated with the imported userdata introspection evidence.
+- Any length operator result is metadata-only; it is not proof of count traversal or item synchronization.
 
 ## Confirmed Unsafe Paths
 

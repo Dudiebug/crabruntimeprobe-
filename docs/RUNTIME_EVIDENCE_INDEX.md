@@ -2,10 +2,10 @@
 
 Generated from imported runtime evidence under `evidence/runtime/`.
 
-- Access evidence files: 12
-- Probe result files: 12
-- Diagnostic summaries: 11
-- Evidence rows: 302
+- Access evidence files: 13
+- Probe result files: 13
+- Diagnostic summaries: 12
+- Evidence rows: 303
 - Health playerstate watch samples: 200
 - Identity/roster samples: 15
 - Resource visibility samples: 6
@@ -105,9 +105,22 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 
 ## Local Inventory Userdata Introspection Summary
 
-- Summary: unresolved; no `local-inventory-userdata-introspection` evidence has been imported yet.
-- Userdata introspection inspects wrapper metadata only after shape visibility is confirmed.
-- It does not traverse arrays, dereference elements, read InventoryInfo, read Enhancements, write, or call RPCs.
+- Summary: local_inventory_userdata_introspection_confirmed
+- Local inventory userdata introspection status: local_inventory_userdata_introspection_confirmed
+- Local PlayerState present: yes
+- Fields readable by userdata introspection: AbilityMods, MeleeMods, Perks, Relics, WeaponMods
+- Value kinds: AbilityMods=userdata, MeleeMods=userdata, Perks=userdata, Relics=userdata, WeaponMods=userdata
+- Safe tostring kinds: AbilityMods=string, MeleeMods=string, Perks=string, Relics=string, WeaponMods=string
+- Metatable kinds: AbilityMods=boolean, MeleeMods=boolean, Perks=boolean, Relics=boolean, WeaponMods=boolean
+- Length operator attempted: AbilityMods=true, MeleeMods=true, Perks=true, Relics=true, WeaponMods=true
+- Length operator results: AbilityMods=0, MeleeMods=0, Perks=0, Relics=0, WeaponMods=1
+- Length operator errors: none
+- Array traversal attempted: no
+- Array elements dereferenced: no
+- InventoryInfo read: no
+- Enhancements read: no
+- Writes/RPCs: no
+- Length operator results, if present, are metadata-only and do not prove count traversal, element traversal, or item sync.
 
 ## Confirmed SAFE Access Rows
 
@@ -133,6 +146,7 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 | `CrabPS.WeaponMods` | GetPropertyValueCountOnly | solo | solo-or-host | SAFE | ok | 20260505T063937Z, 20260505T072250Z | Count-only local inventory array check; table counts are capped and elements are never dereferenced; Read-only count-only checks for WeaponMods/AbilityMods/MeleeMods/Perks/Relics; no element dereference, InventoryInfo, or Enhancements |
 | `CrabPS.WeaponMods` | GetPropertyValueShapeConfirm | solo | solo-or-host | SAFE | ok | 20260505T204615Z | Read-only local CrabPC -> PlayerState -> CrabPS property shape confirm; no count, traversal, element dereference, InventoryInfo, Enhancements, writes, or RPCs |
 | `CrabPS.WeaponMods` | GetPropertyValueShapeOnly | solo | solo-or-host | SAFE | ok | 20260505T072250Z | Read-only local CrabPC -> PlayerState -> CrabPS array shape check; no element dereference, InventoryInfo, Enhancements, writes, or RPCs |
+| `CrabPS.WeaponMods` | GetPropertyValueUserdataMetadata | solo | solo-or-host | SAFE | ok | 20260505T225501Z | Read-only local CrabPC -> PlayerState -> CrabPS userdata wrapper metadata; no traversal, element dereference, InventoryInfo, Enhancements, writes, RPCs, HUD, or deep arrays |
 | `CrabPS.HealthInfo.CurrentHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.HealthInfo.CurrentMaxHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `PlayerState.Identity` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T034622Z, 20260505T035239Z, 20260505T052110Z, 20260505T063937Z | Capped read-only visible PlayerState/CrabPS candidate identity fingerprints; no raw names or UniqueIds emitted; candidate PlayerState display/stable-id fields via GetPropertyValue only; no raw IDs by default |

@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-05T22:48:05.028Z",
+  "updatedAt": "2026-05-05T23:00:35.704Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -92,6 +92,16 @@
       "latestSessionId": "20260505T204615Z",
       "latestCommit": "6ecc98be02bba00c3d9a7fadcd6a905a7b8c9b1f",
       "latestSummaryPath": "evidence/runtime/20260505T204615Z/diagnostic_summary.txt"
+    },
+    {
+      "phaseId": "local-inventory-userdata-introspection",
+      "status": "complete",
+      "completedAt": "2026-05-05T23:00:35.613Z",
+      "source": "campaign-collect",
+      "reason": "--latest-session",
+      "latestSessionId": "20260505T225501Z",
+      "latestCommit": "763e5e9cee9ddf039770315c40837ceb133e8e2f",
+      "latestSummaryPath": "evidence/runtime/20260505T225501Z/diagnostic_summary.txt"
     }
   ],
   "partialPhases": [
@@ -154,11 +164,11 @@
       "reason": "Probe set is not implemented yet."
     }
   ],
-  "currentPhase": "local-inventory-userdata-introspection",
-  "nextRecommendedPhase": "local-inventory-userdata-introspection",
-  "latestSessionId": "20260505T204615Z",
-  "latestCommit": "079f8cb1f06ff7760f31317f12f176140fb5919c",
-  "latestSummaryPath": "evidence/runtime/20260505T204615Z/diagnostic_summary.txt",
+  "currentPhase": null,
+  "nextRecommendedPhase": null,
+  "latestSessionId": "20260505T225501Z",
+  "latestCommit": "763e5e9cee9ddf039770315c40837ceb133e8e2f",
+  "latestSummaryPath": "evidence/runtime/20260505T225501Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {
       "status": "complete",
@@ -240,7 +250,7 @@
       "mode": "active"
     },
     "local-inventory-userdata-introspection": {
-      "status": "current",
+      "status": "complete",
       "riskTier": "cautious-read",
       "probeSet": "local-inventory-userdata-introspection",
       "tickDriver": "executeDelay",
