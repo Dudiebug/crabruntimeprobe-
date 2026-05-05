@@ -32,7 +32,7 @@ These are future CrabSyncV2 constraints. They do not authorize RuntimeProbe writ
 
 - Slot fields are byte range and must clamp to `0..255`.
 - Crystals are UInt32 range and must clamp to `0..4294967295`.
-- Keys policy is unresolved.
+- DO NOT SYNC KEYS. this is because keys are the currency used by the player to unlock new content.
 
 ## Networking/Merge
 
