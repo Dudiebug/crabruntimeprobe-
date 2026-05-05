@@ -426,7 +426,7 @@ foreach ($required in @(
   "latest_CrabHC_CurrentHealth = 250",
   "latest_CrabHC_CurrentMaxHealth = 250",
   "latest_CrabPS_BaseMaxHealth = 250",
-  "possible_base_health_model = solo player CrabPS base appears 250",
+  "possible_base_health_model = local PlayerState base appears 250",
   "failures:",
   " - none"
 )) {
@@ -485,7 +485,7 @@ foreach ($required in @(
   "playerstate_current_max_health = 250.0",
   "playerstate_base_max_health = 250.0",
   "playerstate_max_health_multiplier = 1.0",
-  "possible_base_health_model = solo player CrabPS base appears 250",
+  "possible_base_health_model = local PlayerState base appears 250",
   "failures:",
   " - none"
 )) {

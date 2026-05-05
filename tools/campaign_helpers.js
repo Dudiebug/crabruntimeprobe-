@@ -617,7 +617,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- Writes and RPCs are disabled and are outside this campaign version.\n';
 
   out += '\n## Untested Paths\n\n';
-  out += '- Multiplayer health scaling remains unproven until `multiplayer-health-playerstate-watch` evidence exists.\n';
+  out += '- Vanilla multiplayer local PlayerState health visibility is confirmed only after `multiplayer-health-playerstate-watch` evidence exists; pooled/shared health is a CrabInvSync design concept, not vanilla RuntimeProbe evidence.\n';
   out += '- Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.\n';
   out += '- Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.\n';
   out += '- Crystals, slots, inventory arrays, `InventoryInfo`, and enhancements are placeholders until explicit probe sets are implemented.\n';

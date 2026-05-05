@@ -11,9 +11,9 @@ The following areas remain UNTESTED or UNSAFE_DISABLED unless explicit runtime e
 | `CrabHC.HealthInfo.*` | write | UNTESTED | Health writes are disabled. |
 | `CrabHC.PlayerOwnership` | discovery | UNTESTED | Player-owned CrabHC discovery is not proven yet; unscoped FindFirstOf.CrabHC is ambiguous. |
 | `CrabPS.HealthInfo.*` | write | UNTESTED | Health writes are disabled. |
-| `CrabPS.HealthInfo.*` | joined-client | UNTESTED | Multiplayer/joined-client health evidence does not exist yet. |
-| `CrabPS.HealthInfo.*` | multiplayer watch | UNTESTED | Multiplayer health scaling remains unproven until health-playerstate-watch evidence exists from multiplayer scenarios. |
-| `CrabHC.HealthInfo.*` | multiplayer | UNTESTED | Multiplayer max-health math is untested. |
+| `CrabPS.HealthInfo.*` | joined-client | UNTESTED | Joined-client local PlayerState health visibility has not been separately imported. |
+| `CrabPS.HealthInfo.*` | multiplayer watch | UNTESTED | Vanilla multiplayer evidence is local PlayerState health visibility only; it does not define shared/pooled health behavior. |
+| `CrabHC.HealthInfo.*` | multiplayer | UNTESTED | Player-owned CrabHC discovery in multiplayer is untested; do not use it to infer vanilla or CrabInvSync health behavior. |
 | `GameState.PlayerArray` | identity roster | UNTESTED | Roster reads require the explicit multiplayer-roster-read phase and must remain capped/redacted; latest evidence returned nil instead of a Lua table. |
 | `CrabGS` | identity source candidate | UNTESTED | CrabGS availability is checked only in multiplayer-roster-read and must not recurse through arbitrary fields. |
 | `FindAllOf(PlayerState,CrabPS)` | identity roster candidates | UNTESTED | Capped PlayerState-like discovery is gated by allowIdentityProbes and emits only redacted/fingerprinted identity values. |

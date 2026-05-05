@@ -905,12 +905,20 @@ $possibleBaseHealthModel = if (
   ($healthPlayerStateWatchBaseMaxHealthStats.Last -match '(^|[^0-9])250(\.0+)?([^0-9]|$)')
 ) {
   if ($unscopedCrabHCAppearsNonPlayer) {
-    "solo player CrabPS base appears 250; unscoped CrabHC appears non-player/destructible, do not use as player health"
+    "local PlayerState base appears 250; unscoped CrabHC appears non-player/destructible, do not use as player health"
   } else {
-    "solo player CrabPS base appears 250"
+    "local PlayerState base appears 250"
   }
 } else {
   "unknown"
+}
+$terminalZeroNote = if (
+  ($healthPlayerStateWatchCurrentHealthStats.Last -match '^0(\.0+)?$') -and
+  ($healthPlayerStateWatchCurrentMaxHealthStats.Last -match '^0(\.0+)?$')
+) {
+  "terminal 0/0 observed; treat as likely lifecycle/quit/transition/despawn artifact unless separately proven"
+} else {
+  "terminal 0/0 not observed"
 }
 
 $started = Get-TextPresence -Text $logText -Pattern '\[CrabRuntimeProbe\] started'
@@ -1259,6 +1267,7 @@ $summaryLines = @(
   "health_playerstate_watch_maxHealthMultiplier_min = $($healthPlayerStateWatchMaxHealthMultiplierStats.Min)",
   "health_playerstate_watch_maxHealthMultiplier_max = $($healthPlayerStateWatchMaxHealthMultiplierStats.Max)",
   "possible_base_health_model = $possibleBaseHealthModel",
+  "terminal_zero_note = $terminalZeroNote",
   "unique_contexts_seen = $(if ($uniqueContexts.Count -gt 0) { $uniqueContexts -join ', ' } else { "none" })",
   "unique_roles_seen = $(if ($uniqueRoles.Count -gt 0) { $uniqueRoles -join ', ' } else { "none" })",
   "first_context = $firstContext",

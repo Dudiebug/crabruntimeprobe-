@@ -205,23 +205,35 @@ Assert-Contains -Path $DocPath -Expected "Next recommended phase:"
 Assert-Contains -Path $DocPath -Expected "Campaign read phases never enable writes, RPCs, or HUD hooks."
 Assert-Contains -Path (Join-Path $RepoRoot "docs\RUNTIME_CONTEXTS.md") -Expected "this detector cannot distinguish true solo from multiplayer host"
 
-& (Join-Path $PSScriptRoot "quick-campaign-prepare.ps1") -GameBin $GameBin | Out-Null
-$InstalledConfigPath = Join-Path $GameBin "Mods\CrabRuntimeProbe\Scripts\config.txt"
-$PrepareMarkerPath = Join-Path $GameBin "Mods\CrabRuntimeProbe\Scripts\results\prepare_marker.json"
-$CampaignStatePath = Join-Path $GameBin "Mods\CrabRuntimeProbe\Scripts\results\campaign_state.json"
-if (-not (Test-Path -LiteralPath $PrepareMarkerPath -PathType Leaf)) { throw "campaign prepare did not write prepare_marker.json." }
-if (-not (Test-Path -LiteralPath $CampaignStatePath -PathType Leaf)) { throw "campaign prepare did not write campaign_state.json." }
-Assert-UnsafeReadCampaignGatesFalse -ConfigPath $InstalledConfigPath
-$preparedPhase = (Get-Content -Raw -LiteralPath $PrepareMarkerPath | ConvertFrom-Json).phaseId
-if ($preparedPhase -eq "multiplayer-roster-read") {
-  if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowIdentityProbes") -ne "true") {
-    throw "roster campaign phase expected allowIdentityProbes = true."
+$prepareRan = $false
+try {
+  & (Join-Path $PSScriptRoot "quick-campaign-prepare.ps1") -GameBin $GameBin | Out-Null
+  $prepareRan = $true
+} catch {
+  if ($_.Exception.Message -notmatch "No pending implemented campaign phase is runnable") {
+    throw
   }
-  if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowRawIdentityEvidence") -ne "false") {
-    throw "roster campaign phase expected allowRawIdentityEvidence = false."
-  }
-  if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowHealthProbes") -ne "false") {
-    throw "roster campaign phase must not enable health probes."
+  Write-Host "campaign prepare found no pending implemented phase, as expected for a completed implemented campaign."
+}
+
+if ($prepareRan) {
+  $InstalledConfigPath = Join-Path $GameBin "Mods\CrabRuntimeProbe\Scripts\config.txt"
+  $PrepareMarkerPath = Join-Path $GameBin "Mods\CrabRuntimeProbe\Scripts\results\prepare_marker.json"
+  $CampaignStatePath = Join-Path $GameBin "Mods\CrabRuntimeProbe\Scripts\results\campaign_state.json"
+  if (-not (Test-Path -LiteralPath $PrepareMarkerPath -PathType Leaf)) { throw "campaign prepare did not write prepare_marker.json." }
+  if (-not (Test-Path -LiteralPath $CampaignStatePath -PathType Leaf)) { throw "campaign prepare did not write campaign_state.json." }
+  Assert-UnsafeReadCampaignGatesFalse -ConfigPath $InstalledConfigPath
+  $preparedPhase = (Get-Content -Raw -LiteralPath $PrepareMarkerPath | ConvertFrom-Json).phaseId
+  if ($preparedPhase -eq "multiplayer-roster-read") {
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowIdentityProbes") -ne "true") {
+      throw "roster campaign phase expected allowIdentityProbes = true."
+    }
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowRawIdentityEvidence") -ne "false") {
+      throw "roster campaign phase expected allowRawIdentityEvidence = false."
+    }
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowHealthProbes") -ne "false") {
+      throw "roster campaign phase must not enable health probes."
+    }
   }
 }
 

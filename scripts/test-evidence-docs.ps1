@@ -136,7 +136,7 @@ Set-Content -LiteralPath (Join-Path $GameResults "diagnostic_summary.txt") -Enco
   "health_playerstate_watch_maxHealthMultiplier_last = 1",
   "health_playerstate_watch_maxHealthMultiplier_min = 1",
   "health_playerstate_watch_maxHealthMultiplier_max = 1",
-  "possible_base_health_model = solo player CrabPS base appears 250",
+  "possible_base_health_model = local PlayerState base appears 250",
   "allowHudTickHook = false",
   "allowUnknownRoleProbes = false",
   "allowJoinedClientDeepProbes = false",
@@ -168,15 +168,15 @@ Assert-Contains -Path $MatrixPath -Expected '| `CrabPS.BaseMaxHealth` | GetPrope
 Assert-Contains -Path $MatrixPath -Expected '| `CrabPS.MaxHealthMultiplier` | GetPropertyValue | solo | solo-or-host | SAFE | ok | testsession | sourceScope=player_state_scoped; value=1.0 |'
 Assert-Contains -Path $MatrixPath -Expected '| `CrabPS.HealthInfo` | PlayerStateHealthSample | solo | solo-or-host | SAFE | ok | testsession | sourceScope=player_state_scoped; value=currentHealth=250 currentMaxHealth=250 baseMaxHealth=250 maxHealthMultiplier=1 |'
 Assert-Contains -Path $MatrixPath -Expected 'FindFirstOf.CrabHC` is ambiguous'
-Assert-Contains -Path $MatrixPath -Expected 'health-playerstate-watch` is read-only time-series evidence'
+Assert-Contains -Path $MatrixPath -Expected 'health-playerstate-watch` is read-only local PlayerState time-series evidence for vanilla visibility'
 Assert-Contains -Path $MatrixPath -Expected 'BP_Destructible_ChaoticBarrel10.HC'
 Assert-Contains -Path $MatrixPath -Expected '| `CrabHC` | FindFirstOf | solo | solo-or-host | SAFE | ok | testsession | sourceScope=non_player_candidate; value=CrabHC found |'
 Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected '| `CrabPS.WeaponDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | testsession | sourceScope=player_state_scoped; shortName=DA_Weapon_Minigun nameSource=fullNameFallback objectClass=CrabWeaponDA |'
 Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'Health playerstate watch samples: 1'
 Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'CrabHC touched: False'
 Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'Unsafe gates: HUD=false, deepArrays=false, InventoryInfo=false, writes=false, RPCs=false, unknownRole=false, joinedClientDeep=false'
-Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'Possible base health model: solo player CrabPS base appears 250'
-Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'Do not infer CrabInvSync v2 health math from a single static health snapshot.'
+Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'Possible base health model: local PlayerState base appears 250'
+Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'RuntimeProbe documents what vanilla exposes.'
 Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'PlayerState identity reads are safe and redacted'
 Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'cannot distinguish true solo from multiplayer host-like local context'
 Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'Any candidate exposed more than one player: no'
@@ -184,7 +184,7 @@ Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Ex
 Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'GameStateBase.PlayerArray returned nil / was not exposed as a Lua table'
 Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'Visible player roster is still unresolved; auto-room grouping is not ready yet.'
 Assert-Contains -Path (Join-Path $WorkRoot "docs\KNOWN_UNSAFE_PATHS.md") -Expected '`FindFirstOf.CrabHC` is not a safe player-health source.'
-Assert-Contains -Path (Join-Path $WorkRoot "docs\UNTESTED_ACCESS_PATHS.md") -Expected 'Multiplayer health scaling remains unproven until health-playerstate-watch evidence exists from multiplayer scenarios.'
+Assert-Contains -Path (Join-Path $WorkRoot "docs\UNTESTED_ACCESS_PATHS.md") -Expected 'Vanilla multiplayer evidence is local PlayerState health visibility only; it does not define shared/pooled health behavior.'
 Assert-Contains -Path (Join-Path $WorkRoot "docs\UNTESTED_ACCESS_PATHS.md") -Expected 'Capped PlayerState-like discovery is gated by allowIdentityProbes'
 Assert-Contains -Path (Join-Path $WorkRoot "evidence\runtime\testsession\session_manifest.json") -Expected '"warning":"research gates enabled: allowHealthProbes"'
 Assert-Contains -Path (Join-Path $WorkRoot "evidence\runtime\testsession\session_manifest.json") -Expected '"activeResearchGates":["allowHealthProbes"]'

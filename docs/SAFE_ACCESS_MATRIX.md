@@ -2,7 +2,7 @@
 
 SAFE status is scoped to the contexts, roles, lifecycle states, and access method shown in the evidence. DirectField and GetPropertyValue are separate access paths.
 
-Health source scope matters: `CrabPC -> PlayerState -> CrabPS -> HealthInfo` is the only currently confirmed safe player health read path. Unscoped `FindFirstOf.CrabHC` is ambiguous and has already found `BP_Destructible_ChaoticBarrel10.HC`, so it is not player-health proof. `health-playerstate-watch` is read-only time-series evidence; multiplayer health scaling remains unproven until multiplayer watch rows exist. Identity context `solo-or-host` means local-player-present, not confirmed solo.
+Health source scope matters: `CrabPC -> PlayerState -> CrabPS -> HealthInfo` is the only currently confirmed safe player health read path. Unscoped `FindFirstOf.CrabHC` is ambiguous and has already found `BP_Destructible_ChaoticBarrel10.HC`, so it is not player-health proof. `health-playerstate-watch` is read-only local PlayerState time-series evidence for vanilla visibility; pooled/shared health is a CrabInvSync design concept, not vanilla RuntimeProbe evidence. Identity context `solo-or-host` means local-player-present, not confirmed solo.
 
 | Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |
 |---|---|---|---|---|---|---|---|
@@ -16,7 +16,7 @@ Health source scope matters: `CrabPC -> PlayerState -> CrabPS -> HealthInfo` is 
 | `CrabPS.AbilityDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z | sourceScope=player_state_scoped; shortName=DA_Ability_BlackHole nameSource=fullNameFallback objectClass=CrabAbilityDA |
 | `CrabPS.BaseMaxHealth` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.HealthInfo` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
-| `CrabPS.HealthInfo` | PlayerStateHealthSample | solo | solo-or-host | SAFE | ok | 20260505T025430Z | CrabPC -> PlayerState -> CrabPS -> HealthInfo read-only sample |
+| `CrabPS.HealthInfo` | PlayerStateHealthSample | solo | solo-or-host | SAFE | ok | 20260505T025430Z, 20260505T055346Z | CrabPC -> PlayerState -> CrabPS -> HealthInfo read-only sample |
 | `CrabPS.MaxHealthMultiplier` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.MeleeDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z | sourceScope=player_state_scoped; shortName=DA_Melee_Hammer nameSource=fullNameFallback objectClass=CrabMeleeDA |
 | `CrabPS.WeaponDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z | sourceScope=player_state_scoped; shortName=DA_Weapon_Minigun nameSource=fullNameFallback objectClass=CrabWeaponDA |

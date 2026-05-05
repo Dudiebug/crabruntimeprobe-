@@ -198,10 +198,11 @@ index += '- `CrabPS` health rows are player-state-scoped because the probe path 
 index += '- `CrabPC -> PlayerState -> CrabPS -> HealthInfo` is the only currently confirmed safe player health read path.\n';
 index += '- `FindFirstOf.CrabHC` is unscoped and ambiguous as a player-health source. Session `20260505T002614Z` observed `BP_Destructible_ChaoticBarrel10.HC`, so unscoped `CrabHC` must not be used as the CrabInvSync v2 player health source.\n';
 index += '- `CrabHC` read success proves only that the observed component can be read. It does not prove player ownership unless a later discovery phase establishes that relationship.\n';
-index += '- `health-playerstate-watch` is a read-only time-series diagnostic. Do not infer CrabInvSync v2 health math from a single static health snapshot.\n';
-index += '- Multiplayer health scaling remains unproven until watch evidence exists from multiplayer scenarios.\n';
+index += '- `health-playerstate-watch` is a read-only time-series diagnostic for vanilla local PlayerState health visibility.\n';
+index += '- RuntimeProbe documents what vanilla exposes. CrabInvSync may later build pooled/shared behavior from reported local state, but pooled/shared health is not vanilla RuntimeProbe evidence.\n';
 if (latestWatchDiagnostic) {
   const v = latestWatchDiagnostic.values;
+  const terminalZeroObserved = v.health_playerstate_watch_currentHealth_last === '0' && v.health_playerstate_watch_currentMaxHealth_last === '0';
   index += '\n## Latest Health PlayerState Watch Summary\n\n';
   index += `- Samples: ${v.health_playerstate_watch_sample_count || 'not found'}\n`;
   index += `- PlayerState watch probe ran: ${v.playerstate_health_watch_probe_ran || 'not found'}\n`;
@@ -213,6 +214,10 @@ if (latestWatchDiagnostic) {
   index += `- baseMaxHealth first/last/min/max: ${v.health_playerstate_watch_baseMaxHealth_first || 'not found'} / ${v.health_playerstate_watch_baseMaxHealth_last || 'not found'} / ${v.health_playerstate_watch_baseMaxHealth_min || 'not found'} / ${v.health_playerstate_watch_baseMaxHealth_max || 'not found'}\n`;
   index += `- maxHealthMultiplier first/last/min/max: ${v.health_playerstate_watch_maxHealthMultiplier_first || 'not found'} / ${v.health_playerstate_watch_maxHealthMultiplier_last || 'not found'} / ${v.health_playerstate_watch_maxHealthMultiplier_min || 'not found'} / ${v.health_playerstate_watch_maxHealthMultiplier_max || 'not found'}\n`;
   index += `- Possible base health model: ${v.possible_base_health_model || 'not found'}\n`;
+  index += '- Vanilla local PlayerState health visibility: 250/250 observed during valid samples; BaseMaxHealth stayed 250 and MaxHealthMultiplier stayed 1 in the latest watch evidence.\n';
+  index += terminalZeroObserved
+    ? '- Terminal 0/0 was observed; treat it as a likely lifecycle, quit, transition, or despawn artifact unless separately proven.\n'
+    : '- Terminal 0/0 was not observed in the latest watch summary.\n';
 }
 if (identityEvidenceRows.length > 0) {
   const localVisible = identityEvidenceRows.some((row) => row.localPlayerPresent === true);
@@ -262,7 +267,7 @@ if (safeRows.length === 0) {
 
 let matrix = '# Safe Access Matrix\n\n';
 matrix += 'SAFE status is scoped to the contexts, roles, lifecycle states, and access method shown in the evidence. DirectField and GetPropertyValue are separate access paths.\n\n';
-matrix += 'Health source scope matters: `CrabPC -> PlayerState -> CrabPS -> HealthInfo` is the only currently confirmed safe player health read path. Unscoped `FindFirstOf.CrabHC` is ambiguous and has already found `BP_Destructible_ChaoticBarrel10.HC`, so it is not player-health proof. `health-playerstate-watch` is read-only time-series evidence; multiplayer health scaling remains unproven until multiplayer watch rows exist. Identity context `solo-or-host` means local-player-present, not confirmed solo.\n\n';
+matrix += 'Health source scope matters: `CrabPC -> PlayerState -> CrabPS -> HealthInfo` is the only currently confirmed safe player health read path. Unscoped `FindFirstOf.CrabHC` is ambiguous and has already found `BP_Destructible_ChaoticBarrel10.HC`, so it is not player-health proof. `health-playerstate-watch` is read-only local PlayerState time-series evidence for vanilla visibility; pooled/shared health is a CrabInvSync design concept, not vanilla RuntimeProbe evidence. Identity context `solo-or-host` means local-player-present, not confirmed solo.\n\n';
 matrix += matrixTable(rows);
 
 const byOwner = new Map();
@@ -300,9 +305,9 @@ const defaultUntested = [
   ['CrabHC.HealthInfo.*', 'write', 'UNTESTED', 'Health writes are disabled.'],
   ['CrabHC.PlayerOwnership', 'discovery', 'UNTESTED', 'Player-owned CrabHC discovery is not proven yet; unscoped FindFirstOf.CrabHC is ambiguous.'],
   ['CrabPS.HealthInfo.*', 'write', 'UNTESTED', 'Health writes are disabled.'],
-  ['CrabPS.HealthInfo.*', 'joined-client', 'UNTESTED', 'Multiplayer/joined-client health evidence does not exist yet.'],
-  ['CrabPS.HealthInfo.*', 'multiplayer watch', 'UNTESTED', 'Multiplayer health scaling remains unproven until health-playerstate-watch evidence exists from multiplayer scenarios.'],
-  ['CrabHC.HealthInfo.*', 'multiplayer', 'UNTESTED', 'Multiplayer max-health math is untested.'],
+  ['CrabPS.HealthInfo.*', 'joined-client', 'UNTESTED', 'Joined-client local PlayerState health visibility has not been separately imported.'],
+  ['CrabPS.HealthInfo.*', 'multiplayer watch', 'UNTESTED', 'Vanilla multiplayer evidence is local PlayerState health visibility only; it does not define shared/pooled health behavior.'],
+  ['CrabHC.HealthInfo.*', 'multiplayer', 'UNTESTED', 'Player-owned CrabHC discovery in multiplayer is untested; do not use it to infer vanilla or CrabInvSync health behavior.'],
   ['GameState.PlayerArray', 'identity roster', 'UNTESTED', 'Roster reads require the explicit multiplayer-roster-read phase and must remain capped/redacted; latest evidence returned nil instead of a Lua table.'],
   ['CrabGS', 'identity source candidate', 'UNTESTED', 'CrabGS availability is checked only in multiplayer-roster-read and must not recurse through arbitrary fields.'],
   ['FindAllOf(PlayerState,CrabPS)', 'identity roster candidates', 'UNTESTED', 'Capped PlayerState-like discovery is gated by allowIdentityProbes and emits only redacted/fingerprinted identity values.'],

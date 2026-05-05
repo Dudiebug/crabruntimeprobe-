@@ -1,12 +1,12 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T05:36:52.186Z
-- Current phase: `multiplayer-health-playerstate-watch`
-- Next recommended phase: `multiplayer-health-playerstate-watch`
-- Latest session: 20260505T052110Z
-- Latest commit: 69a6c3a77a237875710a147f81310a79247d0684
-- Latest summary: evidence/runtime/20260505T052110Z/diagnostic_summary.txt
+- Updated: 2026-05-05T06:10:57.364Z
+- Current phase: none
+- Next recommended phase: none
+- Latest session: 20260505T055346Z
+- Latest commit: d5f22ad6f321d6734ce77d07df73129d94f962bc
+- Latest summary: evidence/runtime/20260505T055346Z/diagnostic_summary.txt
 
 ## Completed Phases
 
@@ -17,6 +17,7 @@
 - `health-playerstate-read` - PlayerState health scalar reads
 - `health-playerstate-watch` - Solo PlayerState health watch
 - `multiplayer-roster-read` - Multiplayer roster identity read
+- `multiplayer-health-playerstate-watch` - Multiplayer PlayerState health watch
 
 ## Partial Phases
 
@@ -69,7 +70,7 @@
 
 ## Untested Paths
 
-- Multiplayer health scaling remains unproven until `multiplayer-health-playerstate-watch` evidence exists.
+- Vanilla multiplayer local PlayerState health visibility is confirmed only after `multiplayer-health-playerstate-watch` evidence exists; pooled/shared health is a CrabInvSync design concept, not vanilla RuntimeProbe evidence.
 - Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.
 - Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.
 - Crystals, slots, inventory arrays, `InventoryInfo`, and enhancements are placeholders until explicit probe sets are implemented.
