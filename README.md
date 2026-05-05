@@ -16,6 +16,31 @@ UE4SS object dumps show what symbols exist, but not when/where access is safe. T
 - No deep inventory probes in the default foundation.
 - No packaged UE4SS or game binaries.
 
+## Documentation and CrabSyncV2 planning
+
+The deep documentation index starts at [docs/README.md](docs/README.md).
+
+RuntimeProbe operation docs explain the research tool and workflow:
+[Field Guide](docs/CRABRUNTIMEPROBE_FIELD_GUIDE.md) and
+[Script Reference](docs/CRABRUNTIMEPROBE_SCRIPT_REFERENCE.md).
+
+Generated evidence docs remain the source for current runtime proof:
+[Runtime Evidence Index](docs/RUNTIME_EVIDENCE_INDEX.md),
+[Safe Access Matrix](docs/SAFE_ACCESS_MATRIX.md),
+[Probe Candidates](docs/PROBE_CANDIDATES.md),
+[Probe Results](docs/PROBE_RESULTS.md), and
+[Crash Phase Summary](docs/CRASH_PHASE_SUMMARY.md).
+
+CrabSyncV2 docs are future design constraints derived from evidence, not
+RuntimeProbe behavior:
+[Evidence Baseline](docs/CRABSYNCV2_EVIDENCE_BASELINE.md),
+[Design Rules](docs/CRABSYNCV2_DESIGN_RULES.md),
+[Open Questions](docs/CRABSYNCV2_OPEN_QUESTIONS.md),
+[Crash Safety](docs/CRABSYNCV2_CRASH_SAFETY.md),
+[Implementation Blueprint](docs/CRABSYNCV2_IMPLEMENTATION_BLUEPRINT.md),
+[Research Roadmap](docs/CRABSYNCV2_RESEARCH_ROADMAP.md), and
+[Glossary](docs/CRABSYNCV2_GLOSSARY.md).
+
 ## Install
 
 Use the install script from the real Git checkout. Do not drag a random local
