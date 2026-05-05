@@ -13,6 +13,8 @@ const ALL_GATES = [
   'allowDeepArrayProbes',
   'allowInventoryInfoProbes',
   'allowHealthProbes',
+  'allowIdentityProbes',
+  'allowRawIdentityEvidence',
   'allowWriteProbes',
   'allowRpcProbes'
 ];
@@ -108,6 +110,12 @@ function validatePhaseSafety(phase, gates = gateConfigForPhaseUnchecked(phase)) 
   }
   if (gates.allowHealthProbes && !/^health-|^multiplayer-health-/.test(phase.phaseId)) {
     throw new Error(`${phase.phaseId} may not enable allowHealthProbes.`);
+  }
+  if (gates.allowIdentityProbes && phase.phaseId !== 'multiplayer-roster-read') {
+    throw new Error(`${phase.phaseId} may not enable allowIdentityProbes.`);
+  }
+  if (gates.allowRawIdentityEvidence) {
+    throw new Error(`${phase.phaseId} may not enable allowRawIdentityEvidence by default.`);
   }
   if (gates.allowInventoryInfoProbes && phase.phaseId !== 'inventoryinfo-scalar-read') {
     throw new Error(`${phase.phaseId} may not enable allowInventoryInfoProbes.`);
@@ -215,6 +223,13 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
   }
   if (hasProbe(facts.rows, ['Health.PlayerState.Sample']) || /health_playerstate_watch_sample_count\s*=\s*[1-9]/i.test(facts.text)) {
     add('health-playerstate-watch', 'Imported evidence contains PlayerState health watch samples.');
+  }
+  if (hasProbe(facts.rows, [
+    'Identity.LocalPlayer.Sample',
+    'Identity.VisiblePlayers.Sample',
+    'Identity.PlayerState.Sample'
+  ])) {
+    add('multiplayer-roster-read', 'Imported evidence contains multiplayer roster identity samples.');
   }
 
   return { completed, facts };
@@ -411,8 +426,25 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   if (/CrabPS\.GetPropertyValue\.AbilityDA/.test(facts.text)) safeSignals.push('`CrabPS.AbilityDA` via `GetPropertyValue`');
   if (/CrabPS\.GetPropertyValue\.MeleeDA/.test(facts.text)) safeSignals.push('`CrabPS.MeleeDA` via `GetPropertyValue`');
   if (/Health\.PlayerState\.Sample|CrabPS\.HealthInfo/.test(facts.text)) safeSignals.push('`CrabPC -> PlayerState -> CrabPS -> HealthInfo` read-only PlayerState health path');
+  if (/Identity\.(LocalPlayer|VisiblePlayers|PlayerState)\.Sample/.test(facts.text)) safeSignals.push('`CrabPC -> PlayerState` and capped `GameState.PlayerArray` identity roster reads');
   if (!safeSignals.length) out += '- None imported yet.\n';
   else out += safeSignals.map((item) => `- ${item}\n`).join('');
+
+  const identityRows = facts.rows.filter((row) => /^Identity\./.test(row.probeName || row.probeId || row.event || ''));
+  out += '\n## Identity And Roster Notes\n\n';
+  if (identityRows.length === 0) {
+    out += '- No multiplayer roster identity evidence has been imported yet.\n';
+    out += '- Future auto-room grouping is not ready; run `multiplayer-roster-read` before deriving grouping behavior.\n';
+  } else {
+    const localVisible = identityRows.some((row) => row.localPlayerPresent === true);
+    const visibleCounts = identityRows.map((row) => Number(row.visiblePlayerCount)).filter((n) => Number.isFinite(n));
+    const maxVisible = visibleCounts.length ? Math.max(...visibleCounts) : 0;
+    const rawEnabled = identityRows.some((row) => row.rawIdentityEvidence === true || row.rawDisplayNames || row.rawStableIds);
+    out += `- Local player identity visible: ${localVisible ? 'yes' : 'not proven'}\n`;
+    out += `- Max visible player count observed: ${maxVisible}\n`;
+    out += `- Raw IDs/names emitted: ${rawEnabled ? 'yes' : 'no, redacted/fingerprinted by default'}\n`;
+    out += '- Future auto-room grouping remains design-only until host and joined-client runs show the same roster set.\n';
+  }
 
   out += '\n## Confirmed Unsafe Paths\n\n';
   out += '- HUD ReceiveDrawHUD tick hook remains blocked by default.\n';
@@ -421,6 +453,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
 
   out += '\n## Untested Paths\n\n';
   out += '- Multiplayer health scaling remains unproven until `multiplayer-health-playerstate-watch` evidence exists.\n';
+  out += '- Multiplayer roster identity remains unproven until `multiplayer-roster-read` evidence exists.\n';
   out += '- Crystals, slots, inventory arrays, `InventoryInfo`, and enhancements are placeholders until explicit probe sets are implemented.\n';
   out += '- Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.\n';
 
@@ -428,6 +461,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- Default config remains `tickDriver = none`, `probeSet = shallow-core`, and all research gates false.\n';
   out += '- Campaign read phases never enable writes, RPCs, or HUD hooks.\n';
   out += '- `allowHealthProbes` is enabled only for explicit health phases.\n';
+  out += '- `allowIdentityProbes` is enabled only for the explicit multiplayer roster phase; `allowRawIdentityEvidence` remains false by default.\n';
   out += '- `allowDeepArrayProbes` and `allowInventoryInfoProbes` are not enabled by implemented phases.\n';
   return out;
 }

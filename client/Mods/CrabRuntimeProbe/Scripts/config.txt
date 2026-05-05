@@ -22,6 +22,8 @@ allowJoinedClientDeepProbes = false
 allowDeepArrayProbes = false
 allowInventoryInfoProbes = false
 allowHealthProbes = false
+allowIdentityProbes = false
+allowRawIdentityEvidence = false
 allowWriteProbes = false
 allowRpcProbes = false
 

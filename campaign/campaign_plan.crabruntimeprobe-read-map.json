@@ -182,6 +182,38 @@
       "riskTier": "confirmed-read",
       "status": "pending",
       "humanInstructions": "Launch Crab Champions, start a solo run, stay in world for 60 to 120 seconds, optionally pick up a naturally appearing max-health-changing item, quit, then run scripts\\quick-campaign-collect.ps1.",
+      "nextPhase": "multiplayer-roster-read"
+    },
+    {
+      "phaseId": "multiplayer-roster-read",
+      "label": "Multiplayer roster identity read",
+      "probeSet": "multiplayer-roster-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "implemented": true,
+      "requiredGates": {
+        "allowIdentityProbes": true
+      },
+      "forbiddenGates": [
+        "allowHudTickHook",
+        "allowUnknownRoleProbes",
+        "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
+        "allowInventoryInfoProbes",
+        "allowHealthProbes",
+        "allowRawIdentityEvidence",
+        "allowWriteProbes",
+        "allowRpcProbes"
+      ],
+      "expectedEvidenceSignals": [
+        "Identity.LocalPlayer.Sample",
+        "Identity.VisiblePlayers.Sample",
+        "Identity.PlayerState.Sample",
+        "rawIdentityEvidence = false"
+      ],
+      "riskTier": "cautious-read",
+      "status": "pending",
+      "humanInstructions": "Launch Crab Champions in a multiplayer lobby/run with at least two players if possible. Stay in the same lobby/world for 60 to 120 seconds. Do not force pickups, writes, inventory changes, or sync behavior. Quit, then run scripts\\quick-campaign-collect.ps1.",
       "nextPhase": "multiplayer-health-playerstate-watch"
     },
     {

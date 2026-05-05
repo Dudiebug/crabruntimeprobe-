@@ -14,5 +14,7 @@ The following areas remain UNTESTED or UNSAFE_DISABLED unless explicit runtime e
 | `CrabPS.HealthInfo.*` | joined-client | UNTESTED | Multiplayer/joined-client health evidence does not exist yet. |
 | `CrabPS.HealthInfo.*` | multiplayer watch | UNTESTED | Multiplayer health scaling remains unproven until health-playerstate-watch evidence exists from multiplayer scenarios. |
 | `CrabHC.HealthInfo.*` | multiplayer | UNTESTED | Multiplayer max-health math is untested. |
+| `GameState.PlayerArray` | identity roster | UNTESTED | Roster reads require the explicit multiplayer-roster-read phase and must remain capped/redacted. |
+| `PlayerState.UniqueId` | identity | UNTESTED | Stable IDs must be fingerprinted unless allowRawIdentityEvidence is explicitly enabled. |
 | `GameplayState.*` | write | UNSAFE_DISABLED | Writes are disabled. |
 | `RPC.*` | rpc | UNSAFE_DISABLED | RPC probes are disabled. |

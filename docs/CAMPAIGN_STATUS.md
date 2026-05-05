@@ -1,9 +1,9 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T03:30:16.075Z
+- Updated: 2026-05-05T03:43:18.030Z
 - Current phase: none
-- Next recommended phase: `multiplayer-health-playerstate-watch`
+- Next recommended phase: `multiplayer-roster-read`
 - Latest session: 20260505T032627Z
 - Latest commit: 94503bd65af8508b4efe3e13a9f865da67c2f410
 - Latest summary: evidence/runtime/20260505T032627Z/diagnostic_summary.txt
@@ -33,6 +33,7 @@
 
 ## Pending Phases
 
+- `multiplayer-roster-read` - Multiplayer roster identity read
 - `multiplayer-health-playerstate-watch` - Multiplayer PlayerState health watch
 
 ## Confirmed Safe Paths
@@ -41,6 +42,11 @@
 - `CrabPS.AbilityDA` via `GetPropertyValue`
 - `CrabPS.MeleeDA` via `GetPropertyValue`
 - `CrabPC -> PlayerState -> CrabPS -> HealthInfo` read-only PlayerState health path
+
+## Identity And Roster Notes
+
+- No multiplayer roster identity evidence has been imported yet.
+- Future auto-room grouping is not ready; run `multiplayer-roster-read` before deriving grouping behavior.
 
 ## Confirmed Unsafe Paths
 
@@ -51,6 +57,7 @@
 ## Untested Paths
 
 - Multiplayer health scaling remains unproven until `multiplayer-health-playerstate-watch` evidence exists.
+- Multiplayer roster identity remains unproven until `multiplayer-roster-read` evidence exists.
 - Crystals, slots, inventory arrays, `InventoryInfo`, and enhancements are placeholders until explicit probe sets are implemented.
 - Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.
 
@@ -59,4 +66,5 @@
 - Default config remains `tickDriver = none`, `probeSet = shallow-core`, and all research gates false.
 - Campaign read phases never enable writes, RPCs, or HUD hooks.
 - `allowHealthProbes` is enabled only for explicit health phases.
+- `allowIdentityProbes` is enabled only for the explicit multiplayer roster phase; `allowRawIdentityEvidence` remains false by default.
 - `allowDeepArrayProbes` and `allowInventoryInfoProbes` are not enabled by implemented phases.

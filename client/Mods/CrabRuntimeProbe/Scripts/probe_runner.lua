@@ -10,6 +10,7 @@ function runner.new(config, safe, writer, evidenceWriter)
     cache = {},
     stableTicks = 0,
     probesRun = 0,
+    config = config,
     lastContext = 'unknown',
     role = 'unknown',
     inMenu = false,
@@ -92,6 +93,17 @@ function runner.new(config, safe, writer, evidenceWriter)
       record.baseMaxHealth = meta.baseMaxHealth
       record.maxHealthMultiplier = meta.maxHealthMultiplier
       record.sampleIndex = meta.sampleIndex
+      record.localPlayerPresent = meta.localPlayerPresent
+      record.visiblePlayerCount = meta.visiblePlayerCount
+      record.visiblePlayerCap = meta.visiblePlayerCap
+      record.displayNameFingerprints = meta.displayNameFingerprints
+      record.stableIdFingerprints = meta.stableIdFingerprints
+      record.sourcePath = meta.sourcePath
+      record.hostClientRoleConsistent = meta.hostClientRoleConsistent
+      record.identityRawRedacted = meta.identityRawRedacted
+      record.rawIdentityEvidence = meta.rawIdentityEvidence
+      record.rawDisplayNames = meta.rawDisplayNames
+      record.rawStableIds = meta.rawStableIds
     end
     evidenceWriter:writeEvidence(record)
   end
@@ -122,6 +134,17 @@ function runner.new(config, safe, writer, evidenceWriter)
       row.sampleIndex = meta.sampleIndex
       row.sourceScope = meta.sourceScope
       row.localNotes = meta.localNotes
+      row.localPlayerPresent = meta.localPlayerPresent
+      row.visiblePlayerCount = meta.visiblePlayerCount
+      row.visiblePlayerCap = meta.visiblePlayerCap
+      row.displayNameFingerprints = meta.displayNameFingerprints
+      row.stableIdFingerprints = meta.stableIdFingerprints
+      row.sourcePath = meta.sourcePath
+      row.hostClientRoleConsistent = meta.hostClientRoleConsistent
+      row.identityRawRedacted = meta.identityRawRedacted
+      row.rawIdentityEvidence = meta.rawIdentityEvidence
+      row.rawDisplayNames = meta.rawDisplayNames
+      row.rawStableIds = meta.rawStableIds
     end
     writer:write(row)
     writeEvidence(probe, result, kind, summary, err, meta)
@@ -131,10 +154,11 @@ function runner.new(config, safe, writer, evidenceWriter)
     if probe.set == 'inventory-array-deep' and not config.allowDeepArrayProbes then return false, 'unsafe_disabled' end
     if probe.set == 'inventory-info' and not config.allowInventoryInfoProbes then return false, 'unsafe_disabled' end
     if (probe.set == 'health-read' or probe.set == 'health-baseline-read' or probe.set == 'health-playerstate-read' or probe.set == 'health-playerstate-watch' or probe.set == 'health-hc-discovery-read') and not config.allowHealthProbes then return false, 'unsafe_disabled' end
+    if probe.set == 'multiplayer-roster-read' and not config.allowIdentityProbes then return false, 'unsafe_disabled' end
     if probe.set == 'rpc-dryrun' and not config.allowRpcProbes then return false, 'unsafe_disabled' end
     if probe.set == 'write' and not config.allowWriteProbes then return false, 'unsafe_disabled' end
-    if state.role == 'unknown' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
-    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
+    if state.role == 'unknown' and probe.set ~= 'multiplayer-roster-read' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
+    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and probe.set ~= 'multiplayer-roster-read' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
     if probe.set ~= config.probeSet and config.probeSet ~= 'all-readonly' then return false, 'skipped_by_config' end
     return true
   end

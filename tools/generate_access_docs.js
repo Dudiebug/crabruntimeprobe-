@@ -108,6 +108,7 @@ const diagnosticRows = diagnosticFiles.map((file) => ({
   values: parseDiagnosticSummary(fs.readFileSync(file, 'utf8'))
 }));
 const watchEvidenceRows = evidenceRows.filter((row) => (row.probeId || row.probeName) === 'Health.PlayerState.Sample');
+const identityEvidenceRows = evidenceRows.filter((row) => /^Identity\./.test(row.probeId || row.probeName || ''));
 const latestWatchDiagnostic = diagnosticRows
   .filter((row) => row.values.health_playerstate_watch_sample_count)
   .sort((a, b) => a.file.localeCompare(b.file))
@@ -187,6 +188,7 @@ index += `- Probe result files: ${probeResultFiles.length}\n`;
 index += `- Diagnostic summaries: ${diagnosticFiles.length}\n`;
 index += `- Evidence rows: ${evidenceRows.length}\n`;
 index += `- Health playerstate watch samples: ${watchEvidenceRows.length}\n`;
+index += `- Identity/roster samples: ${identityEvidenceRows.length}\n`;
 index += `- Objectdump symbols discovered: ${objectdumpSymbols.size}\n\n`;
 index += `- Probe candidates doc present: ${probeCandidatesText ? 'yes' : 'no'}\n\n`;
 index += 'Objectdump discovery means a symbol exists in static dump data. It does not mean runtime access is safe.\n';
@@ -210,6 +212,19 @@ if (latestWatchDiagnostic) {
   index += `- baseMaxHealth first/last/min/max: ${v.health_playerstate_watch_baseMaxHealth_first || 'not found'} / ${v.health_playerstate_watch_baseMaxHealth_last || 'not found'} / ${v.health_playerstate_watch_baseMaxHealth_min || 'not found'} / ${v.health_playerstate_watch_baseMaxHealth_max || 'not found'}\n`;
   index += `- maxHealthMultiplier first/last/min/max: ${v.health_playerstate_watch_maxHealthMultiplier_first || 'not found'} / ${v.health_playerstate_watch_maxHealthMultiplier_last || 'not found'} / ${v.health_playerstate_watch_maxHealthMultiplier_min || 'not found'} / ${v.health_playerstate_watch_maxHealthMultiplier_max || 'not found'}\n`;
   index += `- Possible base health model: ${v.possible_base_health_model || 'not found'}\n`;
+}
+if (identityEvidenceRows.length > 0) {
+  const localVisible = identityEvidenceRows.some((row) => row.localPlayerPresent === true);
+  const visibleCounts = identityEvidenceRows.map((row) => Number(row.visiblePlayerCount)).filter((n) => Number.isFinite(n));
+  const maxVisible = visibleCounts.length > 0 ? Math.max(...visibleCounts) : 0;
+  const rawIdentityEvidence = identityEvidenceRows.some((row) => row.rawIdentityEvidence === true || row.rawDisplayNames || row.rawStableIds);
+  const sourcePaths = Array.from(new Set(identityEvidenceRows.map((row) => row.sourcePath).filter(Boolean))).sort();
+  index += '\n## Latest Identity Roster Summary\n\n';
+  index += `- Local player identity visible: ${localVisible ? 'yes' : 'not proven'}\n`;
+  index += `- Max visible player count observed: ${maxVisible}\n`;
+  index += `- Source paths observed: ${sourcePaths.length > 0 ? sourcePaths.join(', ') : 'not found'}\n`;
+  index += `- Raw IDs/names emitted: ${rawIdentityEvidence ? 'yes' : 'no; redacted/fingerprinted by default'}\n`;
+  index += '- Auto-room grouping readiness: not enough until host and joined-client runs show the same roster set.\n';
 }
 index += '\n## Confirmed SAFE Access Rows\n\n';
 const safeRows = rows.filter((row) => bestStatus(row.statuses) === 'SAFE');
@@ -241,6 +256,7 @@ let unsafe = '# Known Unsafe Paths\n\n';
 unsafe += '- HUD ReceiveDrawHUD tick hook is known unsafe in current Crab Champions/UE4SS evidence and remains blocked by default.\n';
 unsafe += '- `FindFirstOf.CrabHC` is not a safe player-health source. It is unscoped and session `20260505T002614Z` found `BP_Destructible_ChaoticBarrel10.HC`, a destructible/barrel component.\n';
 unsafe += '- Do not use unscoped `CrabHC` discovery, item arrays, `InventoryInfo`, writes, RPCs, or HUD hooks for `health-playerstate-watch`.\n';
+unsafe += '- Do not publish raw platform/Steam identity values from roster evidence; keep `allowRawIdentityEvidence = false` unless private evidence capture is explicitly requested.\n';
 const unsafeRows = rows.filter((row) => ['LUA_ERROR', 'UNSAFE_DISABLED'].includes(bestStatus(row.statuses)));
 if (unsafeRows.length > 0) {
   unsafe += '\n' + matrixTable(unsafeRows);
@@ -261,6 +277,8 @@ const defaultUntested = [
   ['CrabPS.HealthInfo.*', 'joined-client', 'UNTESTED', 'Multiplayer/joined-client health evidence does not exist yet.'],
   ['CrabPS.HealthInfo.*', 'multiplayer watch', 'UNTESTED', 'Multiplayer health scaling remains unproven until health-playerstate-watch evidence exists from multiplayer scenarios.'],
   ['CrabHC.HealthInfo.*', 'multiplayer', 'UNTESTED', 'Multiplayer max-health math is untested.'],
+  ['GameState.PlayerArray', 'identity roster', 'UNTESTED', 'Roster reads require the explicit multiplayer-roster-read phase and must remain capped/redacted.'],
+  ['PlayerState.UniqueId', 'identity', 'UNTESTED', 'Stable IDs must be fingerprinted unless allowRawIdentityEvidence is explicitly enabled.'],
   ['GameplayState.*', 'write', 'UNSAFE_DISABLED', 'Writes are disabled.'],
   ['RPC.*', 'rpc', 'UNSAFE_DISABLED', 'RPC probes are disabled.']
 ];

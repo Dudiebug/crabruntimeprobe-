@@ -78,6 +78,12 @@ function Assert-CampaignPhaseSafety {
   if (($required.ContainsKey("allowHealthProbes") -and $required["allowHealthProbes"]) -and ($Phase.phaseId -notmatch '^(health-|multiplayer-health-)')) {
     throw "Campaign phase $($Phase.phaseId) may not enable allowHealthProbes."
   }
+  if (($required.ContainsKey("allowIdentityProbes") -and $required["allowIdentityProbes"]) -and $Phase.phaseId -ne "multiplayer-roster-read") {
+    throw "Campaign phase $($Phase.phaseId) may not enable allowIdentityProbes."
+  }
+  if ($required.ContainsKey("allowRawIdentityEvidence") -and $required["allowRawIdentityEvidence"]) {
+    throw "Campaign phase $($Phase.phaseId) may not enable allowRawIdentityEvidence by default."
+  }
   if (($required.ContainsKey("allowInventoryInfoProbes") -and $required["allowInventoryInfoProbes"]) -and $Phase.phaseId -ne "inventoryinfo-scalar-read") {
     throw "Campaign phase $($Phase.phaseId) may not enable allowInventoryInfoProbes."
   }
@@ -110,6 +116,8 @@ function Set-CampaignPhaseConfig {
     "allowDeepArrayProbes",
     "allowInventoryInfoProbes",
     "allowHealthProbes",
+    "allowIdentityProbes",
+    "allowRawIdentityEvidence",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -144,6 +152,7 @@ function Assert-CampaignInstalledSafety {
   param(
     [string]$ConfigPath,
     [switch]$AllowHealthProbes,
+    [switch]$AllowIdentityProbes,
     [switch]$AllowInventoryInfoProbes,
     [switch]$AllowDeepArrayProbes
   )
@@ -156,12 +165,15 @@ function Assert-CampaignInstalledSafety {
     "allowDeepArrayProbes",
     "allowInventoryInfoProbes",
     "allowHealthProbes",
+    "allowIdentityProbes",
+    "allowRawIdentityEvidence",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
     $value = Get-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key $key
     $allowed =
       ($AllowHealthProbes -and $key -eq "allowHealthProbes") -or
+      ($AllowIdentityProbes -and $key -eq "allowIdentityProbes") -or
       ($AllowInventoryInfoProbes -and $key -eq "allowInventoryInfoProbes") -or
       ($AllowDeepArrayProbes -and $key -eq "allowDeepArrayProbes")
     if ($allowed -and $value -eq "true") { continue }
@@ -234,6 +246,7 @@ Set-CampaignPhaseConfig -ConfigPath $InstalledConfigPath -Phase $phase
 Assert-CampaignInstalledSafety `
   -ConfigPath $InstalledConfigPath `
   -AllowHealthProbes:($phase.phaseId -match '^(health-|multiplayer-health-)') `
+  -AllowIdentityProbes:($phase.phaseId -eq "multiplayer-roster-read") `
   -AllowInventoryInfoProbes:($phase.phaseId -eq "inventoryinfo-scalar-read") `
   -AllowDeepArrayProbes:($phase.phaseId -match 'deep|inventory-element-da-read')
 Clear-CampaignRuntimeFiles -ScriptsRoot $InstallScriptsRoot

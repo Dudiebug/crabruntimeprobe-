@@ -7,6 +7,7 @@ Generated from imported runtime evidence under `evidence/runtime/`.
 - Diagnostic summaries: 4
 - Evidence rows: 159
 - Health playerstate watch samples: 82
+- Identity/roster samples: 0
 - Objectdump symbols discovered: 0
 
 - Probe candidates doc present: yes

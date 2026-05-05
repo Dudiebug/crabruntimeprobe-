@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
-  "createdAt": "2026-05-05T03:30:16.075Z",
-  "updatedAt": "2026-05-05T03:30:16.075Z",
+  "createdAt": "2026-05-05T03:43:18.030Z",
+  "updatedAt": "2026-05-05T03:43:18.030Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
       "status": "complete",
-      "completedAt": "2026-05-05T03:30:16.074Z",
+      "completedAt": "2026-05-05T03:43:18.029Z",
       "source": "imported-evidence",
       "reason": "Imported evidence contains startup smoke.",
       "latestSessionId": "20260505T032627Z",
@@ -18,7 +18,7 @@
     {
       "phaseId": "executeDelay",
       "status": "complete",
-      "completedAt": "2026-05-05T03:30:16.075Z",
+      "completedAt": "2026-05-05T03:43:18.030Z",
       "source": "imported-evidence",
       "reason": "Imported evidence contains executeDelay runtime proof.",
       "latestSessionId": "20260505T032627Z",
@@ -28,7 +28,7 @@
     {
       "phaseId": "observe-context",
       "status": "complete",
-      "completedAt": "2026-05-05T03:30:16.075Z",
+      "completedAt": "2026-05-05T03:43:18.030Z",
       "source": "imported-evidence",
       "reason": "Imported evidence contains Observe.Context rows.",
       "latestSessionId": "20260505T032627Z",
@@ -38,7 +38,7 @@
     {
       "phaseId": "equipment-property-read",
       "status": "complete",
-      "completedAt": "2026-05-05T03:30:16.075Z",
+      "completedAt": "2026-05-05T03:43:18.030Z",
       "source": "imported-evidence",
       "reason": "Imported evidence contains equipment property probes.",
       "latestSessionId": "20260505T032627Z",
@@ -48,7 +48,7 @@
     {
       "phaseId": "health-playerstate-read",
       "status": "complete",
-      "completedAt": "2026-05-05T03:30:16.075Z",
+      "completedAt": "2026-05-05T03:43:18.030Z",
       "source": "imported-evidence",
       "reason": "Imported evidence contains PlayerState health scalar probes.",
       "latestSessionId": "20260505T032627Z",
@@ -58,7 +58,7 @@
     {
       "phaseId": "health-playerstate-watch",
       "status": "complete",
-      "completedAt": "2026-05-05T03:30:16.075Z",
+      "completedAt": "2026-05-05T03:43:18.030Z",
       "source": "imported-evidence",
       "reason": "Imported evidence contains PlayerState health watch samples.",
       "latestSessionId": "20260505T032627Z",
@@ -105,7 +105,7 @@
     }
   ],
   "currentPhase": null,
-  "nextRecommendedPhase": "multiplayer-health-playerstate-watch",
+  "nextRecommendedPhase": "multiplayer-roster-read",
   "latestSessionId": "20260505T032627Z",
   "latestCommit": "94503bd65af8508b4efe3e13a9f865da67c2f410",
   "latestSummaryPath": "evidence/runtime/20260505T032627Z/diagnostic_summary.txt",
@@ -149,6 +149,13 @@
       "status": "complete",
       "riskTier": "confirmed-read",
       "probeSet": "health-playerstate-watch",
+      "tickDriver": "executeDelay",
+      "mode": "active"
+    },
+    "multiplayer-roster-read": {
+      "status": "pending",
+      "riskTier": "cautious-read",
+      "probeSet": "multiplayer-roster-read",
       "tickDriver": "executeDelay",
       "mode": "active"
     },

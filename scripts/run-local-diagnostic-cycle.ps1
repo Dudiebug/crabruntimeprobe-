@@ -17,6 +17,7 @@ param(
   [switch]$CollectHealthPlayerState,
   [switch]$CollectHealthPlayerStateWatch,
   [switch]$ExpectObserveContext,
+  [switch]$AllowIdentityProbes,
   [switch]$NoDiagnosticDebug
 )
 
@@ -109,7 +110,8 @@ function Get-CrabRuntimeProbeConfigValueOrMissing {
 function Test-CrabRuntimeProbeInstalledSafety {
   param(
     [Parameter(Mandatory = $true)][string]$ConfigPath,
-    [switch]$AllowHealthProbes
+    [switch]$AllowHealthProbes,
+    [switch]$AllowIdentityProbes
   )
 
   $errors = New-Object System.Collections.Generic.List[string]
@@ -132,6 +134,8 @@ function Test-CrabRuntimeProbeInstalledSafety {
     "allowDeepArrayProbes",
     "allowInventoryInfoProbes",
     "allowHealthProbes",
+    "allowIdentityProbes",
+    "allowRawIdentityEvidence",
     "allowWriteProbes",
     "allowRpcProbes"
   )
@@ -146,6 +150,9 @@ function Test-CrabRuntimeProbeInstalledSafety {
       if ($AllowHealthProbes -and $key -eq "allowHealthProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
         continue
       }
+      if ($AllowIdentityProbes -and $key -eq "allowIdentityProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
+        continue
+      }
       if (-not [string]::Equals($value, "false", [System.StringComparison]::OrdinalIgnoreCase)) {
         $errors.Add("$key must be false, got '$value'") | Out-Null
       }
@@ -158,10 +165,11 @@ function Test-CrabRuntimeProbeInstalledSafety {
 function Assert-CrabRuntimeProbeInstalledSafety {
   param(
     [Parameter(Mandatory = $true)][string]$ConfigPath,
-    [switch]$AllowHealthProbes
+    [switch]$AllowHealthProbes,
+    [switch]$AllowIdentityProbes
   )
 
-  $errors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $ConfigPath -AllowHealthProbes:$AllowHealthProbes
+  $errors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $ConfigPath -AllowHealthProbes:$AllowHealthProbes -AllowIdentityProbes:$AllowIdentityProbes
   if ($errors.Count -gt 0) {
     throw "Installed config safety validation failed at $ConfigPath`n$((($errors | ForEach-Object { " - $_" }) -join "`n"))"
   }
@@ -544,6 +552,8 @@ function Set-InstalledSmokeConfig {
     "allowDeepArrayProbes",
     "allowInventoryInfoProbes",
     "allowHealthProbes",
+    "allowIdentityProbes",
+    "allowRawIdentityEvidence",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -575,6 +585,8 @@ function Set-InstalledTickDriverConfig {
     "allowDeepArrayProbes",
     "allowInventoryInfoProbes",
     "allowHealthProbes",
+    "allowIdentityProbes",
+    "allowRawIdentityEvidence",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -598,6 +610,8 @@ function Set-InstalledEquipmentPropertyConfig {
     "allowDeepArrayProbes",
     "allowInventoryInfoProbes",
     "allowHealthProbes",
+    "allowIdentityProbes",
+    "allowRawIdentityEvidence",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -621,6 +635,8 @@ function Set-InstalledHealthBaselineConfig {
     "allowJoinedClientDeepProbes",
     "allowDeepArrayProbes",
     "allowInventoryInfoProbes",
+    "allowIdentityProbes",
+    "allowRawIdentityEvidence",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -644,6 +660,8 @@ function Set-InstalledHealthPlayerStateConfig {
     "allowJoinedClientDeepProbes",
     "allowDeepArrayProbes",
     "allowInventoryInfoProbes",
+    "allowIdentityProbes",
+    "allowRawIdentityEvidence",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -668,6 +686,8 @@ function Set-InstalledHealthPlayerStateWatchConfig {
     "allowJoinedClientDeepProbes",
     "allowDeepArrayProbes",
     "allowInventoryInfoProbes",
+    "allowIdentityProbes",
+    "allowRawIdentityEvidence",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -768,7 +788,7 @@ if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "Pr
   exit 0
 }
 
-$safetyErrors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $InstalledConfigPath -AllowHealthProbes:($Mode -eq "CollectHealthBaseline" -or $Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch")
+$safetyErrors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $InstalledConfigPath -AllowHealthProbes:($Mode -eq "CollectHealthBaseline" -or $Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch") -AllowIdentityProbes:$AllowIdentityProbes
 $logText = Read-TextFileOrEmpty -Path $Ue4ssLogPath
 $logLines = @()
 if (Test-Path -LiteralPath $Ue4ssLogPath -PathType Leaf) {
@@ -1262,6 +1282,8 @@ $summaryLines = @(
   "allowDeepArrayProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowDeepArrayProbes")",
   "allowInventoryInfoProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryInfoProbes")",
   "allowHealthProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowHealthProbes")",
+  "allowIdentityProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowIdentityProbes")",
+  "allowRawIdentityEvidence = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowRawIdentityEvidence")",
   "allowWriteProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowWriteProbes")",
   "allowRpcProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowRpcProbes")",
   "observe_context_latest_context = $(if ($null -ne $lastObserveContext) { Get-RecordValue -Record $lastObserveContext -Names @("context") } else { "not found" })",

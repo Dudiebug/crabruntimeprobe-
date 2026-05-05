@@ -83,6 +83,10 @@ function Invoke-CampaignCollect {
     & $cycle -GameBin $GameBinFull -CollectEquipmentProperty
     return $LASTEXITCODE
   }
+  if ($PhaseId -eq "multiplayer-roster-read") {
+    & $cycle -GameBin $GameBinFull -Collect -AllowIdentityProbes
+    return $LASTEXITCODE
+  }
   if ($PhaseId -eq "health-playerstate-read") {
     & $cycle -GameBin $GameBinFull -CollectHealthPlayerState
     return $LASTEXITCODE
@@ -188,6 +192,18 @@ if ($collectExit -eq 0 -and $validatorExit -eq 0 -and $null -ne $latestManifestF
 } else {
   $status = "failed"
   if ([string]::IsNullOrWhiteSpace($reason)) { $reason = "Collection or stale-artifact validation failed." }
+}
+
+if ($status -eq "passed" -and $phase.phaseId -eq "multiplayer-roster-read") {
+  $probeText = if ($null -ne $latestProbeFile) { Get-Content -Raw -LiteralPath $latestProbeFile.FullName } else { "" }
+  if ($probeText -notmatch "Identity\.(LocalPlayer|VisiblePlayers|PlayerState)\.Sample") {
+    $status = "no_evidence"
+    $reason = "No multiplayer roster identity probe evidence was found."
+  }
+  if ($probeText -match "rawIdentityEvidence.{0,20}true") {
+    $status = "failed"
+    $reason = "Raw identity evidence appeared even though allowRawIdentityEvidence should be false."
+  }
 }
 
 if ($null -ne $latestManifestFile) {

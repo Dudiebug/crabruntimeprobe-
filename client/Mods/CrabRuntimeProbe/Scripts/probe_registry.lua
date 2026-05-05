@@ -75,6 +75,125 @@ function registry.build(safe)
     return 'ok', type(value), tostring(value)
   end
 
+  local function fingerprintValue(value)
+    local text = tostring(value or '')
+    if text == '' then return '', 0 end
+    local hash = 2166136261
+    for i = 1, #text do
+      hash = (hash * 16777619 + string.byte(text, i)) % 4294967296
+    end
+    return string.format('%08x', hash), #text
+  end
+
+  local function readFirstProperty(obj, names)
+    for _, name in ipairs(names) do
+      local value, err = safe.getProperty(obj, name)
+      if err == nil and value ~= nil and tostring(value) ~= '' then
+        return value, name, nil
+      end
+    end
+    return nil, '', nil
+  end
+
+  local function samplePlayerStateIdentity(playerState, config)
+    local sample = {
+      playerStatePresent = safe.isValidObject(playerState),
+      displayNameSource = '',
+      displayNameFingerprint = '',
+      displayNameLength = 0,
+      stableIdSource = '',
+      stableIdFingerprint = '',
+      stableIdLength = 0,
+      rawDisplayName = nil,
+      rawStableId = nil
+    }
+    if not sample.playerStatePresent then return sample end
+
+    local displayName, displaySource = readFirstProperty(playerState, {
+      'PlayerName',
+      'PlayerNamePrivate',
+      'DisplayName',
+      'Name'
+    })
+    if displayName ~= nil then
+      sample.displayNameSource = displaySource
+      sample.displayNameFingerprint, sample.displayNameLength = fingerprintValue(displayName)
+      if config.allowRawIdentityEvidence == true then
+        sample.rawDisplayName = tostring(displayName)
+      end
+    end
+
+    local stableId, idSource = readFirstProperty(playerState, {
+      'UniqueId',
+      'PlayerId',
+      'PlatformId',
+      'SteamId',
+      'NetId'
+    })
+    if stableId ~= nil then
+      sample.stableIdSource = idSource
+      sample.stableIdFingerprint, sample.stableIdLength = fingerprintValue(stableId)
+      if config.allowRawIdentityEvidence == true then
+        sample.rawStableId = tostring(stableId)
+      end
+    end
+
+    return sample
+  end
+
+  local function summarizeIdentitySamples(samples, prefix)
+    local display = {}
+    local ids = {}
+    local displaySources = {}
+    local idSources = {}
+    for _, sample in ipairs(samples) do
+      if sample.displayNameFingerprint ~= '' then
+        display[#display + 1] = sample.displayNameFingerprint .. ':len' .. tostring(sample.displayNameLength)
+        displaySources[sample.displayNameSource] = true
+      end
+      if sample.stableIdFingerprint ~= '' then
+        ids[#ids + 1] = sample.stableIdFingerprint .. ':len' .. tostring(sample.stableIdLength)
+        idSources[sample.stableIdSource] = true
+      end
+    end
+
+    local displaySourceList = {}
+    for source, _ in pairs(displaySources) do displaySourceList[#displaySourceList + 1] = source end
+    local idSourceList = {}
+    for source, _ in pairs(idSources) do idSourceList[#idSourceList + 1] = source end
+
+    local summary = prefix
+      .. ' displayFingerprints=' .. (#display > 0 and table.concat(display, ',') or 'none')
+      .. ' idFingerprints=' .. (#ids > 0 and table.concat(ids, ',') or 'none')
+      .. ' displaySources=' .. (#displaySourceList > 0 and table.concat(displaySourceList, ',') or 'none')
+      .. ' idSources=' .. (#idSourceList > 0 and table.concat(idSourceList, ',') or 'none')
+      .. ' rawIdentityEvidence=false'
+    return summary, display, ids
+  end
+
+  local function getLocalPlayerState(ctx)
+    local crabPc, crabPcErr = safe.findFirst('CrabPC')
+    ctx.cache.CrabPC = crabPc
+    if crabPcErr then return nil, crabPcErr end
+    local playerState, playerStateErr = safe.getProperty(crabPc, 'PlayerState')
+    ctx.cache.IdentityLocalPlayerState = playerState
+    return playerState, playerStateErr
+  end
+
+  local function getGameState()
+    local gameState, err = safe.findFirst('GameStateBase')
+    if gameState ~= nil and err == nil then return gameState, 'GameStateBase', nil end
+    local fallback, fallbackErr = safe.findFirst('GameState')
+    return fallback, 'GameState', fallbackErr or err
+  end
+
+  local function objectFromArrayElement(elem)
+    local obj, err = safe.getArrayElement(elem)
+    if err == nil and safe.isValidObject(obj) then return obj, nil end
+    if safe.isValidObject(elem) then return elem, nil end
+    return nil, err
+  end
+
   local function classifyCrabHCSource(fullName)
     local text = tostring(fullName or '')
     if text:find('Destructible') or text:find('Barrel') or text:find('ChaoticBarrel') then
@@ -414,6 +533,146 @@ function registry.build(safe)
     accessMethod = 'PlayerStateHealthSample',
     accessKind = 'health',
     sourceScope = 'player_state_scoped'
+  })
+
+  probes[#probes + 1] = mk('Identity.LocalPlayer.Sample', 'identity', 'multiplayer-roster-read', 'localPlayer', function(ctx)
+    local playerState, playerStateErr = getLocalPlayerState(ctx)
+    if playerStateErr then return 'lua_error', nil, nil, playerStateErr end
+    local sample = samplePlayerStateIdentity(playerState, ctx.config or {})
+    local summary, display, ids = summarizeIdentitySamples({ sample }, 'localPlayerPresent=' .. tostring(sample.playerStatePresent))
+    return sample.playerStatePresent and 'ok' or 'nil', 'identity_sample', summary, nil, {
+      sourceScope = 'player_state_scoped',
+      sourcePath = 'CrabPC.PlayerState',
+      localPlayerPresent = sample.playerStatePresent,
+      visiblePlayerCount = sample.playerStatePresent and 1 or 0,
+      visiblePlayerCap = 1,
+      displayNameFingerprints = display,
+      stableIdFingerprints = ids,
+      identityRawRedacted = ctx.config.allowRawIdentityEvidence ~= true,
+      rawIdentityEvidence = ctx.config.allowRawIdentityEvidence == true,
+      rawDisplayNames = ctx.config.allowRawIdentityEvidence == true and { sample.rawDisplayName or '' } or nil,
+      rawStableIds = ctx.config.allowRawIdentityEvidence == true and { sample.rawStableId or '' } or nil,
+      localNotes = 'read-only local CrabPC -> PlayerState identity sample; raw values redacted unless allowRawIdentityEvidence=true'
+    }
+  end, {
+    symbol = 'CrabPC.PlayerState',
+    owner = 'CrabPC',
+    member = 'PlayerState',
+    accessMethod = 'GetPropertyValue',
+    accessKind = 'identity',
+    sourceScope = 'player_state_scoped'
+  })
+
+  probes[#probes + 1] = mk('Identity.PlayerState.Sample', 'identity', 'multiplayer-roster-read', 'playerState', function(ctx)
+    local playerState = ctx.cache.IdentityLocalPlayerState
+    if not safe.isValidObject(playerState) then
+      local err
+      playerState, err = getLocalPlayerState(ctx)
+      if err then return 'lua_error', nil, nil, err end
+    end
+    local sample = samplePlayerStateIdentity(playerState, ctx.config or {})
+    local summary, display, ids = summarizeIdentitySamples({ sample }, 'playerStatePresent=' .. tostring(sample.playerStatePresent))
+    return sample.playerStatePresent and 'ok' or 'nil', 'identity_sample', summary, nil, {
+      sourceScope = 'player_state_scoped',
+      sourcePath = 'CrabPC.PlayerState identity fields',
+      localPlayerPresent = sample.playerStatePresent,
+      visiblePlayerCount = sample.playerStatePresent and 1 or 0,
+      visiblePlayerCap = 1,
+      displayNameFingerprints = display,
+      stableIdFingerprints = ids,
+      identityRawRedacted = ctx.config.allowRawIdentityEvidence ~= true,
+      rawIdentityEvidence = ctx.config.allowRawIdentityEvidence == true,
+      rawDisplayNames = ctx.config.allowRawIdentityEvidence == true and { sample.rawDisplayName or '' } or nil,
+      rawStableIds = ctx.config.allowRawIdentityEvidence == true and { sample.rawStableId or '' } or nil,
+      localNotes = 'candidate PlayerState display/stable-id fields via GetPropertyValue only; no raw IDs by default'
+    }
+  end, {
+    symbol = 'PlayerState.Identity',
+    owner = 'PlayerState',
+    member = 'PlayerName UniqueId',
+    accessMethod = 'GetPropertyValue',
+    accessKind = 'identity',
+    sourceScope = 'player_state_scoped'
+  })
+
+  probes[#probes + 1] = mk('Identity.VisiblePlayers.Sample', 'identity', 'multiplayer-roster-read', 'visiblePlayers', function(ctx)
+    local cap = 8
+    local gameState, sourceClass, gameStateErr = getGameState()
+    if gameStateErr and not safe.isValidObject(gameState) then return 'lua_error', nil, nil, gameStateErr end
+    if not safe.isValidObject(gameState) then
+      return 'nil', 'identity_roster', 'visiblePlayerCount=0 sourcePath=' .. tostring(sourceClass) .. '.PlayerArray rawIdentityEvidence=false', nil, {
+        sourceScope = 'runtime_roster',
+        sourcePath = tostring(sourceClass) .. '.PlayerArray',
+        localPlayerPresent = safe.isValidObject(ctx.cache.IdentityLocalPlayerState),
+        visiblePlayerCount = 0,
+        visiblePlayerCap = cap,
+        displayNameFingerprints = {},
+        stableIdFingerprints = {},
+        hostClientRoleConsistent = ctx.role ~= 'unknown',
+        identityRawRedacted = ctx.config.allowRawIdentityEvidence ~= true,
+        rawIdentityEvidence = ctx.config.allowRawIdentityEvidence == true,
+        localNotes = 'GameState unavailable; no roster traversal performed'
+      }
+    end
+
+    local playerArray, playerArrayErr = safe.getProperty(gameState, 'PlayerArray')
+    if playerArrayErr then return 'lua_error', nil, nil, playerArrayErr end
+    if type(playerArray) ~= 'table' then
+      return 'nil', 'identity_roster', 'visiblePlayerCount=0 sourcePath=' .. tostring(sourceClass) .. '.PlayerArray rawIdentityEvidence=false', nil, {
+        sourceScope = 'runtime_roster',
+        sourcePath = tostring(sourceClass) .. '.PlayerArray',
+        localPlayerPresent = safe.isValidObject(ctx.cache.IdentityLocalPlayerState),
+        visiblePlayerCount = 0,
+        visiblePlayerCap = cap,
+        displayNameFingerprints = {},
+        stableIdFingerprints = {},
+        hostClientRoleConsistent = ctx.role ~= 'unknown',
+        identityRawRedacted = ctx.config.allowRawIdentityEvidence ~= true,
+        rawIdentityEvidence = ctx.config.allowRawIdentityEvidence == true,
+        localNotes = 'PlayerArray was not exposed as a Lua table; no recursive traversal performed'
+      }
+    end
+
+    local samples = {}
+    local rawNames = {}
+    local rawIds = {}
+    local count = 0
+    safe.forEachArrayLimited(playerArray, cap, function(_, elem)
+      local playerState = objectFromArrayElement(elem)
+      if safe.isValidObject(playerState) then
+        local sample = samplePlayerStateIdentity(playerState, ctx.config or {})
+        samples[#samples + 1] = sample
+        if ctx.config.allowRawIdentityEvidence == true then
+          rawNames[#rawNames + 1] = sample.rawDisplayName or ''
+          rawIds[#rawIds + 1] = sample.rawStableId or ''
+        end
+        count = count + 1
+      end
+    end)
+
+    local summary, display, ids = summarizeIdentitySamples(samples, 'visiblePlayerCount=' .. tostring(count) .. ' cap=' .. tostring(cap) .. ' sourcePath=' .. tostring(sourceClass) .. '.PlayerArray')
+    return 'ok', 'identity_roster', summary, nil, {
+      sourceScope = 'runtime_roster',
+      sourcePath = tostring(sourceClass) .. '.PlayerArray',
+      localPlayerPresent = safe.isValidObject(ctx.cache.IdentityLocalPlayerState),
+      visiblePlayerCount = count,
+      visiblePlayerCap = cap,
+      displayNameFingerprints = display,
+      stableIdFingerprints = ids,
+      hostClientRoleConsistent = ctx.role ~= 'unknown',
+      identityRawRedacted = ctx.config.allowRawIdentityEvidence ~= true,
+      rawIdentityEvidence = ctx.config.allowRawIdentityEvidence == true,
+      rawDisplayNames = ctx.config.allowRawIdentityEvidence == true and rawNames or nil,
+      rawStableIds = ctx.config.allowRawIdentityEvidence == true and rawIds or nil,
+      localNotes = 'capped read-only GameState.PlayerArray identity sample; no recursive object walking'
+    }
+  end, {
+    symbol = 'GameState.PlayerArray',
+    owner = 'GameState',
+    member = 'PlayerArray',
+    accessMethod = 'GetPropertyValue',
+    accessKind = 'identityRoster',
+    sourceScope = 'runtime_roster'
   })
 
   probes[#probes + 1] = mk('FindAllOf.CrabHC.Availability', 'health', 'health-hc-discovery-read', 'findAllAvailability', function()

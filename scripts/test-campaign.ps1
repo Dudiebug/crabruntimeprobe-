@@ -20,12 +20,13 @@ function Assert-Contains {
 function Assert-UnsafeReadCampaignGatesFalse {
   param([string]$ConfigPath)
 
-  foreach ($key in @(
+foreach ($key in @(
     "allowHudTickHook",
     "allowWriteProbes",
     "allowRpcProbes",
     "allowDeepArrayProbes",
-    "allowInventoryInfoProbes"
+    "allowInventoryInfoProbes",
+    "allowRawIdentityEvidence"
   )) {
     $value = Get-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key $key
     if ($value -ne "false") {
@@ -62,7 +63,7 @@ if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "tickDri
 if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "probeSet") -ne "shallow-core") {
   throw "default config probeSet must remain shallow-core."
 }
-foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowWriteProbes", "allowRpcProbes")) {
+foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes")) {
   if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key $key) -ne "false") {
     throw "default config expected $key = false."
   }
@@ -96,6 +97,7 @@ state = helpers.reconcileState(plan, {
     { phaseId: 'equipment-property-read' },
     { phaseId: 'health-playerstate-read' },
     { phaseId: 'health-playerstate-watch' },
+    { phaseId: 'multiplayer-roster-read' },
     { phaseId: 'multiplayer-health-playerstate-watch' }
   ],
   failedPhases: [],
@@ -115,10 +117,29 @@ for (const phase of plan.phases) {
   assert(gates.allowHudTickHook === false, `${phase.phaseId} enabled HUD`);
   assert(gates.allowDeepArrayProbes === false, `${phase.phaseId} enabled deep arrays`);
   assert(gates.allowInventoryInfoProbes === false, `${phase.phaseId} enabled InventoryInfo`);
+  assert(gates.allowRawIdentityEvidence === false, `${phase.phaseId} enabled raw identity evidence`);
   if (!/^health-|^multiplayer-health-/.test(phase.phaseId)) {
     assert(gates.allowHealthProbes === false, `${phase.phaseId} enabled health outside health phases`);
   }
+  if (phase.phaseId !== 'multiplayer-roster-read') {
+    assert(gates.allowIdentityProbes === false, `${phase.phaseId} enabled identity outside roster phase`);
+  }
 }
+
+const afterObserve = helpers.reconcileState(plan, {
+  campaign: plan.campaign,
+  completedPhases: [
+    { phaseId: 'smoke-startup' },
+    { phaseId: 'executeDelay' },
+    { phaseId: 'observe-context' },
+    { phaseId: 'equipment-property-read' },
+    { phaseId: 'health-playerstate-read' },
+    { phaseId: 'health-playerstate-watch' }
+  ],
+  failedPhases: [],
+  blockedPhases: []
+}, repoRoot);
+assert(afterObserve.nextRecommendedPhase === 'multiplayer-roster-read', `expected multiplayer-roster-read, got ${afterObserve.nextRecommendedPhase}`);
 '@
 node $NodeTestPath (Join-Path $RepoRoot "tools\campaign_helpers.js") $RepoRoot
 if ($LASTEXITCODE -ne 0) { throw "campaign helper tests failed." }
@@ -140,5 +161,17 @@ $CampaignStatePath = Join-Path $GameBin "Mods\CrabRuntimeProbe\Scripts\results\c
 if (-not (Test-Path -LiteralPath $PrepareMarkerPath -PathType Leaf)) { throw "campaign prepare did not write prepare_marker.json." }
 if (-not (Test-Path -LiteralPath $CampaignStatePath -PathType Leaf)) { throw "campaign prepare did not write campaign_state.json." }
 Assert-UnsafeReadCampaignGatesFalse -ConfigPath $InstalledConfigPath
+$preparedPhase = (Get-Content -Raw -LiteralPath $PrepareMarkerPath | ConvertFrom-Json).phaseId
+if ($preparedPhase -eq "multiplayer-roster-read") {
+  if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowIdentityProbes") -ne "true") {
+    throw "roster campaign phase expected allowIdentityProbes = true."
+  }
+  if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowRawIdentityEvidence") -ne "false") {
+    throw "roster campaign phase expected allowRawIdentityEvidence = false."
+  }
+  if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowHealthProbes") -ne "false") {
+    throw "roster campaign phase must not enable health probes."
+  }
+}
 
 Write-Host "CrabRuntimeProbe campaign checks passed."
