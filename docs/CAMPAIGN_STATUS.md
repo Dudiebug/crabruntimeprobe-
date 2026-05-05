@@ -1,11 +1,11 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T23:00:35.704Z
+- Updated: 2026-05-05T23:17:47.961Z
 - Current phase: none
-- Next recommended phase: none
+- Next recommended phase: `crystals-read`
 - Latest session: 20260505T225501Z
-- Latest commit: 763e5e9cee9ddf039770315c40837ceb133e8e2f
+- Latest commit: 5f57f8909fa069cfb00a0351303258dbc3ae294a
 - Latest summary: evidence/runtime/20260505T225501Z/diagnostic_summary.txt
 
 ## Completed Phases
@@ -32,7 +32,6 @@
 
 ## Blocked Phases
 
-- `crystals-read` - Crystals read placeholder: Probe set is not implemented yet.
 - `slots-read` - Slots read placeholder: Probe set is not implemented yet.
 - `inventory-array-shallow-read` - Inventory array shallow read placeholder: Probe set is not implemented yet.
 - `inventory-array-count-read` - Inventory array count read placeholder: Probe set is not implemented yet.
@@ -141,6 +140,12 @@
 - No crash dump is associated with the imported userdata introspection evidence.
 - Any length operator result is metadata-only; it is not proof of count traversal or item synchronization.
 
+## Local Crystals Read
+
+- Summary: unresolved; no `crystals-read` evidence has been imported yet.
+- Purpose: read only local PlayerState `Crystals` through `CrabPC -> PlayerState -> CrabPS`.
+- `Crystals` is documented as UInt32-range for interpretation only; RuntimeProbe does not write, clamp, or mutate it.
+
 ## Confirmed Unsafe Paths
 
 - HUD ReceiveDrawHUD tick hook remains blocked by default.
@@ -152,7 +157,9 @@
 - Vanilla multiplayer local PlayerState health visibility is confirmed only after `multiplayer-health-playerstate-watch` evidence exists; pooled/shared health is a CrabInvSync design concept, not vanilla RuntimeProbe evidence.
 - Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.
 - Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.
-- Crystals, slots, equipment, and inventory array counts are only covered by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.
+- Local crystals are covered only by `crystals-read`; remote crystals remain covered separately by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.
+- Slots remain unresolved; `slots-read` must later search for separate locked/max slot fields before CrabSync assumes anything.
+- `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, and `NumPerkSlots` are only candidate observed/unlocked slot counters. Locked slots may be UI-derived or stored elsewhere and are not proven by RuntimeProbe.
 - Local inventory array shallow/count visibility is covered by `local-inventory-array-shallow-read`; property-shape confirmation is covered by `local-inventory-array-shape-confirm`; userdata wrapper metadata is covered by `local-inventory-userdata-introspection`.
 - Item contents are still not proven; userdata metadata does not read item data asset fields or element contents.
 - `InventoryInfo` and enhancements remain placeholders until explicit probe sets are implemented.
@@ -165,6 +172,7 @@
 - `allowHealthProbes` is enabled only for explicit health phases and `multiplayer-resource-visibility-read` health scalar checks.
 - `allowIdentityProbes` is enabled only for the explicit multiplayer roster and resource visibility phases; `allowRawIdentityEvidence` remains false by default.
 - `allowResourceVisibilityProbes` is enabled only for `multiplayer-resource-visibility-read`.
+- `allowCrystalsReadProbes` is enabled only for `crystals-read`.
 - `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.
 - `allowInventoryArrayShapeConfirmProbes` is enabled only for `local-inventory-array-shape-confirm`.
 - `allowInventoryUserdataIntrospectionProbes` is enabled only for `local-inventory-userdata-introspection`.

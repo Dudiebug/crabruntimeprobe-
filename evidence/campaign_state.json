@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-05T23:00:35.704Z",
+  "updatedAt": "2026-05-05T23:17:47.961Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -129,11 +129,6 @@
   "failedPhases": [],
   "blockedPhases": [
     {
-      "phaseId": "crystals-read",
-      "status": "blocked",
-      "reason": "Probe set is not implemented yet."
-    },
-    {
       "phaseId": "slots-read",
       "status": "blocked",
       "reason": "Probe set is not implemented yet."
@@ -165,9 +160,9 @@
     }
   ],
   "currentPhase": null,
-  "nextRecommendedPhase": null,
+  "nextRecommendedPhase": "crystals-read",
   "latestSessionId": "20260505T225501Z",
-  "latestCommit": "763e5e9cee9ddf039770315c40837ceb133e8e2f",
+  "latestCommit": "5f57f8909fa069cfb00a0351303258dbc3ae294a",
   "latestSummaryPath": "evidence/runtime/20260505T225501Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {
@@ -257,12 +252,11 @@
       "mode": "active"
     },
     "crystals-read": {
-      "status": "blocked",
+      "status": "pending",
       "riskTier": "cautious-read",
       "probeSet": "crystals-read",
       "tickDriver": "executeDelay",
-      "mode": "active",
-      "reason": "Probe set is not implemented yet."
+      "mode": "active"
     },
     "slots-read": {
       "status": "blocked",

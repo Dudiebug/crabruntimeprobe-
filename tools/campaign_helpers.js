@@ -16,6 +16,7 @@ const ALL_GATES = [
   'allowIdentityProbes',
   'allowRawIdentityEvidence',
   'allowResourceVisibilityProbes',
+  'allowCrystalsReadProbes',
   'allowInventoryArrayShallowProbes',
   'allowInventoryArrayShapeConfirmProbes',
   'allowInventoryUserdataIntrospectionProbes',
@@ -240,6 +241,84 @@ function classifyResourceVisibilityEvidence(rows) {
   };
 }
 
+function isCrystalsReadRow(row) {
+  return (row.probeName || row.probeId || row.event || '') === 'Resource.Crystals.Read';
+}
+
+function isFiniteIntegerLike(value) {
+  if (value === null || value === undefined || value === '') return false;
+  const numberValue = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(numberValue) && Math.floor(numberValue) === numberValue;
+}
+
+function classifyCrystalsReadEvidence(rows, options = {}) {
+  const crystalRows = rows.filter(isCrystalsReadRow);
+  const localPlayerStatePresent = crystalRows.some((row) => row.localPlayerStatePresent === true);
+  const crystalsReadAttempted = crystalRows.some((row) => row.crystalsReadAttempted === true);
+  const crystalsPresent = crystalRows.some((row) => row.crystalsPresent === true || row.crystalsValue !== undefined);
+  const valueRows = crystalRows.filter((row) => row.crystalsPresent === true || row.crystalsValue !== undefined);
+  const valueIntegerLike = valueRows.length === 0 || valueRows.every((row) =>
+    row.crystalsIntegerLike === true || isFiniteIntegerLike(row.crystalsValue)
+  );
+  const latestValue = valueRows.length ? valueRows[valueRows.length - 1].crystalsValue : undefined;
+  const forbiddenGateNames = [
+    'allowHudTickHook',
+    'allowUnknownRoleProbes',
+    'allowJoinedClientDeepProbes',
+    'allowDeepArrayProbes',
+    'allowInventoryInfoProbes',
+    'allowHealthProbes',
+    'allowIdentityProbes',
+    'allowRawIdentityEvidence',
+    'allowResourceVisibilityProbes',
+    'allowInventoryArrayShallowProbes',
+    'allowInventoryArrayShapeConfirmProbes',
+    'allowInventoryUserdataIntrospectionProbes',
+    'allowWriteProbes',
+    'allowRpcProbes'
+  ];
+  const safetyViolation = crystalRows.some((row) => {
+    const gates = row && row.safetyGates ? row.safetyGates : {};
+    return forbiddenGateNames.some((gate) => gates[gate] === true) ||
+      row.noElementDereference !== true ||
+      row.noArrayTraversal !== true ||
+      row.noInventoryInfo !== true ||
+      row.noEnhancements !== true ||
+      row.noWrites !== true ||
+      row.noRpcs !== true ||
+      row.noHud !== true ||
+      row.noDeepArrays !== true;
+  });
+  let status = 'no_evidence';
+  let classification = 'unresolved';
+  if (safetyViolation || !valueIntegerLike) {
+    status = 'failed';
+  } else if (crystalRows.length > 0 && localPlayerStatePresent && crystalsReadAttempted) {
+    status = options.crashSuspect ? 'crash_suspect_crystals_read' : 'crystals_read_confirmed';
+    classification = options.crashSuspect ? 'crystals_read_crash_suspect' : 'crystals_read_confirmed';
+  }
+  return {
+    crystalsReadEvidenceFound: crystalRows.length > 0,
+    localPlayerStatePresent,
+    crystalsReadAttempted,
+    crystalsPresent,
+    crystalsValue: latestValue,
+    valueIntegerLike,
+    noElementDereference: crystalRows.length > 0 && crystalRows.every((row) => row.noElementDereference === true),
+    noArrayTraversal: crystalRows.length > 0 && crystalRows.every((row) => row.noArrayTraversal === true),
+    noInventoryInfo: crystalRows.length > 0 && crystalRows.every((row) => row.noInventoryInfo === true),
+    noEnhancements: crystalRows.length > 0 && crystalRows.every((row) => row.noEnhancements === true),
+    noWrites: crystalRows.length > 0 && crystalRows.every((row) => row.noWrites === true),
+    noRpcs: crystalRows.length > 0 && crystalRows.every((row) => row.noRpcs === true),
+    noHud: crystalRows.length > 0 && crystalRows.every((row) => row.noHud === true),
+    noDeepArrays: crystalRows.length > 0 && crystalRows.every((row) => row.noDeepArrays === true),
+    safetyViolation,
+    crashSuspect: options.crashSuspect === true,
+    classification,
+    status
+  };
+}
+
 function isLocalInventoryArrayRow(row) {
   const id = row.probeName || row.probeId || row.event || '';
   return /^Inventory\.Local(Arrays|Slots)\./.test(id) &&
@@ -294,6 +373,7 @@ function classifyLocalInventoryArrayEvidence(rows, options = {}) {
     const gates = row && row.safetyGates ? row.safetyGates : {};
     return gates.allowDeepArrayProbes === true ||
       gates.allowInventoryInfoProbes === true ||
+      gates.allowCrystalsReadProbes === true ||
       gates.allowWriteProbes === true ||
       gates.allowRpcProbes === true ||
       gates.allowHudTickHook === true ||
@@ -367,6 +447,7 @@ function classifyLocalInventoryArrayShapeConfirmEvidence(rows, options = {}) {
     'allowHealthProbes',
     'allowIdentityProbes',
     'allowResourceVisibilityProbes',
+    'allowCrystalsReadProbes',
     'allowUnknownRoleProbes',
     'allowJoinedClientDeepProbes',
     'allowInventoryUserdataIntrospectionProbes'
@@ -463,6 +544,7 @@ function classifyLocalInventoryUserdataIntrospectionEvidence(rows, options = {})
     'allowHealthProbes',
     'allowIdentityProbes',
     'allowResourceVisibilityProbes',
+    'allowCrystalsReadProbes',
     'allowUnknownRoleProbes',
     'allowJoinedClientDeepProbes'
   ];
@@ -588,6 +670,9 @@ function validatePhaseSafety(phase, gates = gateConfigForPhaseUnchecked(phase)) 
   }
   if (gates.allowResourceVisibilityProbes && phase.phaseId !== 'multiplayer-resource-visibility-read') {
     throw new Error(`${phase.phaseId} may not enable allowResourceVisibilityProbes.`);
+  }
+  if (gates.allowCrystalsReadProbes && phase.phaseId !== 'crystals-read') {
+    throw new Error(`${phase.phaseId} may not enable allowCrystalsReadProbes.`);
   }
   if (gates.allowInventoryArrayShallowProbes && phase.phaseId !== 'local-inventory-array-shallow-read') {
     throw new Error(`${phase.phaseId} may not enable allowInventoryArrayShallowProbes.`);
@@ -823,6 +908,26 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
       latestSummaryPath: facts.latestSummaryPath || ''
     });
   }
+  const crystalsReadSessionId = latestSessionIdForRows(facts.rows, isCrystalsReadRow);
+  const crystalsRead = classifyCrystalsReadEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, crystalsReadSessionId)
+  });
+  if (crystalsRead.status === 'crystals_read_confirmed') {
+    add('crystals-read', 'Imported evidence contains local PlayerState Crystals scalar read with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays.');
+  } else if (crystalsRead.crystalsReadEvidenceFound && crystalsRead.status !== 'failed') {
+    partial.push({
+      phaseId: 'crystals-read',
+      status: crystalsRead.status,
+      updatedAt: nowIso(),
+      source: 'imported-evidence',
+      reason: crystalsRead.status === 'crash_suspect_crystals_read'
+        ? 'Local PlayerState Crystals scalar was read safely, but a crash dump exists after this run.'
+        : 'Crystals read did not produce usable evidence.',
+      latestSessionId: crystalsReadSessionId || facts.latestSessionId || '',
+      latestCommit: facts.latestCommit || '',
+      latestSummaryPath: facts.latestSummaryPath || ''
+    });
+  }
 
   return { completed, partial, facts };
 }
@@ -890,7 +995,10 @@ function reconcileState(plan, state = null, repoRoot = process.cwd()) {
   }
   for (const entry of existing.blockedPhases || []) {
     const phaseId = entry.phaseId || entry;
-    if (phaseId) blockedById.set(phaseId, typeof entry === 'string' ? { phaseId, status: 'blocked' } : entry);
+    const phase = plan.phases.find((item) => item.phaseId === phaseId);
+    if (phaseId && (!phase || phase.implemented !== true)) {
+      blockedById.set(phaseId, typeof entry === 'string' ? { phaseId, status: 'blocked' } : entry);
+    }
   }
 
   const out = {
@@ -998,6 +1106,17 @@ function markCollected(plan, state, phaseId, result) {
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
     });
+  } else if (phaseId === 'crystals-read' && result.status === 'crystals_read_confirmed') {
+    out.completedPhases.push({
+      phaseId,
+      status: 'complete',
+      completedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || 'Local PlayerState Crystals scalar was read with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays.',
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
   } else if (phaseId === 'multiplayer-roster-read' && (result.status === 'local_identity_confirmed' || result.status === 'roster_source_unresolved')) {
     out.partialPhases.push({
       phaseId,
@@ -1073,6 +1192,22 @@ function markCollected(plan, state, phaseId, result) {
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
     });
+  } else if (phaseId === 'crystals-read' && (
+    result.status === 'crash_suspect_crystals_read' ||
+    result.status === 'no_evidence'
+  )) {
+    out.partialPhases.push({
+      phaseId,
+      status: result.status,
+      updatedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || (result.status === 'crash_suspect_crystals_read'
+        ? 'Local PlayerState Crystals scalar was read, but crash evidence exists after this run.'
+        : 'No local PlayerState Crystals read evidence was found.'),
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
   } else {
     out.failedPhases.push({
       phaseId,
@@ -1120,7 +1255,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '## Completed Phases\n\n';
   out += renderList(listByStatus(plan, state, 'complete'));
   out += '\n## Partial Phases\n\n';
-  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$|^local_inventory_unresolved$|^crash_suspect_local_inventory_shape_visible$|^crash_suspect_local_inventory_shape_confirmed$|^no_evidence$/.test(phaseStatus(state, phase.phaseId)));
+  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$|^local_inventory_unresolved$|^crash_suspect_local_inventory_shape_visible$|^crash_suspect_local_inventory_shape_confirmed$|^crash_suspect_crystals_read$|^no_evidence$/.test(phaseStatus(state, phase.phaseId)));
   if (!partial.length) {
     out += '- None.\n';
   } else {
@@ -1171,6 +1306,11 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     crashSuspect: hasCrashSuspectEvidenceForSession(facts, localInventoryUserdataIntrospectionSessionId || state.latestSessionId || facts.latestSessionId)
   });
   if (localInventoryUserdataIntrospection.status === 'local_inventory_userdata_introspection_confirmed') safeSignals.push('local PlayerState inventory userdata wrapper metadata without traversal or element dereference');
+  const crystalsReadSessionId = latestSessionIdForRows(facts.rows, isCrystalsReadRow);
+  const crystalsRead = classifyCrystalsReadEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, crystalsReadSessionId || state.latestSessionId || facts.latestSessionId)
+  });
+  if (crystalsRead.status === 'crystals_read_confirmed') safeSignals.push('local PlayerState Crystals scalar read through CrabPC -> PlayerState -> CrabPS');
   if (!safeSignals.length) out += '- None imported yet.\n';
   else out += safeSignals.map((item) => `- ${item}\n`).join('');
 
@@ -1315,6 +1455,27 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     out += '- Any length operator result is metadata-only; it is not proof of count traversal or item synchronization.\n';
   }
 
+  out += '\n## Local Crystals Read\n\n';
+  if (!crystalsRead.crystalsReadEvidenceFound) {
+    out += '- Summary: unresolved; no `crystals-read` evidence has been imported yet.\n';
+    out += '- Purpose: read only local PlayerState `Crystals` through `CrabPC -> PlayerState -> CrabPS`.\n';
+    out += '- `Crystals` is documented as UInt32-range for interpretation only; RuntimeProbe does not write, clamp, or mutate it.\n';
+  } else {
+    out += `- Summary: ${crystalsRead.classification}\n`;
+    out += `- Crystals read status: ${crystalsRead.status}\n`;
+    out += `- Local PlayerState present: ${crystalsRead.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
+    out += `- Crystals read attempted: ${crystalsRead.crystalsReadAttempted ? 'yes' : 'no'}\n`;
+    out += `- Crystals value present: ${crystalsRead.crystalsPresent ? 'yes' : 'no'}\n`;
+    out += `- Crystals value integer-like when present: ${crystalsRead.valueIntegerLike ? 'yes' : 'no'}\n`;
+    out += `- Writes/RPCs: ${crystalsRead.noWrites && crystalsRead.noRpcs ? 'no' : 'yes'}\n`;
+    out += `- HUD/deep arrays: ${crystalsRead.noHud && crystalsRead.noDeepArrays ? 'no' : 'yes'}\n`;
+    out += `- Inventory arrays/InventoryInfo/Enhancements: ${crystalsRead.noArrayTraversal && crystalsRead.noElementDereference && crystalsRead.noInventoryInfo && crystalsRead.noEnhancements ? 'no' : 'yes'}\n`;
+    out += crystalsRead.crashSuspect
+      ? '- A crash dump exists after this run, so this scalar path remains crash-suspect pending a repeat.\n'
+      : '- No crash dump is associated with the imported crystals-read evidence.\n';
+    out += '- UInt32 range is documentation only for this read-only phase; RuntimeProbe does not write or clamp the value.\n';
+  }
+
   out += '\n## Confirmed Unsafe Paths\n\n';
   out += '- HUD ReceiveDrawHUD tick hook remains blocked by default.\n';
   out += '- `FindFirstOf.CrabHC` is not confirmed as a player-health source; imported evidence has seen an unscoped destructible/barrel candidate.\n';
@@ -1324,7 +1485,9 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- Vanilla multiplayer local PlayerState health visibility is confirmed only after `multiplayer-health-playerstate-watch` evidence exists; pooled/shared health is a CrabInvSync design concept, not vanilla RuntimeProbe evidence.\n';
   out += '- Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.\n';
   out += '- Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.\n';
-  out += '- Crystals, slots, equipment, and inventory array counts are only covered by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.\n';
+  out += '- Local crystals are covered only by `crystals-read`; remote crystals remain covered separately by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.\n';
+  out += '- Slots remain unresolved; `slots-read` must later search for separate locked/max slot fields before CrabSync assumes anything.\n';
+  out += '- `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, and `NumPerkSlots` are only candidate observed/unlocked slot counters. Locked slots may be UI-derived or stored elsewhere and are not proven by RuntimeProbe.\n';
   out += '- Local inventory array shallow/count visibility is covered by `local-inventory-array-shallow-read`; property-shape confirmation is covered by `local-inventory-array-shape-confirm`; userdata wrapper metadata is covered by `local-inventory-userdata-introspection`.\n';
   out += '- Item contents are still not proven; userdata metadata does not read item data asset fields or element contents.\n';
   out += '- `InventoryInfo` and enhancements remain placeholders until explicit probe sets are implemented.\n';
@@ -1336,6 +1499,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- `allowHealthProbes` is enabled only for explicit health phases and `multiplayer-resource-visibility-read` health scalar checks.\n';
   out += '- `allowIdentityProbes` is enabled only for the explicit multiplayer roster and resource visibility phases; `allowRawIdentityEvidence` remains false by default.\n';
   out += '- `allowResourceVisibilityProbes` is enabled only for `multiplayer-resource-visibility-read`.\n';
+  out += '- `allowCrystalsReadProbes` is enabled only for `crystals-read`.\n';
   out += '- `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.\n';
   out += '- `allowInventoryArrayShapeConfirmProbes` is enabled only for `local-inventory-array-shape-confirm`.\n';
   out += '- `allowInventoryUserdataIntrospectionProbes` is enabled only for `local-inventory-userdata-introspection`.\n';
@@ -1349,6 +1513,7 @@ module.exports = {
   DOC_PATH,
   PLAN_PATH,
   STATE_PATH,
+  classifyCrystalsReadEvidence,
   classifyLocalInventoryArrayEvidence,
   classifyLocalInventoryArrayShapeConfirmEvidence,
   classifyLocalInventoryUserdataIntrospectionEvidence,

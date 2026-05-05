@@ -36,6 +36,7 @@ $script:CrabRuntimeProbeRequiredConfigDefaults = [ordered]@{
   allowIdentityProbes = "false"
   allowRawIdentityEvidence = "false"
   allowResourceVisibilityProbes = "false"
+  allowCrystalsReadProbes = "false"
   allowInventoryArrayShallowProbes = "false"
   allowInventoryArrayShapeConfirmProbes = "false"
   allowInventoryUserdataIntrospectionProbes = "false"

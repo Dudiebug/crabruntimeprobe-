@@ -88,6 +88,9 @@ function Assert-CampaignPhaseSafety {
   if (($required.ContainsKey("allowResourceVisibilityProbes") -and $required["allowResourceVisibilityProbes"]) -and $Phase.phaseId -ne "multiplayer-resource-visibility-read") {
     throw "Campaign phase $($Phase.phaseId) may not enable allowResourceVisibilityProbes."
   }
+  if (($required.ContainsKey("allowCrystalsReadProbes") -and $required["allowCrystalsReadProbes"]) -and $Phase.phaseId -ne "crystals-read") {
+    throw "Campaign phase $($Phase.phaseId) may not enable allowCrystalsReadProbes."
+  }
   if (($required.ContainsKey("allowInventoryArrayShallowProbes") -and $required["allowInventoryArrayShallowProbes"]) -and $Phase.phaseId -ne "local-inventory-array-shallow-read") {
     throw "Campaign phase $($Phase.phaseId) may not enable allowInventoryArrayShallowProbes."
   }
@@ -135,6 +138,7 @@ function Set-CampaignPhaseConfig {
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
+    "allowCrystalsReadProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -174,6 +178,7 @@ function Assert-CampaignInstalledSafety {
     [switch]$AllowHealthProbes,
     [switch]$AllowIdentityProbes,
     [switch]$AllowResourceVisibilityProbes,
+    [switch]$AllowCrystalsReadProbes,
     [switch]$AllowInventoryArrayShallowProbes,
     [switch]$AllowInventoryArrayShapeConfirmProbes,
     [switch]$AllowInventoryUserdataIntrospectionProbes,
@@ -192,6 +197,7 @@ function Assert-CampaignInstalledSafety {
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
+    "allowCrystalsReadProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -203,6 +209,7 @@ function Assert-CampaignInstalledSafety {
       ($AllowHealthProbes -and $key -eq "allowHealthProbes") -or
       ($AllowIdentityProbes -and $key -eq "allowIdentityProbes") -or
       ($AllowResourceVisibilityProbes -and $key -eq "allowResourceVisibilityProbes") -or
+      ($AllowCrystalsReadProbes -and $key -eq "allowCrystalsReadProbes") -or
       ($AllowInventoryArrayShallowProbes -and $key -eq "allowInventoryArrayShallowProbes") -or
       ($AllowInventoryArrayShapeConfirmProbes -and $key -eq "allowInventoryArrayShapeConfirmProbes") -or
       ($AllowInventoryUserdataIntrospectionProbes -and $key -eq "allowInventoryUserdataIntrospectionProbes") -or
@@ -280,6 +287,7 @@ Assert-CampaignInstalledSafety `
   -AllowHealthProbes:($phase.phaseId -match '^(health-|multiplayer-health-)' -or $phase.phaseId -eq "multiplayer-resource-visibility-read") `
   -AllowIdentityProbes:($phase.phaseId -eq "multiplayer-roster-read" -or $phase.phaseId -eq "multiplayer-resource-visibility-read") `
   -AllowResourceVisibilityProbes:($phase.phaseId -eq "multiplayer-resource-visibility-read") `
+  -AllowCrystalsReadProbes:($phase.phaseId -eq "crystals-read") `
   -AllowInventoryArrayShallowProbes:($phase.phaseId -eq "local-inventory-array-shallow-read") `
   -AllowInventoryArrayShapeConfirmProbes:($phase.phaseId -eq "local-inventory-array-shape-confirm") `
   -AllowInventoryUserdataIntrospectionProbes:($phase.phaseId -eq "local-inventory-userdata-introspection") `

@@ -405,13 +405,14 @@
     },
     {
       "phaseId": "crystals-read",
-      "label": "Crystals read placeholder",
+      "label": "Local PlayerState crystals read",
       "probeSet": "crystals-read",
       "tickDriver": "executeDelay",
       "mode": "active",
-      "implemented": false,
-      "blockedReason": "Probe set is not implemented yet.",
-      "requiredGates": {},
+      "implemented": true,
+      "requiredGates": {
+        "allowCrystalsReadProbes": true
+      },
       "forbiddenGates": [
         "allowHudTickHook",
         "allowUnknownRoleProbes",
@@ -419,15 +420,32 @@
         "allowDeepArrayProbes",
         "allowInventoryInfoProbes",
         "allowHealthProbes",
+        "allowIdentityProbes",
+        "allowRawIdentityEvidence",
+        "allowResourceVisibilityProbes",
+        "allowInventoryArrayShallowProbes",
+        "allowInventoryArrayShapeConfirmProbes",
+        "allowInventoryUserdataIntrospectionProbes",
         "allowWriteProbes",
         "allowRpcProbes"
       ],
       "expectedEvidenceSignals": [
-        "TBD safe crystals read evidence"
+        "Resource.Crystals.Read",
+        "localPlayerStatePresent",
+        "crystalsReadAttempted = true",
+        "crystalsIntegerLike = true when value present",
+        "noArrayTraversal = true",
+        "noElementDereference = true",
+        "noInventoryInfo = true",
+        "noEnhancements = true",
+        "noWrites = true",
+        "noRpcs = true",
+        "noHud = true",
+        "noDeepArrays = true"
       ],
       "riskTier": "cautious-read",
       "status": "pending",
-      "humanInstructions": "Do not run until the probe set exists and safety review is complete.",
+      "humanInstructions": "Launch Crab Champions locally in a stable world/lobby. This phase only reads local PlayerState Crystals through CrabPC -> PlayerState -> CrabPS; do not force pickups, inventory changes, writes, RPCs, HUD hooks, inventory arrays, InventoryInfo, Enhancements, slots, or deep arrays. Quit, then run scripts\\quick-campaign-collect.ps1.",
       "nextPhase": "slots-read"
     },
     {

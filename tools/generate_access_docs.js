@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { parseIdentityFromFullName, extractFullNameFromSummary } = require('./identity_helpers');
-const { classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
+const { classifyCrystalsReadEvidence, classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
 
 function walk(dir, name) {
   if (!fs.existsSync(dir)) return [];
@@ -322,6 +322,15 @@ const latestLocalInventoryUserdataIntrospectionSessionId = evidenceRows
 const localInventoryUserdataIntrospection = classifyLocalInventoryUserdataIntrospectionEvidence(evidenceRows, {
   crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestLocalInventoryUserdataIntrospectionSessionId)
 });
+const latestCrystalsReadSessionId = evidenceRows
+  .filter((row) => (row.probeId || row.probeName || row.event || '') === 'Resource.Crystals.Read')
+  .map((row) => row.sessionId)
+  .filter(Boolean)
+  .sort()
+  .pop();
+const crystalsRead = classifyCrystalsReadEvidence(evidenceRows, {
+  crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestCrystalsReadSessionId)
+});
 index += '\n## Local Inventory Array Shallow/Count Visibility Summary\n\n';
 if (!localInventory.localInventoryArrayEvidenceFound) {
   index += '- Summary: unresolved; no `local-inventory-array-shallow-read` evidence has been imported yet.\n';
@@ -391,6 +400,23 @@ if (!localInventoryUserdataIntrospection.localInventoryUserdataIntrospectionEvid
   index += `- Writes/RPCs: ${localInventoryUserdataIntrospection.noWrites && localInventoryUserdataIntrospection.noRpcs ? 'no' : 'yes'}\n`;
   index += '- Length operator results, if present, are metadata-only and do not prove count traversal, element traversal, or item sync.\n';
 }
+index += '\n## Local Crystals Read Summary\n\n';
+if (!crystalsRead.crystalsReadEvidenceFound) {
+  index += '- Summary: unresolved; no `crystals-read` evidence has been imported yet.\n';
+  index += '- Crystals-read will read only local `CrabPC -> PlayerState -> CrabPS -> Crystals`.\n';
+  index += '- UInt32 range is documentation only; RuntimeProbe does not write or clamp values.\n';
+} else {
+  index += `- Summary: ${crystalsRead.classification}\n`;
+  index += `- Crystals read status: ${crystalsRead.status}\n`;
+  index += `- Local PlayerState present: ${crystalsRead.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
+  index += `- Crystals read attempted: ${crystalsRead.crystalsReadAttempted ? 'yes' : 'no'}\n`;
+  index += `- Crystals value present: ${crystalsRead.crystalsPresent ? 'yes' : 'no'}\n`;
+  index += `- Crystals value integer-like when present: ${crystalsRead.valueIntegerLike ? 'yes' : 'no'}\n`;
+  index += `- Writes/RPCs: ${crystalsRead.noWrites && crystalsRead.noRpcs ? 'no' : 'yes'}\n`;
+  index += `- HUD/deep arrays: ${crystalsRead.noHud && crystalsRead.noDeepArrays ? 'no' : 'yes'}\n`;
+  index += `- Inventory arrays/InventoryInfo/Enhancements: ${crystalsRead.noArrayTraversal && crystalsRead.noElementDereference && crystalsRead.noInventoryInfo && crystalsRead.noEnhancements ? 'no' : 'yes'}\n`;
+  index += '- UInt32 range is documentation only for this read-only phase; RuntimeProbe does not write or clamp the value.\n';
+}
 index += '\n## Confirmed SAFE Access Rows\n\n';
 const safeRows = rows.filter((row) => bestStatus(row.statuses) === 'SAFE');
 if (safeRows.length === 0) {
@@ -447,7 +473,7 @@ const defaultUntested = [
   ['FindAllOf(PlayerState,CrabPS)', 'identity roster candidates', 'UNTESTED', 'Capped PlayerState-like discovery is gated by allowIdentityProbes and emits only redacted/fingerprinted identity values.'],
   ['FindAllOf(PlayerController,CrabPC).PlayerState', 'identity controller candidates', 'UNTESTED', 'Capped controller discovery reads only PlayerState from valid controllers.'],
   ['FindAllOf(PlayerState,CrabPS)', 'resource visibility candidates', 'UNTESTED', 'Capped resource visibility discovery is gated by allowResourceVisibilityProbes and reads only explicitly named PlayerState fields.'],
-  ['CrabPS.Crystals', 'GetPropertyValue', 'UNTESTED', 'Resource visibility probes are disabled by default.'],
+  ['CrabPS.Crystals', 'GetPropertyValue', 'UNTESTED', 'Local crystals-read evidence has not been imported yet; remote resource visibility remains separate.'],
   ['CrabPS.WeaponMods', 'RemotePlayerStateCountOnly', 'UNTESTED', 'Remote inventory arrays are count-only in resource visibility and remain unresolved until evidence proves visibility.'],
   ['CrabPS.WeaponMods', 'GetPropertyValueCountOnly', 'UNTESTED', 'Local inventory arrays require local-inventory-array-shallow-read; no element dereference.'],
   ['CrabPS.WeaponMods', 'GetPropertyValueShapeConfirm', 'UNTESTED', 'Local inventory shape confirm reads property presence/value kind only; no count, traversal, element dereference, InventoryInfo, or Enhancements.'],

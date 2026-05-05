@@ -122,6 +122,12 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 - Writes/RPCs: no
 - Length operator results, if present, are metadata-only and do not prove count traversal, element traversal, or item sync.
 
+## Local Crystals Read Summary
+
+- Summary: unresolved; no `crystals-read` evidence has been imported yet.
+- Crystals-read will read only local `CrabPC -> PlayerState -> CrabPS -> Crystals`.
+- UInt32 range is documentation only; RuntimeProbe does not write or clamp values.
+
 ## Confirmed SAFE Access Rows
 
 | Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |

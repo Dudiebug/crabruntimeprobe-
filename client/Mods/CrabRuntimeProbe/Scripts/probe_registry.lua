@@ -982,6 +982,108 @@ function registry.build(safe)
       .. ' crashAttributionMarker=userdata-introspection'
   end
 
+  local function integerLikeUInt32(value)
+    if type(value) ~= 'number' then return false, false end
+    if value ~= value or value == math.huge or value == -math.huge then return false, false end
+    local integerLike = math.floor(value) == value
+    local inRange = integerLike and value >= 0 and value <= 4294967295
+    return integerLike, inRange
+  end
+
+  local function buildCrystalsReadCache(ctx)
+    if ctx.cache.CrystalsRead then return ctx.cache.CrystalsRead end
+
+    local playerState, playerStateErr = getCrabPlayerState(ctx)
+    if playerStateErr then
+      ctx.cache.CrystalsRead = { error = playerStateErr }
+      return ctx.cache.CrystalsRead
+    end
+
+    local stats = {
+      sourceScope = 'local_player_state_crystals',
+      sourcePath = 'CrabPC.PlayerState',
+      sourceClass = 'CrabPS',
+      localPlayerStatePresent = safe.isValidObject(playerState),
+      crystalsReadAttempted = false,
+      crystalsPresent = false,
+      crystalsValue = nil,
+      crystalsValueKind = 'nil',
+      crystalsIntegerLike = false,
+      crystalsInUInt32Range = false,
+      noElementDereference = true,
+      noArrayCount = true,
+      noArrayTraversal = true,
+      noInventoryInfo = true,
+      noEnhancements = true,
+      noWrites = true,
+      noRpcs = true,
+      noHud = true,
+      noDeepArrays = true,
+      crashAttributionMarker = 'crystals-read'
+    }
+
+    if not stats.localPlayerStatePresent then
+      ctx.cache.CrystalsRead = stats
+      return stats
+    end
+
+    stats.crystalsReadAttempted = true
+    local value, err = safe.getProperty(playerState, 'Crystals')
+    if err then
+      stats.error = 'Crystals: ' .. tostring(err)
+      ctx.cache.CrystalsRead = stats
+      return stats
+    end
+    stats.crystalsValueKind = type(value)
+    if value ~= nil then
+      stats.crystalsPresent = true
+      stats.crystalsValue = value
+      stats.crystalsIntegerLike, stats.crystalsInUInt32Range = integerLikeUInt32(value)
+    end
+
+    ctx.cache.CrystalsRead = stats
+    return stats
+  end
+
+  local function crystalsReadMeta(stats, note)
+    return {
+      sourceScope = stats.sourceScope,
+      sourcePath = stats.sourcePath,
+      sourceClass = stats.sourceClass,
+      candidateClasses = { 'CrabPC', 'CrabPS' },
+      localPlayerStatePresent = stats.localPlayerStatePresent == true,
+      crystalsReadAttempted = stats.crystalsReadAttempted == true,
+      crystalsPresent = stats.crystalsPresent == true,
+      crystalsValue = stats.crystalsValue,
+      crystalsValueKind = stats.crystalsValueKind,
+      crystalsIntegerLike = stats.crystalsIntegerLike == true,
+      crystalsInUInt32Range = stats.crystalsInUInt32Range == true,
+      noElementDereference = true,
+      noArrayCount = true,
+      noArrayTraversal = true,
+      noInventoryInfo = true,
+      noEnhancements = true,
+      noWrites = true,
+      noRpcs = true,
+      noHud = true,
+      noDeepArrays = true,
+      crashAttributionMarker = 'crystals-read',
+      localNotes = note
+    }
+  end
+
+  local function crystalsReadSummary(stats)
+    return 'category=crystals-read'
+      .. ' localPlayerStatePresent=' .. tostring(stats.localPlayerStatePresent == true)
+      .. ' crystalsReadAttempted=' .. tostring(stats.crystalsReadAttempted == true)
+      .. ' crystalsPresent=' .. tostring(stats.crystalsPresent == true)
+      .. ' crystalsValueKind=' .. tostring(stats.crystalsValueKind or 'nil')
+      .. ' crystalsIntegerLike=' .. tostring(stats.crystalsIntegerLike == true)
+      .. ' crystalsInUInt32Range=' .. tostring(stats.crystalsInUInt32Range == true)
+      .. ' noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true'
+      .. ' noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=crystals-read'
+  end
+
   local function classifyCrabHCSource(fullName)
     local text = tostring(fullName or '')
     if text:find('Destructible') or text:find('Barrel') or text:find('ChaoticBarrel') then
@@ -1936,6 +2038,21 @@ function registry.build(safe)
     accessMethod = 'GetPropertyValueUserdataMetadata',
     accessKind = 'localInventoryUserdataIntrospection',
     sourceScope = 'local_player_state_inventory_userdata_introspection'
+  })
+
+  probes[#probes + 1] = mk('Resource.Crystals.Read', 'resource-crystals', 'crystals-read', 'localCrystalsRead', function(ctx)
+    local stats = buildCrystalsReadCache(ctx)
+    if stats.error then return 'lua_error', nil, nil, stats.error, crystalsReadMeta(stats, 'Read-only local CrabPC -> PlayerState -> CrabPS Crystals scalar read; UInt32 range documented only, with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays') end
+    return stats.crystalsPresent and 'ok' or 'nil', 'crystals_read',
+      crystalsReadSummary(stats), nil,
+      crystalsReadMeta(stats, 'Read-only local CrabPC -> PlayerState -> CrabPS Crystals scalar read; UInt32 range documented only, with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays')
+  end, {
+    symbol = 'CrabPS.Crystals',
+    owner = 'CrabPS',
+    member = 'Crystals',
+    accessMethod = 'GetPropertyValue',
+    accessKind = 'localCrystalsRead',
+    sourceScope = 'local_player_state_crystals'
   })
 
   probes[#probes + 1] = mk('FindAllOf.CrabHC.Availability', 'health', 'health-hc-discovery-read', 'findAllAvailability', function()

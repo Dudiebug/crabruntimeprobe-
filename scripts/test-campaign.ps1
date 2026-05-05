@@ -63,7 +63,7 @@ if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "tickDri
 if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "probeSet") -ne "shallow-core") {
   throw "default config probeSet must remain shallow-core."
 }
-foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
   if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key $key) -ne "false") {
     throw "default config expected $key = false."
   }
@@ -107,7 +107,7 @@ assert(state.nextRecommendedPhase === 'multiplayer-resource-visibility-read', `e
 
 const defaultState = helpers.reconcileState(plan, null, repoRoot);
 assert(Array.isArray(defaultState.completedPhases), 'state initializes completedPhases');
-assert(defaultState.blockedPhases.some((entry) => entry.phaseId === 'crystals-read'), 'unimplemented crystals phase is blocked');
+assert(!defaultState.blockedPhases.some((entry) => entry.phaseId === 'crystals-read'), 'implemented crystals phase must not be blocked');
 
 for (const phase of plan.phases) {
   if (phase.implemented !== true) continue;
@@ -135,6 +135,9 @@ for (const phase of plan.phases) {
   }
   if (phase.phaseId !== 'multiplayer-resource-visibility-read') {
     assert(gates.allowResourceVisibilityProbes === false, `${phase.phaseId} enabled resource visibility outside resource phase`);
+  }
+  if (phase.phaseId !== 'crystals-read') {
+    assert(gates.allowCrystalsReadProbes === false, `${phase.phaseId} enabled crystals read outside crystals phase`);
   }
 }
 

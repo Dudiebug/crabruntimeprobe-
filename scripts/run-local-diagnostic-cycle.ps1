@@ -17,6 +17,7 @@ param(
   [switch]$CollectHealthPlayerState,
   [switch]$CollectHealthPlayerStateWatch,
   [switch]$CollectResourceVisibility,
+  [switch]$CollectCrystalsRead,
   [switch]$CollectLocalInventoryArrayShallow,
   [switch]$CollectLocalInventoryArrayShapeConfirm,
   [switch]$CollectLocalInventoryUserdataIntrospection,
@@ -46,13 +47,14 @@ function Get-CycleMode {
   if ($CollectHealthPlayerState) { $modes += "CollectHealthPlayerState" }
   if ($CollectHealthPlayerStateWatch) { $modes += "CollectHealthPlayerStateWatch" }
   if ($CollectResourceVisibility) { $modes += "CollectResourceVisibility" }
+  if ($CollectCrystalsRead) { $modes += "CollectCrystalsRead" }
   if ($CollectLocalInventoryArrayShallow) { $modes += "CollectLocalInventoryArrayShallow" }
   if ($CollectLocalInventoryArrayShapeConfirm) { $modes += "CollectLocalInventoryArrayShapeConfirm" }
   if ($CollectLocalInventoryUserdataIntrospection) { $modes += "CollectLocalInventoryUserdataIntrospection" }
 
   $unique = @($modes | Sort-Object -Unique)
   if ($unique.Count -ne 1) {
-    throw "Choose exactly one mode: -PrepareSmoke, -CollectSmoke, -PrepareTickDriver <driver>, -PrepareEquipmentProperty, -PrepareHealthBaseline, -PrepareHealthPlayerState, -PrepareHealthPlayerStateWatch, -Collect, -CollectEquipmentProperty, -CollectHealthBaseline, -CollectHealthPlayerState, -CollectHealthPlayerStateWatch, -CollectResourceVisibility, -CollectLocalInventoryArrayShallow, -CollectLocalInventoryArrayShapeConfirm, or -CollectLocalInventoryUserdataIntrospection."
+    throw "Choose exactly one mode: -PrepareSmoke, -CollectSmoke, -PrepareTickDriver <driver>, -PrepareEquipmentProperty, -PrepareHealthBaseline, -PrepareHealthPlayerState, -PrepareHealthPlayerStateWatch, -Collect, -CollectEquipmentProperty, -CollectHealthBaseline, -CollectHealthPlayerState, -CollectHealthPlayerStateWatch, -CollectResourceVisibility, -CollectCrystalsRead, -CollectLocalInventoryArrayShallow, -CollectLocalInventoryArrayShapeConfirm, or -CollectLocalInventoryUserdataIntrospection."
   }
 
   return $unique[0]
@@ -122,6 +124,7 @@ function Test-CrabRuntimeProbeInstalledSafety {
     [switch]$AllowHealthProbes,
     [switch]$AllowIdentityProbes,
     [switch]$AllowResourceVisibilityProbes,
+    [switch]$AllowCrystalsReadProbes,
     [switch]$AllowInventoryArrayShallowProbes,
     [switch]$AllowInventoryArrayShapeConfirmProbes,
     [switch]$AllowInventoryUserdataIntrospectionProbes
@@ -150,6 +153,7 @@ function Test-CrabRuntimeProbeInstalledSafety {
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
+    "allowCrystalsReadProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -171,6 +175,9 @@ function Test-CrabRuntimeProbeInstalledSafety {
         continue
       }
       if ($AllowResourceVisibilityProbes -and $key -eq "allowResourceVisibilityProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
+        continue
+      }
+      if ($AllowCrystalsReadProbes -and $key -eq "allowCrystalsReadProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
         continue
       }
       if ($AllowInventoryArrayShallowProbes -and $key -eq "allowInventoryArrayShallowProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
@@ -197,12 +204,13 @@ function Assert-CrabRuntimeProbeInstalledSafety {
     [switch]$AllowHealthProbes,
     [switch]$AllowIdentityProbes,
     [switch]$AllowResourceVisibilityProbes,
+    [switch]$AllowCrystalsReadProbes,
     [switch]$AllowInventoryArrayShallowProbes,
     [switch]$AllowInventoryArrayShapeConfirmProbes,
     [switch]$AllowInventoryUserdataIntrospectionProbes
   )
 
-  $errors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $ConfigPath -AllowHealthProbes:$AllowHealthProbes -AllowIdentityProbes:$AllowIdentityProbes -AllowResourceVisibilityProbes:$AllowResourceVisibilityProbes -AllowInventoryArrayShallowProbes:$AllowInventoryArrayShallowProbes -AllowInventoryArrayShapeConfirmProbes:$AllowInventoryArrayShapeConfirmProbes -AllowInventoryUserdataIntrospectionProbes:$AllowInventoryUserdataIntrospectionProbes
+  $errors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $ConfigPath -AllowHealthProbes:$AllowHealthProbes -AllowIdentityProbes:$AllowIdentityProbes -AllowResourceVisibilityProbes:$AllowResourceVisibilityProbes -AllowCrystalsReadProbes:$AllowCrystalsReadProbes -AllowInventoryArrayShallowProbes:$AllowInventoryArrayShallowProbes -AllowInventoryArrayShapeConfirmProbes:$AllowInventoryArrayShapeConfirmProbes -AllowInventoryUserdataIntrospectionProbes:$AllowInventoryUserdataIntrospectionProbes
   if ($errors.Count -gt 0) {
     throw "Installed config safety validation failed at $ConfigPath`n$((($errors | ForEach-Object { " - $_" }) -join "`n"))"
   }
@@ -620,6 +628,7 @@ function Set-InstalledSmokeConfig {
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
+    "allowCrystalsReadProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -657,6 +666,7 @@ function Set-InstalledTickDriverConfig {
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
+    "allowCrystalsReadProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -686,6 +696,7 @@ function Set-InstalledEquipmentPropertyConfig {
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
+    "allowCrystalsReadProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -715,6 +726,7 @@ function Set-InstalledHealthBaselineConfig {
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
+    "allowCrystalsReadProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -744,6 +756,7 @@ function Set-InstalledHealthPlayerStateConfig {
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
+    "allowCrystalsReadProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -774,6 +787,7 @@ function Set-InstalledHealthPlayerStateWatchConfig {
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
+    "allowCrystalsReadProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -882,6 +896,7 @@ $safetyErrors = Test-CrabRuntimeProbeInstalledSafety `
   -AllowHealthProbes:($Mode -eq "CollectHealthBaseline" -or $Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch" -or $Mode -eq "CollectResourceVisibility") `
   -AllowIdentityProbes:($AllowIdentityProbes -or $Mode -eq "CollectResourceVisibility") `
   -AllowResourceVisibilityProbes:($AllowResourceVisibilityProbes -or $Mode -eq "CollectResourceVisibility") `
+  -AllowCrystalsReadProbes:($Mode -eq "CollectCrystalsRead") `
   -AllowInventoryArrayShallowProbes:($Mode -eq "CollectLocalInventoryArrayShallow") `
   -AllowInventoryArrayShapeConfirmProbes:($Mode -eq "CollectLocalInventoryArrayShapeConfirm") `
   -AllowInventoryUserdataIntrospectionProbes:($Mode -eq "CollectLocalInventoryUserdataIntrospection")
@@ -986,6 +1001,25 @@ if ($null -eq $resourceVisibilityReadableCrystals) { $resourceVisibilityReadable
 if ($null -eq $resourceVisibilityReadableSlots) { $resourceVisibilityReadableSlots = 0 }
 if ($null -eq $resourceVisibilityReadableEquipment) { $resourceVisibilityReadableEquipment = 0 }
 if ($null -eq $resourceVisibilityReadableInventoryArrays) { $resourceVisibilityReadableInventoryArrays = 0 }
+$crystalsReadProbeNames = @("Resource.Crystals.Read")
+$crystalsReadRecords = @($jsonlRecords | Where-Object { $crystalsReadProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) })
+$crystalsReadAllRecords = @($crystalsReadRecords + @($accessEvidenceRecords | Where-Object { $crystalsReadProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) }))
+$latestCrystalsReadRecord = if ($crystalsReadAllRecords.Count -gt 0) { $crystalsReadAllRecords[-1] } else { $null }
+$crystalsReadAttempted = @($crystalsReadAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "crystalsReadAttempted") -and $_.crystalsReadAttempted -eq $true }).Count -gt 0
+$crystalsReadLocalPlayerStatePresent = @($crystalsReadAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "localPlayerStatePresent") -and $_.localPlayerStatePresent -eq $true }).Count -gt 0
+$crystalsReadValue = if ($null -ne $latestCrystalsReadRecord) { Get-RecordValue -Record $latestCrystalsReadRecord -Names @("crystalsValue") } else { "not found" }
+$crystalsReadValueKind = if ($null -ne $latestCrystalsReadRecord) { Get-RecordValue -Record $latestCrystalsReadRecord -Names @("crystalsValueKind") } else { "not found" }
+$crystalsReadIntegerLike = @($crystalsReadAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "crystalsPresent") -and $_.crystalsPresent -eq $true -and ($_.PSObject.Properties.Name -contains "crystalsIntegerLike") -and $_.crystalsIntegerLike -ne $true }).Count -eq 0
+$crystalsReadSafetyViolation = @($crystalsReadAllRecords | Where-Object {
+  (($_.PSObject.Properties.Name -contains "noElementDereference") -and $_.noElementDereference -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noArrayTraversal") -and $_.noArrayTraversal -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noInventoryInfo") -and $_.noInventoryInfo -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noEnhancements") -and $_.noEnhancements -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noWrites") -and $_.noWrites -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noRpcs") -and $_.noRpcs -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noHud") -and $_.noHud -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noDeepArrays") -and $_.noDeepArrays -ne $true)
+}).Count -gt 0
 $localInventoryProbeNames = @(
   "Inventory.LocalSlots.Sample",
   "Inventory.LocalArrays.Shape",
@@ -1327,6 +1361,29 @@ if ($Mode -eq "CollectResourceVisibility") {
   }
 }
 
+if ($Mode -eq "CollectCrystalsRead") {
+  if ($installedMode -ne "active") { $failures.Add("Crystals read collect expected mode = active, got '$installedMode'.") | Out-Null }
+  if ($tickDriver -ne "executeDelay") { $failures.Add("Crystals read collect expected tickDriver = executeDelay, got '$tickDriver'.") | Out-Null }
+  if ($probeSet -ne "crystals-read") { $failures.Add("Crystals read collect expected probeSet = crystals-read, got '$probeSet'.") | Out-Null }
+  if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowCrystalsReadProbes") -ne "true") {
+    $failures.Add("Crystals read collect expected allowCrystalsReadProbes = true.") | Out-Null
+  }
+  foreach ($key in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+    if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+      $failures.Add("Crystals read collect expected $key = false.") | Out-Null
+    }
+  }
+  foreach ($probeName in $crystalsReadProbeNames) {
+    if (@($crystalsReadRecords | Where-Object { (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) -eq $probeName }).Count -eq 0) {
+      $failures.Add("Expected $probeName during crystals read collection, but it did not run.") | Out-Null
+    }
+  }
+  if (-not $crystalsReadLocalPlayerStatePresent) { $failures.Add("Crystals read evidence did not confirm local PlayerState present.") | Out-Null }
+  if (-not $crystalsReadAttempted) { $failures.Add("Crystals read evidence did not attempt the Crystals scalar read.") | Out-Null }
+  if (-not $crystalsReadIntegerLike) { $failures.Add("Crystals read value was not finite/integer-like when present.") | Out-Null }
+  if ($crystalsReadSafetyViolation) { $failures.Add("Crystals read evidence touched or omitted forbidden safety markers.") | Out-Null }
+}
+
 if ($Mode -eq "CollectLocalInventoryArrayShallow") {
   if ($installedMode -ne "active") { $failures.Add("Local inventory array shallow collect expected mode = active, got '$installedMode'.") | Out-Null }
   if ($tickDriver -ne "executeDelay") { $failures.Add("Local inventory array shallow collect expected tickDriver = executeDelay, got '$tickDriver'.") | Out-Null }
@@ -1521,6 +1578,13 @@ $summaryLines = @(
   "resource_visibility_readable_slots_count = $resourceVisibilityReadableSlots",
   "resource_visibility_readable_equipment_count = $resourceVisibilityReadableEquipment",
   "resource_visibility_readable_inventory_array_count = $resourceVisibilityReadableInventoryArrays",
+  "crystals_read_probe_ran = $($crystalsReadRecords.Count -gt 0)",
+  "crystals_read_local_playerstate_present = $crystalsReadLocalPlayerStatePresent",
+  "crystals_read_attempted = $crystalsReadAttempted",
+  "crystals_read_value = $crystalsReadValue",
+  "crystals_read_value_kind = $crystalsReadValueKind",
+  "crystals_read_value_integer_like = $crystalsReadIntegerLike",
+  "crystals_read_safety_violation = $crystalsReadSafetyViolation",
   "local_inventory_array_shallow_probe_ran = $($localInventoryRecords.Count -gt 0)",
   "local_inventory_array_shallow_sample_count = $($localInventoryRecords.Count)",
   "local_inventory_array_element_dereference = $localInventoryElementDereference",
@@ -1568,6 +1632,7 @@ $summaryLines = @(
   "allowIdentityProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowIdentityProbes")",
   "allowRawIdentityEvidence = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowRawIdentityEvidence")",
   "allowResourceVisibilityProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowResourceVisibilityProbes")",
+  "allowCrystalsReadProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowCrystalsReadProbes")",
   "allowInventoryArrayShallowProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryArrayShallowProbes")",
   "allowInventoryArrayShapeConfirmProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryArrayShapeConfirmProbes")",
   "allowInventoryUserdataIntrospectionProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryUserdataIntrospectionProbes")",
@@ -1678,7 +1743,7 @@ if ($errorLines.Count -eq 0) {
   }
 }
 
-if ($Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch" -or $Mode -eq "CollectResourceVisibility" -or $Mode -eq "CollectLocalInventoryArrayShallow" -or $Mode -eq "CollectLocalInventoryArrayShapeConfirm" -or $Mode -eq "CollectLocalInventoryUserdataIntrospection") {
+if ($Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch" -or $Mode -eq "CollectResourceVisibility" -or $Mode -eq "CollectCrystalsRead" -or $Mode -eq "CollectLocalInventoryArrayShallow" -or $Mode -eq "CollectLocalInventoryArrayShapeConfirm" -or $Mode -eq "CollectLocalInventoryUserdataIntrospection") {
   $summaryLines += ""
   $summaryLines += "files_to_upload:"
   $summaryLines += " - $SummaryPath"
