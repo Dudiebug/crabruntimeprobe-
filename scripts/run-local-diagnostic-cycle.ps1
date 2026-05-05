@@ -172,8 +172,10 @@ function Clear-CrabRuntimeProbeRuntimeFiles {
   $removed = New-Object System.Collections.Generic.List[string]
   $ue4ssLog = Join-Path $GameBinFull "UE4SS.log"
   $summary = Join-Path $ScriptsRoot "diagnostic_summary.txt"
+  $resultsSummary = Join-Path (Join-Path $ScriptsRoot "results") "diagnostic_summary.txt"
+  $prepareMarker = Join-Path (Join-Path $ScriptsRoot "results") "prepare_marker.json"
 
-  foreach ($path in @($ue4ssLog, $summary)) {
+  foreach ($path in @($ue4ssLog, $summary, $resultsSummary, $prepareMarker)) {
     if (Test-Path -LiteralPath $path -PathType Leaf) {
       Remove-Item -LiteralPath $path -Force
       $removed.Add($path) | Out-Null
@@ -266,6 +268,72 @@ function Read-TextFileOrEmpty {
     return (Get-Content -Raw -LiteralPath $Path)
   }
   return ""
+}
+
+function Read-CrabRuntimeProbeJsonFileOrNull {
+  param([string]$Path)
+
+  if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $null }
+  try {
+    return (Get-Content -Raw -LiteralPath $Path | ConvertFrom-Json -ErrorAction Stop)
+  } catch {
+    return $null
+  }
+}
+
+function Get-CrabRuntimeProbeBuildInfoValue {
+  param(
+    [string]$BuildInfoText,
+    [string]$Key
+  )
+
+  foreach ($line in @($BuildInfoText -split "`r?`n")) {
+    if ($line -match "^\s*$([regex]::Escape($Key))\s*=\s*(.*?)\s*$") {
+      return $matches[1].Trim()
+    }
+  }
+  return "not found"
+}
+
+function Get-CrabRuntimeProbeObjectValue {
+  param(
+    [object]$Object,
+    [string[]]$Path,
+    [string]$Default = "not found"
+  )
+
+  $current = $Object
+  foreach ($part in $Path) {
+    if ($null -eq $current -or -not ($current.PSObject.Properties.Name -contains $part)) {
+      return $Default
+    }
+    $current = $current.$part
+  }
+  if ($null -eq $current -or [string]::IsNullOrWhiteSpace([string]$current)) { return $Default }
+  return [string]$current
+}
+
+function Write-CrabRuntimeProbePrepareMarker {
+  param(
+    [Parameter(Mandatory = $true)][string]$ScriptsRoot,
+    [Parameter(Mandatory = $true)][string]$ExpectedGitCommit,
+    [Parameter(Mandatory = $true)][string]$ExpectedProbeSet,
+    [Parameter(Mandatory = $true)][string]$ExpectedTickDriver,
+    [Parameter(Mandatory = $true)][string]$ExpectedMode
+  )
+
+  $resultsDir = Join-Path $ScriptsRoot "results"
+  New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
+  $markerPath = Join-Path $resultsDir "prepare_marker.json"
+  $marker = [ordered]@{
+    preparedAt = (Get-Date).ToUniversalTime().ToString("o")
+    expectedGitCommit = $ExpectedGitCommit
+    expectedProbeSet = $ExpectedProbeSet
+    expectedTickDriver = $ExpectedTickDriver
+    expectedMode = $ExpectedMode
+  }
+  Set-Content -LiteralPath $markerPath -Value ($marker | ConvertTo-Json -Depth 4) -Encoding ASCII
+  return $markerPath
 }
 
 function Convert-CrabRuntimeProbeJsonlRecords {
@@ -526,6 +594,7 @@ $InstalledConfigPath = Join-Path $InstallScriptsRoot "config.txt"
 $BuildInfoPath = Join-Path $InstallScriptsRoot "build_info.txt"
 $SummaryPath = Join-Path $InstallScriptsRoot "diagnostic_summary.txt"
 $Ue4ssLogPath = Join-Path $GameBinFull "UE4SS.log"
+$PrepareMarkerPath = Join-Path (Join-Path $InstallScriptsRoot "results") "prepare_marker.json"
 
 Assert-CrabRuntimeProbeModLayout -ModRoot $SourceModRoot -Label "source CrabRuntimeProbe mod"
 Assert-CrabRuntimeProbeConfig -ConfigPath $SourceConfigPath -Label "source config"
@@ -552,6 +621,13 @@ if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "Pr
 
   Assert-CrabRuntimeProbeInstalledSafety -ConfigPath $InstalledConfigPath -AllowHealthProbes:($Mode -eq "PrepareHealthBaseline" -or $Mode -eq "PrepareHealthPlayerState")
   $removed = Clear-CrabRuntimeProbeRuntimeFiles -GameBinFull $GameBinFull -ScriptsRoot $InstallScriptsRoot
+  $buildInfoText = Read-TextFileOrEmpty -Path $BuildInfoPath
+  $prepareMarkerPath = Write-CrabRuntimeProbePrepareMarker `
+    -ScriptsRoot $InstallScriptsRoot `
+    -ExpectedGitCommit (Get-CrabRuntimeProbeBuildInfoValue -BuildInfoText $buildInfoText -Key "git_commit") `
+    -ExpectedProbeSet (Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet") `
+    -ExpectedTickDriver (Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver") `
+    -ExpectedMode (Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "mode")
 
   Write-Host "CrabRuntimeProbe diagnostic prepare passed."
   Write-Host "Mode: $Mode"
@@ -565,6 +641,7 @@ if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "Pr
   Write-Host "debugTickHeartbeat = $(Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "debugTickHeartbeat")"
   Write-Host "debugWriterSelfTest = $(Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "debugWriterSelfTest")"
   Write-Host "Cleared old runtime files: $($removed.Count)"
+  Write-Host "Prepare marker path: $prepareMarkerPath"
   Write-Host ""
   Write-Host "Next human action:"
   Write-Host " 1. Launch Crab Champions."
@@ -726,6 +803,75 @@ $installedMode = Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $Installed
 $probeSet = Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "probeSet"
 $debugWriterSelfTest = Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "debugWriterSelfTest"
 $buildInfo = Read-TextFileOrEmpty -Path $BuildInfoPath
+$installedGitCommit = Get-CrabRuntimeProbeBuildInfoValue -BuildInfoText $buildInfo -Key "git_commit"
+$prepareMarker = Read-CrabRuntimeProbeJsonFileOrNull -Path $PrepareMarkerPath
+$prepareMarkerFound = $null -ne $prepareMarker
+$expectedGitCommit = Get-CrabRuntimeProbeObjectValue -Object $prepareMarker -Path @("expectedGitCommit") -Default "not found"
+$expectedProbeSet = Get-CrabRuntimeProbeObjectValue -Object $prepareMarker -Path @("expectedProbeSet") -Default "not found"
+$expectedTickDriver = Get-CrabRuntimeProbeObjectValue -Object $prepareMarker -Path @("expectedTickDriver") -Default "not found"
+$expectedMode = Get-CrabRuntimeProbeObjectValue -Object $prepareMarker -Path @("expectedMode") -Default "not found"
+$prepareMarkerPreparedAt = Get-CrabRuntimeProbeObjectValue -Object $prepareMarker -Path @("preparedAt") -Default "not found"
+$prepareMarkerTime = $null
+if ($prepareMarkerPreparedAt -ne "not found") {
+  $parsedPrepareTime = [datetime]::MinValue
+  if ([datetime]::TryParse($prepareMarkerPreparedAt, [ref]$parsedPrepareTime)) {
+    $prepareMarkerTime = $parsedPrepareTime.ToUniversalTime()
+  }
+}
+
+$latestSessionManifestFile = if ($sessionManifestFiles.Count -gt 0) { @($sessionManifestFiles | Sort-Object LastWriteTimeUtc, Name -Descending | Select-Object -First 1)[0] } else { $null }
+$latestProbeResultsFile = if ($jsonlFiles.Count -gt 0) { @($jsonlFiles | Sort-Object LastWriteTimeUtc, Name -Descending | Select-Object -First 1)[0] } else { $null }
+$latestAccessEvidenceFile = if ($accessEvidenceFiles.Count -gt 0) { @($accessEvidenceFiles | Sort-Object LastWriteTimeUtc, Name -Descending | Select-Object -First 1)[0] } else { $null }
+$latestSessionManifest = if ($null -ne $latestSessionManifestFile) { Read-CrabRuntimeProbeJsonFileOrNull -Path $latestSessionManifestFile.FullName } else { $null }
+$latestManifestSessionId = Get-CrabRuntimeProbeObjectValue -Object $latestSessionManifest -Path @("sessionId") -Default "not found"
+$latestManifestGitCommit = Get-CrabRuntimeProbeObjectValue -Object $latestSessionManifest -Path @("buildInfo", "git_commit") -Default "not found"
+$latestManifestProbeSet = Get-CrabRuntimeProbeObjectValue -Object $latestSessionManifest -Path @("probeSet") -Default "not found"
+$latestManifestTickDriver = Get-CrabRuntimeProbeObjectValue -Object $latestSessionManifest -Path @("tickDriver") -Default "not found"
+$ue4ssLogContainsLatestSession = ($latestManifestSessionId -ne "not found") -and $logText.Contains($latestManifestSessionId)
+$ue4ssLogContainsInstalledCommit = ($installedGitCommit -ne "not found") -and $logText.Contains($installedGitCommit)
+$artifactOlderThanPrepare = $false
+if ($null -ne $prepareMarkerTime) {
+  foreach ($file in @($latestSessionManifestFile, $latestProbeResultsFile, $latestAccessEvidenceFile)) {
+    if ($null -ne $file -and $file.LastWriteTimeUtc -lt $prepareMarkerTime.AddSeconds(-2)) {
+      $artifactOlderThanPrepare = $true
+    }
+  }
+}
+$artifactSessionMatchesPrepare = $false
+if ($prepareMarkerFound -and $null -ne $latestSessionManifest -and -not $artifactOlderThanPrepare) {
+  $artifactSessionMatchesPrepare =
+    ($expectedGitCommit -eq "not found" -or $latestManifestGitCommit -eq $expectedGitCommit) -and
+    ($expectedProbeSet -eq "not found" -or $latestManifestProbeSet -eq $expectedProbeSet) -and
+    ($expectedTickDriver -eq "not found" -or $latestManifestTickDriver -eq $expectedTickDriver) -and
+    ($expectedMode -eq "not found" -or $installedMode -eq $expectedMode)
+}
+$latestAccessEvidenceProbeSetMismatch = @($accessEvidenceRecords | Where-Object {
+  ($_.PSObject.Properties.Name -contains "probeSet") -and
+  -not [string]::IsNullOrWhiteSpace([string]$_.probeSet) -and
+  [string]$_.probeSet -ne $probeSet
+})
+$latestAccessEvidenceTickDriverMismatch = @($accessEvidenceRecords | Where-Object {
+  ($_.PSObject.Properties.Name -contains "tickDriver") -and
+  -not [string]::IsNullOrWhiteSpace([string]$_.tickDriver) -and
+  [string]$_.tickDriver -ne $tickDriver
+})
+$latestEvidenceSessionMismatch = if ($latestManifestSessionId -eq "not found") {
+  @()
+} else {
+  @(@($jsonlRecords + $accessEvidenceRecords) | Where-Object {
+    ($_.PSObject.Properties.Name -contains "sessionId") -and
+    -not [string]::IsNullOrWhiteSpace([string]$_.sessionId) -and
+    [string]$_.sessionId -ne $latestManifestSessionId
+  })
+}
+$evidenceFilesMatchInstalledConfigProbeSet = ($latestAccessEvidenceProbeSetMismatch.Count -eq 0) -and ($latestAccessEvidenceTickDriverMismatch.Count -eq 0) -and ($latestEvidenceSessionMismatch.Count -eq 0)
+$staleArtifactSuspected = $prepareMarkerFound -and (
+  -not $artifactSessionMatchesPrepare -or
+  $artifactOlderThanPrepare -or
+  ($latestManifestSessionId -ne "not found" -and -not $ue4ssLogContainsLatestSession) -or
+  -not $evidenceFilesMatchInstalledConfigProbeSet
+)
+
 $failures = New-Object System.Collections.Generic.List[string]
 foreach ($err in $safetyErrors) { $failures.Add($err) | Out-Null }
 
@@ -780,6 +926,35 @@ if ($Mode -eq "CollectHealthPlayerState") {
   if ($installedMode -ne "active") { $failures.Add("Health playerstate collect expected mode = active, got '$installedMode'.") | Out-Null }
   if ($tickDriver -ne "executeDelay") { $failures.Add("Health playerstate collect expected tickDriver = executeDelay, got '$tickDriver'.") | Out-Null }
   if ($probeSet -ne "health-playerstate-read") { $failures.Add("Health playerstate collect expected probeSet = health-playerstate-read, got '$probeSet'.") | Out-Null }
+  if (-not $prepareMarkerFound) { $failures.Add("Health playerstate collect expected prepare_marker.json from quick-health-playerstate-prepare.ps1.") | Out-Null }
+  if ($null -eq $latestSessionManifestFile) {
+    $failures.Add("No session_manifest_*.json exists for the prepared health-playerstate run.") | Out-Null
+  } else {
+    if ($latestManifestGitCommit -ne "not found" -and $installedGitCommit -ne "not found" -and $latestManifestGitCommit -ne $installedGitCommit) {
+      $failures.Add("Latest manifest commit '$latestManifestGitCommit' does not match installed build_info commit '$installedGitCommit'.") | Out-Null
+    }
+    if ($latestManifestProbeSet -ne "health-playerstate-read") {
+      $failures.Add("Health playerstate collect expected latest manifest probeSet = health-playerstate-read, got '$latestManifestProbeSet'.") | Out-Null
+    }
+    if ($latestManifestProbeSet -eq "health-baseline-read") {
+      $failures.Add("Stale baseline artifact detected: expected health-playerstate-read but latest manifest says health-baseline-read.") | Out-Null
+    }
+    if ($latestManifestTickDriver -ne "executeDelay") {
+      $failures.Add("Health playerstate collect expected latest manifest tickDriver = executeDelay, got '$latestManifestTickDriver'.") | Out-Null
+    }
+    if (-not $artifactSessionMatchesPrepare) {
+      $failures.Add("Latest session manifest does not match prepare_marker.json expected commit/probeSet/tickDriver/mode or is older than prepare.") | Out-Null
+    }
+    if (-not $ue4ssLogContainsLatestSession) {
+      $failures.Add("UE4SS.log does not contain latest sessionId '$latestManifestSessionId'.") | Out-Null
+    }
+    if ($installedGitCommit -ne "not found" -and -not $ue4ssLogContainsInstalledCommit) {
+      $failures.Add("UE4SS.log does not contain installed git commit '$installedGitCommit'.") | Out-Null
+    }
+    if (-not $evidenceFilesMatchInstalledConfigProbeSet) {
+      $failures.Add("Latest evidence files do not match installed config/probeSet/session.") | Out-Null
+    }
+  }
   if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowHealthProbes") -ne "true") {
     $failures.Add("Health playerstate collect expected allowHealthProbes = true for this explicit phase.") | Out-Null
   }
@@ -800,6 +975,25 @@ if (-not $startupSmoke) {
   $crashSuspicion = "startup smoke present but selected tick source did not register; inspect last CrabRuntimeProbe log line for risky driver phase"
 }
 
+$startupCompleteReached = Get-TextPresence -Text $logText -Pattern 'boot phase: startup complete'
+$tickRegistrationHappened = Get-TextPresence -Text $logText -Pattern 'boot phase: tick registration begin|tick driver register begin|tick source registered'
+$probeBreadcrumbsAppeared = (Get-TextPresence -Text $jsonlText -Pattern 'Observe\.Context|CrabPS\.|CrabHC\.|FindFirstOf\.CrabHC') -or (Get-TextPresence -Text $logText -Pattern 'probe')
+$likelyCrashPhase = if (-not $started) {
+  "before CrabRuntimeProbe startup"
+} elseif ($null -eq $latestSessionManifestFile) {
+  "after startup logging but before session manifest write, or manifest write failed"
+} elseif (-not $startupSmoke) {
+  "after session manifest write but before startup smoke result write"
+} elseif ($tickDriver -ne "none" -and -not $tickRegistrationHappened) {
+  "after startup smoke before tick registration"
+} elseif ($tickDriver -ne "none" -and $tickSource -eq "not found") {
+  "during tick registration"
+} elseif (-not $probeBreadcrumbsAppeared) {
+  "after tick registration before gameplay probe breadcrumbs"
+} else {
+  "after current-run probe breadcrumbs appeared"
+}
+
 $summaryLines = @(
   "CrabRuntimeProbe diagnostic summary",
   "timestamp = $((Get-Date).ToString('o'))",
@@ -814,6 +1008,27 @@ $summaryLines = @(
   "access_evidence_file_count = $($accessEvidenceFiles.Count)",
   "access_evidence_event_count = $($accessEvidenceRecords.Count)",
   "session_manifest_file_count = $($sessionManifestFiles.Count)",
+  "prepare_marker_found = $prepareMarkerFound",
+  "prepare_marker_path = $PrepareMarkerPath",
+  "prepare_marker_preparedAt = $prepareMarkerPreparedAt",
+  "expected_git_commit = $expectedGitCommit",
+  "expected_probeSet = $expectedProbeSet",
+  "expected_tickDriver = $expectedTickDriver",
+  "expected_mode = $expectedMode",
+  "installed_git_commit = $installedGitCommit",
+  "latest_session_manifest_file = $(if ($null -ne $latestSessionManifestFile) { $latestSessionManifestFile.FullName } else { "not found" })",
+  "latest_manifest_sessionId = $latestManifestSessionId",
+  "latest_manifest_git_commit = $latestManifestGitCommit",
+  "latest_manifest_probeSet = $latestManifestProbeSet",
+  "latest_manifest_tickDriver = $latestManifestTickDriver",
+  "latest_probe_results_file = $(if ($null -ne $latestProbeResultsFile) { $latestProbeResultsFile.FullName } else { "not found" })",
+  "latest_access_evidence_file = $(if ($null -ne $latestAccessEvidenceFile) { $latestAccessEvidenceFile.FullName } else { "not found" })",
+  "artifact_session_matches_prepare = $artifactSessionMatchesPrepare",
+  "ue4ss_log_contains_session = $ue4ssLogContainsLatestSession",
+  "ue4ss_log_contains_installed_git_commit = $ue4ssLogContainsInstalledCommit",
+  "evidence_files_match_installed_config_probeSet = $evidenceFilesMatchInstalledConfigProbeSet",
+  "latest_evidence_older_than_prepare = $artifactOlderThanPrepare",
+  "stale_artifact_suspected = $staleArtifactSuspected",
   "jsonl_first_timestamp = $firstJsonlTimestamp",
   "jsonl_last_timestamp = $lastJsonlTimestamp",
   "observe_context_count = $observeContextCount",
@@ -859,6 +1074,10 @@ $summaryLines = @(
   "crabinventorysync_appeared_unexpectedly = $crabInventorySync",
   "last_crabruntimeprobe_log_line = $($lastCrabRuntimeProbeLogLine[0])",
   "crash_suspicion = $crashSuspicion",
+  "startup_complete_reached = $startupCompleteReached",
+  "tick_registration_happened = $tickRegistrationHappened",
+  "probe_breadcrumbs_appeared = $probeBreadcrumbsAppeared",
+  "likely_crash_phase = $likelyCrashPhase",
   "allowHudTickHook = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowHudTickHook")",
   "allowUnknownRoleProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowUnknownRoleProbes")",
   "allowJoinedClientDeepProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowJoinedClientDeepProbes")",
@@ -883,6 +1102,16 @@ if ([string]::IsNullOrWhiteSpace($buildInfo)) {
   foreach ($line in @($buildInfo -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })) {
     $summaryLines += " - $line"
   }
+}
+
+$summaryLines += ""
+$summaryLines += "installed_config:"
+if (Test-Path -LiteralPath $InstalledConfigPath -PathType Leaf) {
+  foreach ($line in @(Get-Content -LiteralPath $InstalledConfigPath | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })) {
+    $summaryLines += " - $line"
+  }
+} else {
+  $summaryLines += " - missing"
 }
 
 $summaryLines = Add-CountLines -Lines $summaryLines -Header "jsonl_event_type_counts:" -Groups $eventGroups
@@ -960,6 +1189,17 @@ if ($errorLines.Count -eq 0) {
   foreach ($line in $errorLines) {
     $summaryLines += " - $line"
   }
+}
+
+if ($Mode -eq "CollectHealthPlayerState") {
+  $summaryLines += ""
+  $summaryLines += "files_to_upload:"
+  $summaryLines += " - $SummaryPath"
+  $summaryLines += " - $(if ($null -ne $latestSessionManifestFile) { $latestSessionManifestFile.FullName } else { "latest session_manifest_*.json not found" })"
+  $summaryLines += " - $(if ($null -ne $latestProbeResultsFile) { $latestProbeResultsFile.FullName } else { "latest probe_results_*.jsonl not found" })"
+  $summaryLines += " - $(if ($null -ne $latestAccessEvidenceFile) { $latestAccessEvidenceFile.FullName } else { "latest access_evidence_*.jsonl not found" })"
+  $summaryLines += " - $Ue4ssLogPath"
+  $summaryLines += " - crash files only if a crash happened"
 }
 
 $summaryLines += ""

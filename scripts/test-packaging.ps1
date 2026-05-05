@@ -69,6 +69,62 @@ function Set-TestConfigValue {
   Set-Content -LiteralPath $ConfigPath -Value $updated -Encoding ASCII
 }
 
+function Get-TestBuildInfoValue {
+  param(
+    [string]$ScriptsRoot,
+    [string]$Key
+  )
+
+  $path = Join-Path $ScriptsRoot "build_info.txt"
+  foreach ($line in @(Get-Content -LiteralPath $path)) {
+    if ($line -match "^\s*$([regex]::Escape($Key))\s*=\s*(.*?)\s*$") {
+      return $matches[1].Trim()
+    }
+  }
+  throw "Missing $Key in $path"
+}
+
+function Write-TestSessionManifest {
+  param(
+    [string]$ResultsRoot,
+    [string]$SessionId,
+    [string]$GitCommit,
+    [string]$ProbeSet,
+    [string]$TickDriver
+  )
+
+  $manifest = [ordered]@{
+    sessionId = $SessionId
+    startedAt = "2026-05-04T00:00:00Z"
+    game = "Crab Champions"
+    mod = "CrabRuntimeProbe"
+    schemaVersion = 1
+    buildInfo = [ordered]@{
+      git_commit = $GitCommit
+      git_branch = "main"
+    }
+    config = [ordered]@{
+      probeSet = $ProbeSet
+      tickDriver = $TickDriver
+      mode = "active"
+    }
+    probeSet = $ProbeSet
+    tickDriver = $TickDriver
+    safetyGates = [ordered]@{
+      allowHudTickHook = $false
+      allowDeepArrayProbes = $false
+      allowInventoryInfoProbes = $false
+      allowHealthProbes = $true
+      allowWriteProbes = $false
+      allowRpcProbes = $false
+      allowJoinedClientDeepProbes = $false
+      allowUnknownRoleProbes = $false
+    }
+  }
+
+  Set-Content -LiteralPath (Join-Path $ResultsRoot "session_manifest_$SessionId.json") -Encoding ASCII -Value ($manifest | ConvertTo-Json -Depth 8 -Compress)
+}
+
 $RepoRoot = Resolve-CrabRuntimeProbeRepoRoot -StartPath $PSScriptRoot -RequireGit
 $SourceModRoot = Join-Path $RepoRoot "client\Mods\CrabRuntimeProbe"
 $SourceConfigPath = Join-Path $SourceModRoot "Scripts\config.txt"
@@ -154,6 +210,10 @@ if ($healthBaselinePrepareScript -notmatch 'PrepareHealthBaseline') {
 $healthPlayerStatePrepareScript = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "quick-health-playerstate-prepare.ps1")
 if ($healthPlayerStatePrepareScript -notmatch 'PrepareHealthPlayerState') {
   throw "quick-health-playerstate-prepare.ps1 must use the health playerstate prepare path."
+}
+$healthPlayerStateCollectScript = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "quick-health-playerstate-collect.ps1")
+if ($healthPlayerStateCollectScript -notmatch 'validate-latest-crash-bundle\.ps1' -or $healthPlayerStateCollectScript -notmatch 'health-playerstate-read') {
+  throw "quick-health-playerstate-collect.ps1 must run the stale bundle validator for health-playerstate-read."
 }
 
 $probeRegistry = Get-Content -Raw -LiteralPath (Join-Path $SourceModRoot "Scripts\probe_registry.lua")
@@ -348,14 +408,22 @@ Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected 
 Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "active"
 Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "health-playerstate-read"
 Assert-HealthBaselineGates -ConfigPath $InstalledConfigPath
+$healthPlayerStatePrepareMarker = Get-Content -Raw -LiteralPath (Join-Path $resultsRoot "prepare_marker.json") | ConvertFrom-Json
+if ($healthPlayerStatePrepareMarker.expectedProbeSet -ne "health-playerstate-read" -or $healthPlayerStatePrepareMarker.expectedTickDriver -ne "executeDelay" -or $healthPlayerStatePrepareMarker.expectedMode -ne "active") {
+  throw "health playerstate prepare marker did not record the expected prepared run contract."
+}
 
 New-Item -ItemType Directory -Force -Path $resultsRoot | Out-Null
+$healthPlayerStateBuildCommit = Get-TestBuildInfoValue -ScriptsRoot $scriptsRoot -Key "git_commit"
+Write-TestSessionManifest -ResultsRoot $resultsRoot -SessionId "test" -GitCommit $healthPlayerStateBuildCommit -ProbeSet "health-playerstate-read" -TickDriver "executeDelay"
 Set-Content -LiteralPath (Join-Path $TestGameBin "UE4SS.log") -Encoding ASCII -Value @(
   "[CrabRuntimeProbe] boot phase: config loaded",
   "[CrabRuntimeProbe] started session=test mode=active",
+  "[CrabRuntimeProbe] build git_commit = $healthPlayerStateBuildCommit",
   "[CrabRuntimeProbe] tickDriver=executeDelay",
   "[CrabRuntimeProbe] tick driver register begin: executeDelay",
   "[CrabRuntimeProbe] tick source registered: executeDelay",
+  "[CrabRuntimeProbe] boot phase: startup complete",
   "[CrabRuntimeProbe] tick heartbeat tick=100 mode=active"
 )
 Set-Content -LiteralPath (Join-Path $resultsRoot "probe_results_health_playerstate.jsonl") -Encoding ASCII -Value @(
@@ -390,12 +458,16 @@ foreach ($required in @(
 
 & (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareHealthPlayerState
 New-Item -ItemType Directory -Force -Path $resultsRoot | Out-Null
+$healthPlayerStateCrabHcBuildCommit = Get-TestBuildInfoValue -ScriptsRoot $scriptsRoot -Key "git_commit"
+Write-TestSessionManifest -ResultsRoot $resultsRoot -SessionId "test" -GitCommit $healthPlayerStateCrabHcBuildCommit -ProbeSet "health-playerstate-read" -TickDriver "executeDelay"
 Set-Content -LiteralPath (Join-Path $TestGameBin "UE4SS.log") -Encoding ASCII -Value @(
   "[CrabRuntimeProbe] boot phase: config loaded",
   "[CrabRuntimeProbe] started session=test mode=active",
+  "[CrabRuntimeProbe] build git_commit = $healthPlayerStateCrabHcBuildCommit",
   "[CrabRuntimeProbe] tickDriver=executeDelay",
   "[CrabRuntimeProbe] tick driver register begin: executeDelay",
-  "[CrabRuntimeProbe] tick source registered: executeDelay"
+  "[CrabRuntimeProbe] tick source registered: executeDelay",
+  "[CrabRuntimeProbe] boot phase: startup complete"
 )
 Set-Content -LiteralPath (Join-Path $resultsRoot "probe_results_health_playerstate_crabhc_fail.jsonl") -Encoding ASCII -Value @(
   '{"timestamp":"2026-05-04T00:00:01Z","event":"Debug.StartupSmoke","probeId":"Debug.StartupSmoke","probeName":"Debug.StartupSmoke","result":"ok"}',
@@ -410,6 +482,41 @@ Set-Content -LiteralPath (Join-Path $resultsRoot "probe_results_health_playersta
 & $powerShellExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -CollectHealthPlayerState | Out-Host
 if ($LASTEXITCODE -eq 0) {
   throw "health playerstate collection must fail when FindFirstOf.CrabHC evidence appears."
+}
+
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareHealthPlayerState
+New-Item -ItemType Directory -Force -Path $resultsRoot | Out-Null
+$staleBaselineBuildCommit = Get-TestBuildInfoValue -ScriptsRoot $scriptsRoot -Key "git_commit"
+Write-TestSessionManifest -ResultsRoot $resultsRoot -SessionId "stale_baseline" -GitCommit $staleBaselineBuildCommit -ProbeSet "health-baseline-read" -TickDriver "executeDelay"
+Set-Content -LiteralPath (Join-Path $TestGameBin "UE4SS.log") -Encoding ASCII -Value @(
+  "[CrabRuntimeProbe] boot phase: config loaded",
+  "[CrabRuntimeProbe] started session=stale_baseline mode=active",
+  "[CrabRuntimeProbe] build git_commit = $staleBaselineBuildCommit",
+  "[CrabRuntimeProbe] tickDriver=executeDelay",
+  "[CrabRuntimeProbe] tick driver register begin: executeDelay",
+  "[CrabRuntimeProbe] tick source registered: executeDelay",
+  "[CrabRuntimeProbe] boot phase: startup complete"
+)
+Set-Content -LiteralPath (Join-Path $resultsRoot "probe_results_stale_baseline.jsonl") -Encoding ASCII -Value @(
+  '{"timestamp":"2026-05-04T00:00:01Z","sessionId":"stale_baseline","event":"Debug.StartupSmoke","probeId":"Debug.StartupSmoke","probeName":"Debug.StartupSmoke","result":"ok"}',
+  '{"timestamp":"2026-05-04T00:00:02Z","sessionId":"stale_baseline","probeId":"CrabPS.GetPropertyValue.HealthInfo","probeName":"CrabPS.GetPropertyValue.HealthInfo","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"HealthInfo obtained"}',
+  '{"timestamp":"2026-05-04T00:00:03Z","sessionId":"stale_baseline","probeId":"CrabPS.HealthInfo.CurrentHealth","probeName":"CrabPS.HealthInfo.CurrentHealth","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"250.0"}',
+  '{"timestamp":"2026-05-04T00:00:04Z","sessionId":"stale_baseline","probeId":"CrabPS.HealthInfo.CurrentMaxHealth","probeName":"CrabPS.HealthInfo.CurrentMaxHealth","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"250.0"}',
+  '{"timestamp":"2026-05-04T00:00:05Z","sessionId":"stale_baseline","probeId":"CrabPS.GetPropertyValue.BaseMaxHealth","probeName":"CrabPS.GetPropertyValue.BaseMaxHealth","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"250.0"}',
+  '{"timestamp":"2026-05-04T00:00:06Z","sessionId":"stale_baseline","probeId":"CrabPS.GetPropertyValue.MaxHealthMultiplier","probeName":"CrabPS.GetPropertyValue.MaxHealthMultiplier","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"1.0"}'
+)
+& $powerShellExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -CollectHealthPlayerState | Out-Host
+if ($LASTEXITCODE -eq 0) {
+  throw "health playerstate collection must fail when latest manifest says health-baseline-read."
+}
+$staleBaselineSummary = Get-Content -Raw -LiteralPath $summaryPath
+if ($staleBaselineSummary -notmatch [regex]::Escape("Stale baseline artifact detected: expected health-playerstate-read but latest manifest says health-baseline-read.")) {
+  throw "health playerstate stale-baseline summary did not call out the stale health-baseline manifest."
+}
+
+& $powerShellExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "validate-latest-crash-bundle.ps1") -GameBin $TestGameBin -ExpectedProbeSet "health-playerstate-read" -ExpectedTickDriver "executeDelay" -ExpectedMode "active" -RequirePreparedRun | Out-Host
+if ($LASTEXITCODE -eq 0) {
+  throw "validate-latest-crash-bundle.ps1 must fail when latest manifest says health-baseline-read for health-playerstate."
 }
 
 Write-Host "CrabRuntimeProbe packaging checks passed."
