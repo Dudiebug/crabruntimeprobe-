@@ -291,7 +291,10 @@ const localInventoryFacts = {
   ].join('\n')
 };
 const latestLocalInventorySessionId = evidenceRows
-  .filter((row) => /^Inventory\.Local(Arrays|Slots)\./.test(row.probeId || row.probeName || ''))
+  .filter((row) => {
+    const id = row.probeId || row.probeName || row.event || '';
+    return /^Inventory\.Local(Arrays|Slots)\./.test(id) && id !== 'Inventory.LocalArrays.ShapeConfirm';
+  })
   .map((row) => row.sessionId)
   .filter(Boolean)
   .sort()

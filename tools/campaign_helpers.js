@@ -412,11 +412,22 @@ function hasCrashSuspectEvidenceForSession(facts, sessionId) {
   const text = facts && facts.text ? facts.text : '';
   if (!text) return false;
   const escapedSessionId = sessionId ? String(sessionId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
-  if (/crash_after_prepare\s*=\s*True|crash_dump_uploaded\s*=|crash_2026_05_05_07_24_18\.dmp/i.test(text)) {
-    return true;
+  const crashEvidencePattern = '(?:crash_after_prepare\\s*=\\s*True|crash_suspect\\s*=\\s*True|crash_dump_uploaded\\s*=|crash_\\d{4}_\\d{2}_\\d{2}_[^\\s"]*\\.dmp|\\.mdmp)';
+  if (escapedSessionId) {
+    const sessionMentioned = new RegExp(escapedSessionId, 'i').test(text);
+    const sessionCrashPattern = new RegExp(`${escapedSessionId}[\\s\\S]{0,5000}${crashEvidencePattern}`, 'i');
+    if (sessionMentioned) return sessionCrashPattern.test(text);
   }
-  if (!escapedSessionId) return false;
-  return new RegExp(`${escapedSessionId}[\\s\\S]{0,2000}(?:crash|\\.dmp|\\.mdmp)|(?:crash|\\.dmp|\\.mdmp)[\\s\\S]{0,2000}${escapedSessionId}`, 'i').test(text);
+  return new RegExp(crashEvidencePattern, 'i').test(text);
+}
+
+function latestSessionIdForRows(rows, predicate) {
+  return rows
+    .filter(predicate)
+    .map((row) => row.sessionId)
+    .filter(Boolean)
+    .sort()
+    .pop() || null;
 }
 
 function formatReadableCount(count, total) {
@@ -634,8 +645,9 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
       latestSummaryPath: facts.latestSummaryPath || ''
     });
   }
+  const localInventorySessionId = latestSessionIdForRows(facts.rows, isLocalInventoryArrayRow);
   const localInventory = classifyLocalInventoryArrayEvidence(facts.rows, {
-    crashSuspect: hasCrashSuspectEvidenceForSession(facts, facts.latestSessionId)
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, localInventorySessionId)
   });
   if (localInventory.status === 'passed') {
     add('local-inventory-array-shallow-read', 'Imported evidence contains local PlayerState inventory array shallow shape/count visibility.');
@@ -648,13 +660,14 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
       reason: localInventory.status === 'crash_suspect_local_inventory_shape_visible'
         ? 'Local inventory array fields were visible as shallow userdata shapes, but a crash dump exists after this run; keep the phase crash-suspect pending safer confirmation.'
         : 'Local PlayerState inventory array fields were nil or unsupported in shallow reads.',
-      latestSessionId: facts.latestSessionId || '',
+      latestSessionId: localInventorySessionId || facts.latestSessionId || '',
       latestCommit: facts.latestCommit || '',
       latestSummaryPath: facts.latestSummaryPath || ''
     });
   }
+  const localInventoryShapeConfirmSessionId = latestSessionIdForRows(facts.rows, isLocalInventoryArrayShapeConfirmRow);
   const localInventoryShapeConfirm = classifyLocalInventoryArrayShapeConfirmEvidence(facts.rows, {
-    crashSuspect: hasCrashSuspectEvidenceForSession(facts, facts.latestSessionId)
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, localInventoryShapeConfirmSessionId)
   });
   if (localInventoryShapeConfirm.status === 'local_inventory_shape_confirmed') {
     add('local-inventory-array-shape-confirm', 'Imported evidence contains local PlayerState inventory array property shape confirmation with no count, traversal, or element dereference.');
@@ -667,7 +680,7 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
       reason: localInventoryShapeConfirm.status === 'crash_suspect_local_inventory_shape_confirmed'
         ? 'Local inventory array fields were confirmed as property shapes with no count, traversal, or element dereference, but a crash dump exists after this run; keep the phase crash-suspect pending another safer confirmation.'
         : 'Local inventory array shape confirmation did not produce usable evidence.',
-      latestSessionId: facts.latestSessionId || '',
+      latestSessionId: localInventoryShapeConfirmSessionId || facts.latestSessionId || '',
       latestCommit: facts.latestCommit || '',
       latestSummaryPath: facts.latestSummaryPath || ''
     });
@@ -978,12 +991,14 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   const resourceVisibility = classifyResourceVisibilityEvidence(facts.rows);
   if (resourceVisibility.status === 'passed') safeSignals.push('remote-visible multiplayer PlayerState resource reads');
   else if (resourceVisibility.remoteResourceVisible) safeSignals.push('partial remote multiplayer PlayerState resource reads for crystals, slots, equipment, and health scalars');
+  const localInventorySessionId = latestSessionIdForRows(facts.rows, isLocalInventoryArrayRow);
   const localInventory = classifyLocalInventoryArrayEvidence(facts.rows, {
-    crashSuspect: hasCrashSuspectEvidenceForSession(facts, state.latestSessionId || facts.latestSessionId)
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, localInventorySessionId || state.latestSessionId || facts.latestSessionId)
   });
   if (localInventory.status === 'passed') safeSignals.push('local PlayerState inventory array shallow shape/count reads');
+  const localInventoryShapeConfirmSessionId = latestSessionIdForRows(facts.rows, isLocalInventoryArrayShapeConfirmRow);
   const localInventoryShapeConfirm = classifyLocalInventoryArrayShapeConfirmEvidence(facts.rows, {
-    crashSuspect: hasCrashSuspectEvidenceForSession(facts, state.latestSessionId || facts.latestSessionId)
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, localInventoryShapeConfirmSessionId || state.latestSessionId || facts.latestSessionId)
   });
   if (localInventoryShapeConfirm.status === 'local_inventory_shape_confirmed') safeSignals.push('local PlayerState inventory array property shape confirmation without count, traversal, or element dereference');
   if (!safeSignals.length) out += '- None imported yet.\n';
@@ -1146,6 +1161,7 @@ module.exports = {
   hasLocalIdentityEvidence,
   hasNonEmptyRawIdentityValue,
   hasRawIdentityLeak,
+  latestSessionIdForRows,
   loadPlan,
   markCollected,
   markPrepared,

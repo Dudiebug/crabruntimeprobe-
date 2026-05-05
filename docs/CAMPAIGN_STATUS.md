@@ -1,12 +1,12 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T20:41:23.725Z
+- Updated: 2026-05-05T20:53:03.775Z
 - Current phase: none
-- Next recommended phase: `local-inventory-array-shape-confirm`
-- Latest session: 20260505T072250Z
-- Latest commit: 591389d5f71e99e2c19f7c287290cbf853a8e496
-- Latest summary: evidence/runtime/20260505T072250Z/diagnostic_summary.txt
+- Next recommended phase: none
+- Latest session: 20260505T204615Z
+- Latest commit: 6ecc98be02bba00c3d9a7fadcd6a905a7b8c9b1f
+- Latest summary: evidence/runtime/20260505T204615Z/diagnostic_summary.txt
 
 ## Completed Phases
 
@@ -18,6 +18,7 @@
 - `health-playerstate-watch` - Solo PlayerState health watch
 - `multiplayer-roster-read` - Multiplayer roster identity read
 - `multiplayer-health-playerstate-watch` - Multiplayer PlayerState health watch
+- `local-inventory-array-shape-confirm` - Local inventory array shape confirm
 
 ## Partial Phases
 
@@ -40,7 +41,7 @@
 
 ## Pending Phases
 
-- `local-inventory-array-shape-confirm` - Local inventory array shape confirm
+- None.
 
 ## Confirmed Safe Paths
 
@@ -51,6 +52,7 @@
 - `CrabPC -> PlayerState` local identity reads with redacted/fingerprinted identity values
 - confirmed visible multiplayer roster reads
 - partial remote multiplayer PlayerState resource reads for crystals, slots, equipment, and health scalars
+- local PlayerState inventory array property shape confirmation without count, traversal, or element dereference
 
 ## Identity And Roster Notes
 
@@ -97,9 +99,22 @@
 
 ## Local Inventory Array Shape Confirm
 
-- Summary: unresolved; no `local-inventory-array-shape-confirm` evidence has been imported yet.
-- Purpose: repeat only local CrabPC -> PlayerState slot scalar and inventory array property shape reads.
-- This confirmation phase does not count arrays, traverse arrays, dereference userdata, read InventoryInfo, or read Enhancements.
+- Summary: local_inventory_shape_confirmed
+- Local inventory shape confirm status: local_inventory_shape_confirmed
+- Local PlayerState present: yes
+- Fields readable by property shape confirm: AbilityMods, MeleeMods, Perks, Relics, WeaponMods
+- Fields nil or unsupported: none
+- Property present map: AbilityMods=true, MeleeMods=true, Perks=true, Relics=true, WeaponMods=true
+- Array value kinds: AbilityMods=userdata, MeleeMods=userdata, Perks=userdata, Relics=userdata, WeaponMods=userdata
+- Safe tostring kinds: AbilityMods=string, MeleeMods=string, Perks=string, Relics=string, WeaponMods=string
+- Slot scalar values: NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
+- Array counts attempted: no
+- Array traversal attempted: no
+- Array elements dereferenced: no
+- InventoryInfo read: no
+- Enhancements read: no
+- No crash dump is associated with the imported shape-confirm evidence.
+- This phase distinguishes userdata shape visibility from countable Lua table arrays; counts remain unavailable for userdata values.
 
 ## Confirmed Unsafe Paths
 

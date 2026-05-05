@@ -2,10 +2,10 @@
 
 Generated from imported runtime evidence under `evidence/runtime/`.
 
-- Access evidence files: 11
-- Probe result files: 11
-- Diagnostic summaries: 10
-- Evidence rows: 301
+- Access evidence files: 12
+- Probe result files: 12
+- Diagnostic summaries: 11
+- Evidence rows: 302
 - Health playerstate watch samples: 200
 - Identity/roster samples: 15
 - Resource visibility samples: 6
@@ -86,9 +86,22 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 
 ## Local Inventory Array Shape Confirm Summary
 
-- Summary: unresolved; no `local-inventory-array-shape-confirm` evidence has been imported yet.
-- Shape confirm repeats only local CrabPC -> PlayerState slot scalar and inventory array property shape reads.
-- It does not count arrays, traverse arrays, dereference userdata, read InventoryInfo, or read Enhancements.
+- Summary: local_inventory_shape_confirmed
+- Local inventory shape confirm status: local_inventory_shape_confirmed
+- Local PlayerState present: yes
+- Fields readable by property shape confirm: AbilityMods, MeleeMods, Perks, Relics, WeaponMods
+- Fields nil or unsupported: none
+- Property present map: AbilityMods=true, MeleeMods=true, Perks=true, Relics=true, WeaponMods=true
+- Array value kinds: AbilityMods=userdata, MeleeMods=userdata, Perks=userdata, Relics=userdata, WeaponMods=userdata
+- Safe tostring kinds: AbilityMods=string, MeleeMods=string, Perks=string, Relics=string, WeaponMods=string
+- Slot scalar values: NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
+- Array counts attempted: no
+- Array traversal attempted: no
+- Array elements dereferenced: no
+- InventoryInfo read: no
+- Enhancements read: no
+- No crash dump is associated with the imported shape-confirm evidence.
+- Shape confirm distinguishes userdata shape visibility from countable Lua table arrays; counts remain unavailable for userdata values.
 
 ## Confirmed SAFE Access Rows
 
@@ -112,6 +125,7 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 | `CrabPS.NumWeaponModSlots` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T063937Z, 20260505T072250Z | Read-only NumWeaponModSlots/NumAbilityModSlots/NumMeleeModSlots/NumPerkSlots visibility checks; Read-only local CrabPC -> PlayerState slot scalar sample for inventory array correlation |
 | `CrabPS.WeaponDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z, 20260505T063937Z | Read-only WeaponDA/AbilityDA/MeleeDA property visibility checks; object identities are not dereferenced or summarized in this phase |
 | `CrabPS.WeaponMods` | GetPropertyValueCountOnly | solo | solo-or-host | SAFE | ok | 20260505T063937Z, 20260505T072250Z | Count-only local inventory array check; table counts are capped and elements are never dereferenced; Read-only count-only checks for WeaponMods/AbilityMods/MeleeMods/Perks/Relics; no element dereference, InventoryInfo, or Enhancements |
+| `CrabPS.WeaponMods` | GetPropertyValueShapeConfirm | solo | solo-or-host | SAFE | ok | 20260505T204615Z | Read-only local CrabPC -> PlayerState -> CrabPS property shape confirm; no count, traversal, element dereference, InventoryInfo, Enhancements, writes, or RPCs |
 | `CrabPS.WeaponMods` | GetPropertyValueShapeOnly | solo | solo-or-host | SAFE | ok | 20260505T072250Z | Read-only local CrabPC -> PlayerState -> CrabPS array shape check; no element dereference, InventoryInfo, Enhancements, writes, or RPCs |
 | `CrabPS.HealthInfo.CurrentHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.HealthInfo.CurrentMaxHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
