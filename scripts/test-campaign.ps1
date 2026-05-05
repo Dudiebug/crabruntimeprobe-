@@ -140,6 +140,38 @@ const afterObserve = helpers.reconcileState(plan, {
   blockedPhases: []
 }, repoRoot);
 assert(afterObserve.nextRecommendedPhase === 'multiplayer-roster-read', `expected multiplayer-roster-read, got ${afterObserve.nextRecommendedPhase}`);
+
+const redactedLocalRows = [
+  { probeName: 'Identity.LocalPlayer.Sample', result: 'ok', localPlayerPresent: true, rawIdentityEvidence: false, identityRawRedacted: true, displayNameFingerprints: ['abc:len3'], safetyGates: { allowRawIdentityEvidence: false } },
+  { probeName: 'Identity.VisiblePlayers.Sample', result: 'nil', visiblePlayerCount: 0, rawIdentityEvidence: false, identityRawRedacted: true, safetyGates: { allowRawIdentityEvidence: false } }
+];
+let roster = helpers.classifyRosterEvidence(redactedLocalRows);
+assert(roster.status === 'local_identity_confirmed', `expected local_identity_confirmed, got ${roster.status}`);
+assert(roster.rawIdentityLeak === false, 'redacted identity row must not count as raw identity leak');
+
+roster = helpers.classifyRosterEvidence([
+  { probeName: 'Identity.LocalPlayer.Sample', result: 'ok', localPlayerPresent: true, rawIdentityEvidence: true, safetyGates: { allowRawIdentityEvidence: false } }
+]);
+assert(roster.rawIdentityLeak === true && roster.status === 'failed', 'rawIdentityEvidence=true must fail when raw identity evidence is disabled');
+
+roster = helpers.classifyRosterEvidence([
+  { probeName: 'Identity.LocalPlayer.Sample', result: 'ok', localPlayerPresent: true, rawIdentityEvidence: false, rawDisplayNames: ['ActualName'], safetyGates: { allowRawIdentityEvidence: false } }
+]);
+assert(roster.rawIdentityLeak === true && roster.status === 'failed', 'non-empty rawDisplayNames must fail when raw identity evidence is disabled');
+
+roster = helpers.classifyRosterEvidence([
+  { probeName: 'Identity.LocalPlayer.Sample', result: 'ok', localPlayerPresent: true, rawIdentityEvidence: false, rawStableIds: { local: 'SteamId' }, safetyGates: { allowRawIdentityEvidence: false } }
+]);
+assert(roster.rawIdentityLeak === true && roster.status === 'failed', 'non-empty rawStableIds must fail when raw identity evidence is disabled');
+
+const partialState = helpers.markCollected(plan, afterObserve, 'multiplayer-roster-read', {
+  status: 'local_identity_confirmed',
+  latestSessionId: '20260505T035239Z',
+  latestCommit: '7b9c773f133d5464a1f5d6046bdf4ebdd565c75f',
+  latestSummaryPath: 'evidence/runtime/20260505T035239Z/diagnostic_summary.txt'
+});
+assert(partialState.phaseStatuses['multiplayer-roster-read'].status === 'local_identity_confirmed', 'local identity evidence should be partial, not failed');
+assert(partialState.nextRecommendedPhase === 'multiplayer-roster-read', `partial roster should keep next phase at multiplayer-roster-read, got ${partialState.nextRecommendedPhase}`);
 '@
 node $NodeTestPath (Join-Path $RepoRoot "tools\campaign_helpers.js") $RepoRoot
 if ($LASTEXITCODE -ne 0) { throw "campaign helper tests failed." }
@@ -153,6 +185,7 @@ try {
 }
 Assert-Contains -Path $DocPath -Expected "Next recommended phase:"
 Assert-Contains -Path $DocPath -Expected "Campaign read phases never enable writes, RPCs, or HUD hooks."
+Assert-Contains -Path (Join-Path $RepoRoot "docs\RUNTIME_CONTEXTS.md") -Expected "this detector cannot distinguish true solo from multiplayer host"
 
 & (Join-Path $PSScriptRoot "quick-campaign-prepare.ps1") -GameBin $GameBin | Out-Null
 $InstalledConfigPath = Join-Path $GameBin "Mods\CrabRuntimeProbe\Scripts\config.txt"

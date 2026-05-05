@@ -13,6 +13,118 @@ function Read-JsonFileOrNull {
   return (Get-Content -Raw -LiteralPath $Path | ConvertFrom-Json -ErrorAction Stop)
 }
 
+function Read-JsonLines {
+  param([string[]]$Paths)
+
+  $rows = @()
+  foreach ($path in @($Paths)) {
+    if ([string]::IsNullOrWhiteSpace($path) -or -not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
+    foreach ($line in Get-Content -LiteralPath $path) {
+      if ([string]::IsNullOrWhiteSpace($line)) { continue }
+      $rows += @($line | ConvertFrom-Json -ErrorAction Stop)
+    }
+  }
+  return $rows
+}
+
+function Test-NonEmptyRawIdentityValue {
+  param([object]$Value)
+
+  if ($null -eq $Value) { return $false }
+  if ($Value -is [string]) { return -not [string]::IsNullOrWhiteSpace($Value) }
+  if ($Value -is [System.Collections.IEnumerable]) {
+    foreach ($item in $Value) {
+      if (Test-NonEmptyRawIdentityValue -Value $item) { return $true }
+    }
+    return $false
+  }
+  if ($Value.PSObject -and $Value.PSObject.Properties.Count -gt 0) {
+    foreach ($property in $Value.PSObject.Properties) {
+      if (Test-NonEmptyRawIdentityValue -Value $property.Value) { return $true }
+    }
+    return $false
+  }
+  return $false
+}
+
+function Test-IdentityRow {
+  param([object]$Row)
+
+  $name = ""
+  foreach ($field in @("probeName", "probeId", "event")) {
+    if ($Row.PSObject.Properties.Name -contains $field) {
+      $name = [string]$Row.$field
+      if (-not [string]::IsNullOrWhiteSpace($name)) { break }
+    }
+  }
+  return $name -match "^Identity\."
+}
+
+function Get-RosterEvidenceClassification {
+  param([object[]]$Rows)
+
+  $identityRows = @($Rows | Where-Object { Test-IdentityRow -Row $_ })
+  $rawIdentityLeak = $false
+  $localIdentityConfirmed = $false
+  $visibleRosterConfirmed = $false
+
+  foreach ($row in $identityRows) {
+    $rowAllowsRaw = $false
+    if (($row.PSObject.Properties.Name -contains "allowRawIdentityEvidence") -and $row.allowRawIdentityEvidence -eq $true) {
+      $rowAllowsRaw = $true
+    }
+    if (($row.PSObject.Properties.Name -contains "safetyGates") -and $null -ne $row.safetyGates -and
+        ($row.safetyGates.PSObject.Properties.Name -contains "allowRawIdentityEvidence") -and
+        $row.safetyGates.allowRawIdentityEvidence -eq $true) {
+      $rowAllowsRaw = $true
+    }
+
+    if (-not $rowAllowsRaw) {
+      if (($row.PSObject.Properties.Name -contains "rawIdentityEvidence") -and $row.rawIdentityEvidence -eq $true) {
+        $rawIdentityLeak = $true
+      }
+      if (($row.PSObject.Properties.Name -contains "rawDisplayNames") -and (Test-NonEmptyRawIdentityValue -Value $row.rawDisplayNames)) {
+        $rawIdentityLeak = $true
+      }
+      if (($row.PSObject.Properties.Name -contains "rawStableIds") -and (Test-NonEmptyRawIdentityValue -Value $row.rawStableIds)) {
+        $rawIdentityLeak = $true
+      }
+    }
+
+    $name = ""
+    foreach ($field in @("probeName", "probeId", "event")) {
+      if ($row.PSObject.Properties.Name -contains $field) {
+        $name = [string]$row.$field
+        if (-not [string]::IsNullOrWhiteSpace($name)) { break }
+      }
+    }
+    if (($name -eq "Identity.LocalPlayer.Sample" -or $name -eq "Identity.PlayerState.Sample") -and
+        ($row.result -eq "ok" -or $row.localPlayerPresent -eq $true) -and
+        ($row.localPlayerPresent -eq $true -or
+          (Test-NonEmptyRawIdentityValue -Value $row.displayNameFingerprints) -or
+          (Test-NonEmptyRawIdentityValue -Value $row.stableIdFingerprints))) {
+      $localIdentityConfirmed = $true
+    }
+
+    $visibleCount = 0
+    $hasVisibleCount = [int]::TryParse([string]$row.visiblePlayerCount, [ref]$visibleCount)
+    if ($hasVisibleCount -and $visibleCount -gt 1) {
+      $visibleRosterConfirmed = $true
+    }
+    if ($name -eq "Identity.VisiblePlayers.Sample" -and $row.result -eq "ok" -and $row.sourceScope -eq "runtime_roster" -and
+        ((-not $hasVisibleCount) -or $visibleCount -gt 0)) {
+      $visibleRosterConfirmed = $true
+    }
+  }
+
+  return [pscustomobject]@{
+    identityEvidenceFound = $identityRows.Count -gt 0
+    rawIdentityLeak = $rawIdentityLeak
+    localIdentityConfirmed = $localIdentityConfirmed
+    visibleRosterConfirmed = $visibleRosterConfirmed
+  }
+}
+
 function Get-CampaignPhase {
   param(
     [object]$Plan,
@@ -154,6 +266,7 @@ $validatorExit = $LASTEXITCODE
 
 $latestManifestFile = Get-LatestFile -Directory $ResultsRoot -Filter "session_manifest_*.json"
 $latestProbeFile = Get-LatestFile -Directory $ResultsRoot -Filter "probe_results_*.jsonl"
+$latestAccessFile = Get-LatestFile -Directory $ResultsRoot -Filter "access_evidence_*.jsonl"
 $latestSummaryFile = Get-LatestFile -Directory $ResultsRoot -Filter "diagnostic_summary.txt"
 if ($null -eq $latestSummaryFile) {
   $candidateSummary = Join-Path $InstallScriptsRoot "diagnostic_summary.txt"
@@ -195,14 +308,25 @@ if ($collectExit -eq 0 -and $validatorExit -eq 0 -and $null -ne $latestManifestF
 }
 
 if ($status -eq "passed" -and $phase.phaseId -eq "multiplayer-roster-read") {
-  $probeText = if ($null -ne $latestProbeFile) { Get-Content -Raw -LiteralPath $latestProbeFile.FullName } else { "" }
-  if ($probeText -notmatch "Identity\.(LocalPlayer|VisiblePlayers|PlayerState)\.Sample") {
+  $rows = Read-JsonLines -Paths @(
+    $(if ($null -ne $latestProbeFile) { $latestProbeFile.FullName } else { "" }),
+    $(if ($null -ne $latestAccessFile) { $latestAccessFile.FullName } else { "" })
+  )
+  $roster = Get-RosterEvidenceClassification -Rows $rows
+  if (-not $roster.identityEvidenceFound) {
     $status = "no_evidence"
     $reason = "No multiplayer roster identity probe evidence was found."
-  }
-  if ($probeText -match "rawIdentityEvidence.{0,20}true") {
+  } elseif ($roster.rawIdentityLeak) {
     $status = "failed"
     $reason = "Raw identity evidence appeared even though allowRawIdentityEvidence should be false."
+  } elseif ($roster.visibleRosterConfirmed) {
+    $status = "passed"
+  } elseif ($roster.localIdentityConfirmed) {
+    $status = "local_identity_confirmed"
+    $reason = "Local PlayerState identity read confirmed; visible roster source remains unresolved."
+  } else {
+    $status = "no_evidence"
+    $reason = "Roster probes ran but did not confirm local identity or visible roster evidence."
   }
 }
 
@@ -237,6 +361,6 @@ Write-Host "phaseResult = $status"
 Write-Host "phaseId = $($phase.phaseId)"
 Write-Host "nextRecommendedPhase = $($updatedState.nextRecommendedPhase)"
 
-if ($status -ne "passed") {
+if ($status -ne "passed" -and $status -ne "local_identity_confirmed") {
   exit 1
 }

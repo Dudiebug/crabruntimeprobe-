@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-05T03:43:18.030Z",
+  "updatedAt": "2026-05-05T04:14:01.207Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -66,6 +66,18 @@
       "latestSummaryPath": "evidence/runtime/20260505T032627Z/diagnostic_summary.txt"
     }
   ],
+  "partialPhases": [
+    {
+      "phaseId": "multiplayer-roster-read",
+      "status": "local_identity_confirmed",
+      "updatedAt": "2026-05-05T04:13:06.815Z",
+      "source": "campaign-collect",
+      "reason": "Local PlayerState identity read confirmed; visible roster source remains unresolved.",
+      "latestSessionId": "20260505T035239Z",
+      "latestCommit": "7b9c773f133d5464a1f5d6046bdf4ebdd565c75f",
+      "latestSummaryPath": "evidence/runtime/20260505T035239Z/diagnostic_summary.txt"
+    }
+  ],
   "failedPhases": [],
   "blockedPhases": [
     {
@@ -104,11 +116,11 @@
       "reason": "Probe set is not implemented yet."
     }
   ],
-  "currentPhase": null,
+  "currentPhase": "multiplayer-roster-read",
   "nextRecommendedPhase": "multiplayer-roster-read",
-  "latestSessionId": "20260505T032627Z",
-  "latestCommit": "94503bd65af8508b4efe3e13a9f865da67c2f410",
-  "latestSummaryPath": "evidence/runtime/20260505T032627Z/diagnostic_summary.txt",
+  "latestSessionId": "20260505T035239Z",
+  "latestCommit": "7b9c773f133d5464a1f5d6046bdf4ebdd565c75f",
+  "latestSummaryPath": "evidence/runtime/20260505T035239Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {
       "status": "complete",
@@ -153,11 +165,12 @@
       "mode": "active"
     },
     "multiplayer-roster-read": {
-      "status": "pending",
+      "status": "local_identity_confirmed",
       "riskTier": "cautious-read",
       "probeSet": "multiplayer-roster-read",
       "tickDriver": "executeDelay",
-      "mode": "active"
+      "mode": "active",
+      "reason": "Local PlayerState identity read confirmed; visible roster source remains unresolved."
     },
     "multiplayer-health-playerstate-watch": {
       "status": "pending",

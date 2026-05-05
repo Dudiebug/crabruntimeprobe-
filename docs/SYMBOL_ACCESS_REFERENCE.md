@@ -18,6 +18,12 @@ Grouped by owner. A symbol may have multiple access methods with different runti
 | `CrabHC.HealthInfo.CurrentHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z | sourceScope=non_player_candidate; value=400.0 |
 | `CrabHC.HealthInfo.CurrentMaxHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z | sourceScope=non_player_candidate; value=400.0 |
 
+## CrabPC
+
+| Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |
+|---|---|---|---|---|---|---|---|
+| `CrabPC.PlayerState` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T034622Z, 20260505T035239Z | read-only local CrabPC -> PlayerState identity sample; raw values redacted unless allowRawIdentityEvidence=true |
+
 ## CrabPS
 
 | Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |
@@ -36,6 +42,18 @@ Grouped by owner. A symbol may have multiple access methods with different runti
 |---|---|---|---|---|---|---|---|
 | `CrabPS.HealthInfo.CurrentHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.HealthInfo.CurrentMaxHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
+
+## GameState
+
+| Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |
+|---|---|---|---|---|---|---|---|
+| `GameState.PlayerArray` | GetPropertyValue | solo | solo-or-host | RETURNS_NIL | nil | 20260505T034622Z, 20260505T035239Z | PlayerArray was not exposed as a Lua table; no recursive traversal performed |
+
+## PlayerState
+
+| Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |
+|---|---|---|---|---|---|---|---|
+| `PlayerState.Identity` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T034622Z, 20260505T035239Z | candidate PlayerState display/stable-id fields via GetPropertyValue only; no raw IDs by default |
 
 ## Runtime
 

@@ -72,6 +72,80 @@ function readJsonl(file) {
     .filter(Boolean);
 }
 
+function isIdentityRow(row) {
+  return /^Identity\./.test(row.probeName || row.probeId || row.event || '');
+}
+
+function hasNonEmptyRawIdentityValue(value) {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (Array.isArray(value)) return value.some(hasNonEmptyRawIdentityValue);
+  if (typeof value === 'object') return Object.values(value).some(hasNonEmptyRawIdentityValue);
+  return false;
+}
+
+function rowAllowsRawIdentityEvidence(row) {
+  const gates = row && row.safetyGates ? row.safetyGates : {};
+  return row.allowRawIdentityEvidence === true || gates.allowRawIdentityEvidence === true;
+}
+
+function hasRawIdentityLeak(rows, allowRawIdentityEvidence = false) {
+  return rows.some((row) => {
+    if (!isIdentityRow(row)) return false;
+    if (allowRawIdentityEvidence || rowAllowsRawIdentityEvidence(row)) return false;
+    return row.rawIdentityEvidence === true ||
+      hasNonEmptyRawIdentityValue(row.rawDisplayNames) ||
+      hasNonEmptyRawIdentityValue(row.rawStableIds);
+  });
+}
+
+function hasLocalIdentityEvidence(rows) {
+  return rows.some((row) => {
+    if (!isIdentityRow(row)) return false;
+    const id = row.probeName || row.probeId || row.event || '';
+    return (
+      (id === 'Identity.LocalPlayer.Sample' || id === 'Identity.PlayerState.Sample') &&
+      (row.result === 'ok' || row.localPlayerPresent === true) &&
+      (
+        row.localPlayerPresent === true ||
+        hasNonEmptyRawIdentityValue(row.displayNameFingerprints) ||
+        hasNonEmptyRawIdentityValue(row.stableIdFingerprints)
+      )
+    );
+  });
+}
+
+function hasConfirmedVisibleRosterEvidence(rows) {
+  return rows.some((row) => {
+    if (!isIdentityRow(row)) return false;
+    const visibleCount = Number(row.visiblePlayerCount);
+    if (Number.isFinite(visibleCount) && visibleCount > 1) return true;
+    const id = row.probeName || row.probeId || row.event || '';
+    return (
+      id === 'Identity.VisiblePlayers.Sample' &&
+      row.result === 'ok' &&
+      row.sourceScope === 'runtime_roster' &&
+      (Number.isFinite(visibleCount) ? visibleCount > 0 : true)
+    );
+  });
+}
+
+function classifyRosterEvidence(rows, allowRawIdentityEvidence = false) {
+  const identityRows = rows.filter(isIdentityRow);
+  const rawIdentityLeak = hasRawIdentityLeak(identityRows, allowRawIdentityEvidence);
+  const localIdentityConfirmed = hasLocalIdentityEvidence(identityRows);
+  const visibleRosterConfirmed = hasConfirmedVisibleRosterEvidence(identityRows);
+  return {
+    identityEvidenceFound: identityRows.length > 0,
+    rawIdentityLeak,
+    localIdentityConfirmed,
+    visibleRosterConfirmed,
+    status: rawIdentityLeak
+      ? 'failed'
+      : (visibleRosterConfirmed ? 'passed' : (localIdentityConfirmed ? 'local_identity_confirmed' : 'no_evidence'))
+  };
+}
+
 function parseKeyValueText(text) {
   const out = {};
   for (const line of text.split(/\r?\n/)) {
@@ -224,15 +298,26 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
   if (hasProbe(facts.rows, ['Health.PlayerState.Sample']) || /health_playerstate_watch_sample_count\s*=\s*[1-9]/i.test(facts.text)) {
     add('health-playerstate-watch', 'Imported evidence contains PlayerState health watch samples.');
   }
-  if (hasProbe(facts.rows, [
-    'Identity.LocalPlayer.Sample',
-    'Identity.VisiblePlayers.Sample',
-    'Identity.PlayerState.Sample'
-  ])) {
-    add('multiplayer-roster-read', 'Imported evidence contains multiplayer roster identity samples.');
+  const roster = classifyRosterEvidence(facts.rows);
+  if (roster.visibleRosterConfirmed) {
+    add('multiplayer-roster-read', 'Imported evidence contains visible multiplayer roster identity samples.');
   }
 
-  return { completed, facts };
+  const partial = [];
+  if (!roster.visibleRosterConfirmed && roster.localIdentityConfirmed && !roster.rawIdentityLeak) {
+    partial.push({
+      phaseId: 'multiplayer-roster-read',
+      status: 'local_identity_confirmed',
+      updatedAt: nowIso(),
+      source: 'imported-evidence',
+      reason: 'Local PlayerState identity read confirmed; visible roster source remains unresolved.',
+      latestSessionId: facts.latestSessionId || '',
+      latestCommit: facts.latestCommit || '',
+      latestSummaryPath: facts.latestSummaryPath || ''
+    });
+  }
+
+  return { completed, partial, facts };
 }
 
 function completedPhaseIds(state) {
@@ -262,12 +347,20 @@ function findNextRunnablePhase(plan, state) {
 
 function reconcileState(plan, state = null, repoRoot = process.cwd()) {
   const existing = state || {};
-  const seeded = state ? { completed: [], facts: evidenceFacts(repoRoot) } : seedCompletionsFromEvidence(plan, repoRoot);
+  const seeded = state ? { completed: [], partial: [], facts: evidenceFacts(repoRoot) } : seedCompletionsFromEvidence(plan, repoRoot);
   const completedById = new Map();
   for (const entry of [...(seeded.completed || []), ...(existing.completedPhases || [])]) {
     const phaseId = entry.phaseId || entry;
     if (phaseId && !completedById.has(phaseId)) {
       completedById.set(phaseId, typeof entry === 'string' ? { phaseId, status: 'complete' } : entry);
+    }
+  }
+
+  const partialById = new Map();
+  for (const entry of [...(seeded.partial || []), ...(existing.partialPhases || [])]) {
+    const phaseId = entry.phaseId || entry;
+    if (phaseId && !completedById.has(phaseId) && !partialById.has(phaseId)) {
+      partialById.set(phaseId, typeof entry === 'string' ? { phaseId, status: 'partial' } : entry);
     }
   }
 
@@ -293,6 +386,7 @@ function reconcileState(plan, state = null, repoRoot = process.cwd()) {
     createdAt: existing.createdAt || nowIso(),
     updatedAt: nowIso(),
     completedPhases: Array.from(completedById.values()),
+    partialPhases: Array.from(partialById.values()),
     failedPhases: existing.failedPhases || [],
     blockedPhases: Array.from(blockedById.values()),
     currentPhase: existing.currentPhase || null,
@@ -313,6 +407,12 @@ function reconcileState(plan, state = null, repoRoot = process.cwd()) {
     };
   }
   for (const entry of out.completedPhases) out.phaseStatuses[entry.phaseId].status = 'complete';
+  for (const entry of out.partialPhases) {
+    if (out.phaseStatuses[entry.phaseId]) {
+      out.phaseStatuses[entry.phaseId].status = entry.status || 'partial';
+      out.phaseStatuses[entry.phaseId].reason = entry.reason || '';
+    }
+  }
   for (const entry of out.failedPhases) out.phaseStatuses[entry.phaseId].status = entry.status || 'failed';
   for (const entry of out.blockedPhases) {
     if (out.phaseStatuses[entry.phaseId]) {
@@ -349,6 +449,7 @@ function markCollected(plan, state, phaseId, result) {
   out.latestSummaryPath = result.latestSummaryPath || out.latestSummaryPath || '';
 
   out.completedPhases = (out.completedPhases || []).filter((entry) => (entry.phaseId || entry) !== phaseId);
+  out.partialPhases = (out.partialPhases || []).filter((entry) => (entry.phaseId || entry) !== phaseId);
   out.failedPhases = (out.failedPhases || []).filter((entry) => (entry.phaseId || entry) !== phaseId);
 
   if (result.status === 'passed') {
@@ -357,6 +458,17 @@ function markCollected(plan, state, phaseId, result) {
       status: 'complete',
       completedAt: nowIso(),
       source: 'campaign-collect',
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
+  } else if (phaseId === 'multiplayer-roster-read' && result.status === 'local_identity_confirmed') {
+    out.partialPhases.push({
+      phaseId,
+      status: 'local_identity_confirmed',
+      updatedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || 'Local PlayerState identity read confirmed; visible roster source remains unresolved.',
       latestSessionId: out.latestSessionId,
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
@@ -377,6 +489,8 @@ function markCollected(plan, state, phaseId, result) {
 
 function phaseStatus(state, phaseId) {
   if ((state.completedPhases || []).some((entry) => (entry.phaseId || entry) === phaseId)) return 'complete';
+  const partial = (state.partialPhases || []).find((entry) => (entry.phaseId || entry) === phaseId);
+  if (partial) return partial.status || 'partial';
   if ((state.failedPhases || []).some((entry) => (entry.phaseId || entry) === phaseId)) return 'failed';
   if ((state.blockedPhases || []).some((entry) => (entry.phaseId || entry) === phaseId)) return 'blocked';
   if (state.currentPhase === phaseId) return 'current';
@@ -405,6 +519,16 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
 
   out += '## Completed Phases\n\n';
   out += renderList(listByStatus(plan, state, 'complete'));
+  out += '\n## Partial Phases\n\n';
+  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$/.test(phaseStatus(state, phase.phaseId)));
+  if (!partial.length) {
+    out += '- None.\n';
+  } else {
+    for (const phase of partial) {
+      const entry = (state.partialPhases || []).find((item) => item.phaseId === phase.phaseId) || {};
+      out += `- \`${phase.phaseId}\` - ${phase.label}: ${entry.status || 'partial'}; ${entry.reason || 'partial evidence collected'}\n`;
+    }
+  }
   out += '\n## Failed Phases\n\n';
   out += renderList(listByStatus(plan, state, 'failed'));
   out += '\n## Blocked Phases\n\n';
@@ -426,7 +550,9 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   if (/CrabPS\.GetPropertyValue\.AbilityDA/.test(facts.text)) safeSignals.push('`CrabPS.AbilityDA` via `GetPropertyValue`');
   if (/CrabPS\.GetPropertyValue\.MeleeDA/.test(facts.text)) safeSignals.push('`CrabPS.MeleeDA` via `GetPropertyValue`');
   if (/Health\.PlayerState\.Sample|CrabPS\.HealthInfo/.test(facts.text)) safeSignals.push('`CrabPC -> PlayerState -> CrabPS -> HealthInfo` read-only PlayerState health path');
-  if (/Identity\.(LocalPlayer|VisiblePlayers|PlayerState)\.Sample/.test(facts.text)) safeSignals.push('`CrabPC -> PlayerState` and capped `GameState.PlayerArray` identity roster reads');
+  const roster = classifyRosterEvidence(facts.rows);
+  if (roster.localIdentityConfirmed) safeSignals.push('`CrabPC -> PlayerState` local identity reads with redacted/fingerprinted identity values');
+  if (roster.visibleRosterConfirmed) safeSignals.push('confirmed visible multiplayer roster reads');
   if (!safeSignals.length) out += '- None imported yet.\n';
   else out += safeSignals.map((item) => `- ${item}\n`).join('');
 
@@ -439,11 +565,20 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     const localVisible = identityRows.some((row) => row.localPlayerPresent === true);
     const visibleCounts = identityRows.map((row) => Number(row.visiblePlayerCount)).filter((n) => Number.isFinite(n));
     const maxVisible = visibleCounts.length ? Math.max(...visibleCounts) : 0;
-    const rawEnabled = identityRows.some((row) => row.rawIdentityEvidence === true || row.rawDisplayNames || row.rawStableIds);
+    const rawEnabled = hasRawIdentityLeak(identityRows, false);
+    const rosterSourceResolved = hasConfirmedVisibleRosterEvidence(identityRows);
     out += `- Local player identity visible: ${localVisible ? 'yes' : 'not proven'}\n`;
     out += `- Max visible player count observed: ${maxVisible}\n`;
+    out += `- Visible roster source resolved: ${rosterSourceResolved ? 'yes' : 'no'}\n`;
     out += `- Raw IDs/names emitted: ${rawEnabled ? 'yes' : 'no, redacted/fingerprinted by default'}\n`;
-    out += '- Future auto-room grouping remains design-only until host and joined-client runs show the same roster set.\n';
+    out += '- PlayerName and UniqueId can be fingerprinted from PlayerState identity reads without emitting raw values.\n';
+    out += '- `solo-or-host` means local-player-present in the current detector; it is not proof that the run was solo and cannot distinguish true solo from multiplayer host-like local context.\n';
+    if (rosterSourceResolved) {
+      out += '- Visible player roster source is confirmed; future auto-room grouping still requires matched host and joined-client runs.\n';
+    } else {
+      out += '- `GameStateBase.PlayerArray` returned nil / was not exposed as a Lua table in the latest roster evidence.\n';
+      out += '- Visible player roster remains unresolved, so future auto-room grouping is not ready.\n';
+    }
   }
 
   out += '\n## Confirmed Unsafe Paths\n\n';
@@ -453,7 +588,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
 
   out += '\n## Untested Paths\n\n';
   out += '- Multiplayer health scaling remains unproven until `multiplayer-health-playerstate-watch` evidence exists.\n';
-  out += '- Multiplayer roster identity remains unproven until `multiplayer-roster-read` evidence exists.\n';
+  out += '- Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.\n';
   out += '- Crystals, slots, inventory arrays, `InventoryInfo`, and enhancements are placeholders until explicit probe sets are implemented.\n';
   out += '- Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.\n';
 
@@ -472,11 +607,16 @@ module.exports = {
   DOC_PATH,
   PLAN_PATH,
   STATE_PATH,
+  classifyRosterEvidence,
   completedPhaseIds,
   evidenceFacts,
   findNextRunnablePhase,
   gateConfigForPhase,
   generateCampaignStatusMarkdown,
+  hasConfirmedVisibleRosterEvidence,
+  hasLocalIdentityEvidence,
+  hasNonEmptyRawIdentityValue,
+  hasRawIdentityLeak,
   loadPlan,
   markCollected,
   markPrepared,

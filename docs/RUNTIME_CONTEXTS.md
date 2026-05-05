@@ -4,7 +4,9 @@ Conservative context labels used by probe results:
 
 - `menu`: no valid `CrabPC` during early ticks.
 - `lobby`: valid `CrabPC`, no valid `PlayerState`.
-- `solo`: valid `CrabPC` and valid `PlayerState`; role is `solo-or-host`.
+- `solo`: valid `CrabPC` and valid local `PlayerState`.
+  - Current limitation: this detector cannot distinguish true solo from multiplayer host or host-like local contexts.
+  - The emitted role `solo-or-host` means `local-player-present`; it is not proof that the run was solo.
 - `unknown`: insufficient passive evidence.
 - `traveling`, `unstable`, `dead-or-respawning`: lifecycle guard states.
 

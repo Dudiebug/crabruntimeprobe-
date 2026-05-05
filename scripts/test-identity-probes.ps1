@@ -82,7 +82,8 @@ try {
 
 Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected "Identity/roster samples: 2"
 Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected "Raw IDs/names emitted: no; redacted/fingerprinted by default"
-Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected "Auto-room grouping readiness: not enough"
+Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected "Visible roster source resolved: yes"
+Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected "auto-room grouping still requires matched host and joined-client runs"
 Assert-Contains -Path (Join-Path $WorkRoot "docs\CAMPAIGN_STATUS.md") -Expected "Raw IDs/names emitted: no, redacted/fingerprinted by default"
 Assert-NotContains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Unexpected "765611"
 Assert-NotContains -Path (Join-Path $WorkRoot "docs\CAMPAIGN_STATUS.md") -Unexpected "765611"

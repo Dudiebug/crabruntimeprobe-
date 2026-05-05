@@ -38,6 +38,8 @@ function context.snapshot(safe, state)
   elseif state.deadOrRespawning then
     facts.context = 'dead-or-respawning'
   elseif facts.crabPcValid and facts.playerStateValid then
+    -- This only proves the local player controller has a valid PlayerState.
+    -- It can be true for solo, multiplayer host, or other host-like local contexts.
     facts.context = 'solo'
     facts.role = 'solo-or-host'
   elseif facts.crabPcValid then

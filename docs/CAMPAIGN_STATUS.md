@@ -1,12 +1,12 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T03:43:18.030Z
-- Current phase: none
+- Updated: 2026-05-05T04:14:01.207Z
+- Current phase: `multiplayer-roster-read`
 - Next recommended phase: `multiplayer-roster-read`
-- Latest session: 20260505T032627Z
-- Latest commit: 94503bd65af8508b4efe3e13a9f865da67c2f410
-- Latest summary: evidence/runtime/20260505T032627Z/diagnostic_summary.txt
+- Latest session: 20260505T035239Z
+- Latest commit: 7b9c773f133d5464a1f5d6046bdf4ebdd565c75f
+- Latest summary: evidence/runtime/20260505T035239Z/diagnostic_summary.txt
 
 ## Completed Phases
 
@@ -16,6 +16,10 @@
 - `equipment-property-read` - Equipment data asset property reads
 - `health-playerstate-read` - PlayerState health scalar reads
 - `health-playerstate-watch` - Solo PlayerState health watch
+
+## Partial Phases
+
+- `multiplayer-roster-read` - Multiplayer roster identity read: local_identity_confirmed; Local PlayerState identity read confirmed; visible roster source remains unresolved.
 
 ## Failed Phases
 
@@ -33,7 +37,6 @@
 
 ## Pending Phases
 
-- `multiplayer-roster-read` - Multiplayer roster identity read
 - `multiplayer-health-playerstate-watch` - Multiplayer PlayerState health watch
 
 ## Confirmed Safe Paths
@@ -42,11 +45,18 @@
 - `CrabPS.AbilityDA` via `GetPropertyValue`
 - `CrabPS.MeleeDA` via `GetPropertyValue`
 - `CrabPC -> PlayerState -> CrabPS -> HealthInfo` read-only PlayerState health path
+- `CrabPC -> PlayerState` local identity reads with redacted/fingerprinted identity values
 
 ## Identity And Roster Notes
 
-- No multiplayer roster identity evidence has been imported yet.
-- Future auto-room grouping is not ready; run `multiplayer-roster-read` before deriving grouping behavior.
+- Local player identity visible: yes
+- Max visible player count observed: 1
+- Visible roster source resolved: no
+- Raw IDs/names emitted: no, redacted/fingerprinted by default
+- PlayerName and UniqueId can be fingerprinted from PlayerState identity reads without emitting raw values.
+- `solo-or-host` means local-player-present in the current detector; it is not proof that the run was solo and cannot distinguish true solo from multiplayer host-like local context.
+- `GameStateBase.PlayerArray` returned nil / was not exposed as a Lua table in the latest roster evidence.
+- Visible player roster remains unresolved, so future auto-room grouping is not ready.
 
 ## Confirmed Unsafe Paths
 
@@ -57,7 +67,7 @@
 ## Untested Paths
 
 - Multiplayer health scaling remains unproven until `multiplayer-health-playerstate-watch` evidence exists.
-- Multiplayer roster identity remains unproven until `multiplayer-roster-read` evidence exists.
+- Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.
 - Crystals, slots, inventory arrays, `InventoryInfo`, and enhancements are placeholders until explicit probe sets are implemented.
 - Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.
 

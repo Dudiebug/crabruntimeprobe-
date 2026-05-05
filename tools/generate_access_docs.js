@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { parseIdentityFromFullName, extractFullNameFromSummary } = require('./identity_helpers');
+const { hasConfirmedVisibleRosterEvidence, hasRawIdentityLeak } = require('./campaign_helpers');
 
 function walk(dir, name) {
   if (!fs.existsSync(dir)) return [];
@@ -217,14 +218,23 @@ if (identityEvidenceRows.length > 0) {
   const localVisible = identityEvidenceRows.some((row) => row.localPlayerPresent === true);
   const visibleCounts = identityEvidenceRows.map((row) => Number(row.visiblePlayerCount)).filter((n) => Number.isFinite(n));
   const maxVisible = visibleCounts.length > 0 ? Math.max(...visibleCounts) : 0;
-  const rawIdentityEvidence = identityEvidenceRows.some((row) => row.rawIdentityEvidence === true || row.rawDisplayNames || row.rawStableIds);
+  const rawIdentityEvidence = hasRawIdentityLeak(identityEvidenceRows, false);
+  const rosterResolved = hasConfirmedVisibleRosterEvidence(identityEvidenceRows);
   const sourcePaths = Array.from(new Set(identityEvidenceRows.map((row) => row.sourcePath).filter(Boolean))).sort();
   index += '\n## Latest Identity Roster Summary\n\n';
   index += `- Local player identity visible: ${localVisible ? 'yes' : 'not proven'}\n`;
   index += `- Max visible player count observed: ${maxVisible}\n`;
   index += `- Source paths observed: ${sourcePaths.length > 0 ? sourcePaths.join(', ') : 'not found'}\n`;
   index += `- Raw IDs/names emitted: ${rawIdentityEvidence ? 'yes' : 'no; redacted/fingerprinted by default'}\n`;
-  index += '- Auto-room grouping readiness: not enough until host and joined-client runs show the same roster set.\n';
+  index += `- Visible roster source resolved: ${rosterResolved ? 'yes' : 'no'}\n`;
+  index += '- PlayerState identity reads are safe and redacted; PlayerName and UniqueId can be fingerprinted without emitting raw values.\n';
+  index += '- Runtime context `solo-or-host` means local-player-present in the current detector; it is not proof of solo and cannot distinguish true solo from multiplayer host-like local context.\n';
+  if (rosterResolved) {
+    index += '- Visible player roster source is confirmed; auto-room grouping still requires matched host and joined-client runs.\n';
+  } else {
+    index += '- GameStateBase.PlayerArray returned nil / was not exposed as a Lua table in the latest roster run.\n';
+    index += '- Visible player roster is still unresolved; auto-room grouping is not ready yet.\n';
+  }
 }
 index += '\n## Confirmed SAFE Access Rows\n\n';
 const safeRows = rows.filter((row) => bestStatus(row.statuses) === 'SAFE');
@@ -236,7 +246,7 @@ if (safeRows.length === 0) {
 
 let matrix = '# Safe Access Matrix\n\n';
 matrix += 'SAFE status is scoped to the contexts, roles, lifecycle states, and access method shown in the evidence. DirectField and GetPropertyValue are separate access paths.\n\n';
-matrix += 'Health source scope matters: `CrabPC -> PlayerState -> CrabPS -> HealthInfo` is the only currently confirmed safe player health read path. Unscoped `FindFirstOf.CrabHC` is ambiguous and has already found `BP_Destructible_ChaoticBarrel10.HC`, so it is not player-health proof. `health-playerstate-watch` is read-only time-series evidence; multiplayer health scaling remains unproven until multiplayer watch rows exist.\n\n';
+matrix += 'Health source scope matters: `CrabPC -> PlayerState -> CrabPS -> HealthInfo` is the only currently confirmed safe player health read path. Unscoped `FindFirstOf.CrabHC` is ambiguous and has already found `BP_Destructible_ChaoticBarrel10.HC`, so it is not player-health proof. `health-playerstate-watch` is read-only time-series evidence; multiplayer health scaling remains unproven until multiplayer watch rows exist. Identity context `solo-or-host` means local-player-present, not confirmed solo.\n\n';
 matrix += matrixTable(rows);
 
 const byOwner = new Map();
@@ -277,7 +287,7 @@ const defaultUntested = [
   ['CrabPS.HealthInfo.*', 'joined-client', 'UNTESTED', 'Multiplayer/joined-client health evidence does not exist yet.'],
   ['CrabPS.HealthInfo.*', 'multiplayer watch', 'UNTESTED', 'Multiplayer health scaling remains unproven until health-playerstate-watch evidence exists from multiplayer scenarios.'],
   ['CrabHC.HealthInfo.*', 'multiplayer', 'UNTESTED', 'Multiplayer max-health math is untested.'],
-  ['GameState.PlayerArray', 'identity roster', 'UNTESTED', 'Roster reads require the explicit multiplayer-roster-read phase and must remain capped/redacted.'],
+  ['GameState.PlayerArray', 'identity roster', 'UNTESTED', 'Roster reads require the explicit multiplayer-roster-read phase and must remain capped/redacted; latest evidence returned nil instead of a Lua table.'],
   ['PlayerState.UniqueId', 'identity', 'UNTESTED', 'Stable IDs must be fingerprinted unless allowRawIdentityEvidence is explicitly enabled.'],
   ['GameplayState.*', 'write', 'UNSAFE_DISABLED', 'Writes are disabled.'],
   ['RPC.*', 'rpc', 'UNSAFE_DISABLED', 'RPC probes are disabled.']

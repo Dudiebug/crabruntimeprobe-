@@ -2,12 +2,12 @@
 
 Generated from imported runtime evidence under `evidence/runtime/`.
 
-- Access evidence files: 5
-- Probe result files: 5
-- Diagnostic summaries: 4
-- Evidence rows: 159
+- Access evidence files: 7
+- Probe result files: 7
+- Diagnostic summaries: 6
+- Evidence rows: 165
 - Health playerstate watch samples: 82
-- Identity/roster samples: 0
+- Identity/roster samples: 6
 - Objectdump symbols discovered: 0
 
 - Probe candidates doc present: yes
@@ -36,6 +36,18 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 - maxHealthMultiplier first/last/min/max: not found / not found / not found / not found
 - Possible base health model: unknown
 
+## Latest Identity Roster Summary
+
+- Local player identity visible: yes
+- Max visible player count observed: 1
+- Source paths observed: CrabPC.PlayerState, CrabPC.PlayerState identity fields, GameStateBase.PlayerArray
+- Raw IDs/names emitted: no; redacted/fingerprinted by default
+- Visible roster source resolved: no
+- PlayerState identity reads are safe and redacted; PlayerName and UniqueId can be fingerprinted without emitting raw values.
+- Runtime context `solo-or-host` means local-player-present in the current detector; it is not proof of solo and cannot distinguish true solo from multiplayer host-like local context.
+- GameStateBase.PlayerArray returned nil / was not exposed as a Lua table in the latest roster run.
+- Visible player roster is still unresolved; auto-room grouping is not ready yet.
+
 ## Confirmed SAFE Access Rows
 
 | Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |
@@ -46,6 +58,7 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 | `CrabHC.HealthInfo` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z | sourceScope=non_player_candidate; value=HealthInfo obtained |
 | `CrabHC.HealthInfo.CurrentHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z | sourceScope=non_player_candidate; value=400.0 |
 | `CrabHC.HealthInfo.CurrentMaxHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z | sourceScope=non_player_candidate; value=400.0 |
+| `CrabPC.PlayerState` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T034622Z, 20260505T035239Z | read-only local CrabPC -> PlayerState identity sample; raw values redacted unless allowRawIdentityEvidence=true |
 | `CrabPS.AbilityDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z | sourceScope=player_state_scoped; shortName=DA_Ability_BlackHole nameSource=fullNameFallback objectClass=CrabAbilityDA |
 | `CrabPS.BaseMaxHealth` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.HealthInfo` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
@@ -55,5 +68,6 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 | `CrabPS.WeaponDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z | sourceScope=player_state_scoped; shortName=DA_Weapon_Minigun nameSource=fullNameFallback objectClass=CrabWeaponDA |
 | `CrabPS.HealthInfo.CurrentHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.HealthInfo.CurrentMaxHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
+| `PlayerState.Identity` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T034622Z, 20260505T035239Z | candidate PlayerState display/stable-id fields via GetPropertyValue only; no raw IDs by default |
 | `CrabHC` | FindFirstOf | solo | solo-or-host | SAFE | ok | 20260505T002614Z | sourceScope=non_player_candidate; value=CrabHC found |
 | `Runtime.Context` | observe | lobby, solo, unknown | solo-or-host, unknown | SAFE | ok | 20260505T032627Z | context observation only; not arbitrary object access |
