@@ -164,6 +164,15 @@ roster = helpers.classifyRosterEvidence([
 ]);
 assert(roster.rawIdentityLeak === true && roster.status === 'failed', 'non-empty rawStableIds must fail when raw identity evidence is disabled');
 
+roster = helpers.classifyRosterEvidence([
+  { probeName: 'Identity.LocalPlayer.Sample', result: 'ok', localPlayerPresent: true, rawIdentityEvidence: false, identityRawRedacted: true, displayNameFingerprints: ['abc:len3'], safetyGates: { allowRawIdentityEvidence: false } },
+  { probeName: 'Identity.GameState.SourceCandidate', result: 'ok', sourceScope: 'runtime_roster_candidate', sourcePath: 'GameStateBase', visiblePlayerCount: 0, rawIdentityEvidence: false, safetyGates: { allowRawIdentityEvidence: false } },
+  { probeName: 'Identity.PlayerArray.Shape', result: 'nil', sourcePath: 'GameStateBase.PlayerArray', playerArrayValueKind: 'nil', visiblePlayerCount: 0, rawIdentityEvidence: false, safetyGates: { allowRawIdentityEvidence: false } },
+  { probeName: 'Identity.FindAll.PlayerStateCandidates', result: 'nil', sourcePath: 'FindAllOf(PlayerState,CrabPS)', visiblePlayerCount: 0, rawIdentityEvidence: false, safetyGates: { allowRawIdentityEvidence: false } }
+]);
+assert(roster.status === 'local_identity_confirmed', `candidate rows without visible players must not claim roster success, got ${roster.status}`);
+assert(roster.visibleRosterConfirmed === false, 'candidate source rows with count 0 must leave visible roster unresolved');
+
 const partialState = helpers.markCollected(plan, afterObserve, 'multiplayer-roster-read', {
   status: 'local_identity_confirmed',
   latestSessionId: '20260505T035239Z',
@@ -172,6 +181,15 @@ const partialState = helpers.markCollected(plan, afterObserve, 'multiplayer-rost
 });
 assert(partialState.phaseStatuses['multiplayer-roster-read'].status === 'local_identity_confirmed', 'local identity evidence should be partial, not failed');
 assert(partialState.nextRecommendedPhase === 'multiplayer-roster-read', `partial roster should keep next phase at multiplayer-roster-read, got ${partialState.nextRecommendedPhase}`);
+
+const unresolvedState = helpers.markCollected(plan, afterObserve, 'multiplayer-roster-read', {
+  status: 'roster_source_unresolved',
+  latestSessionId: '20260505T040000Z',
+  latestCommit: '7b9c773f133d5464a1f5d6046bdf4ebdd565c75f',
+  latestSummaryPath: 'evidence/runtime/20260505T040000Z/diagnostic_summary.txt'
+});
+assert(unresolvedState.phaseStatuses['multiplayer-roster-read'].status === 'roster_source_unresolved', 'candidate-only roster evidence should be partial unresolved, not complete');
+assert(unresolvedState.nextRecommendedPhase === 'multiplayer-roster-read', `unresolved roster should keep next phase at multiplayer-roster-read, got ${unresolvedState.nextRecommendedPhase}`);
 '@
 node $NodeTestPath (Join-Path $RepoRoot "tools\campaign_helpers.js") $RepoRoot
 if ($LASTEXITCODE -ne 0) { throw "campaign helper tests failed." }

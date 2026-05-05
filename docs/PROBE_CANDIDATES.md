@@ -111,6 +111,17 @@ Generated from `objectdump/objectdump_index.json` at 2026-05-04T00:53:15.128Z.
 | `Relics.InventoryInfo.Enhancements` | `CrabInventoryInfo.Enhancements (objectdump discovered)` | objectdump | unverified | `allowInventoryInfoProbes = true` | InventoryInfo enhancements array candidate. |
 | `Relics.Enhancements.ForEach.CountOnly` | `CrabInventoryInfo.Enhancements (objectdump discovered)` | objectdump | unverified | `allowInventoryInfoProbes = true` | Count enhancements without deep dereference. |
 
+## Roster Identity Probes
+
+| Probe id | Related objectdump symbol | Source | Runtime status | Required safety gate | Notes |
+|---|---|---|---|---|---|
+| `Identity.GameState.SourceCandidate` | `GameStateBase / GameState (objectdump discovered)` | objectdump | unverified | `allowIdentityProbes = true` | FindFirstOf source identity only: GetFullName/GetName/GetClass, no roster traversal. |
+| `Identity.CrabGS.SourceCandidate` | `CrabGS (objectdump discovered)` | objectdump | unverified | `allowIdentityProbes = true` | FindFirstOf CrabGS source identity only. Objectdump shows CrabGS extends GameStateBase; no CrabGS-specific PlayerArray field was found. |
+| `Identity.PlayerArray.Shape` | `GameStateBase.PlayerArray (objectdump discovered)` | objectdump | unverified | `allowIdentityProbes = true` | Shape-only PlayerArray probe records nil/userdata/table/unsupported and samples table length up to cap without recursive traversal. |
+| `Identity.VisiblePlayers.SourceCandidate` | `GameStateBase.PlayerArray (objectdump discovered)` | objectdump | unverified | `allowIdentityProbes = true` | Capped read-only PlayerArray identity candidate. Emits only fingerprints/redacted identity values; raw identity remains disabled by default. |
+| `Identity.FindAll.PlayerStateCandidates` | `PlayerState / CrabPS (objectdump discovered)` | objectdump | unverified | `allowIdentityProbes = true` | FindAllOf availability checked first, then capped PlayerState-like candidates only; no arbitrary property dumping. |
+| `Identity.PlayerControllerCandidates` | `PlayerController / CrabPC (objectdump discovered)` | objectdump | unverified | `allowIdentityProbes = true` | FindAllOf availability checked first, then capped controller candidates; reads only PlayerState from valid controllers. |
+
 ## Health Probes
 
 | Probe id | Related objectdump symbol | Source | Runtime status | Required safety gate | Notes |
@@ -173,4 +184,5 @@ Generated from `objectdump/objectdump_index.json` at 2026-05-04T00:53:15.128Z.
 - Enable deep inventory candidates only with `allowDeepArrayProbes = true`.
 - Enable InventoryInfo candidates only with `allowInventoryInfoProbes = true`.
 - Enable health candidates only with `allowHealthProbes = true`.
+- Enable roster identity candidates only with `allowIdentityProbes = true`; keep `allowRawIdentityEvidence = false` unless private evidence capture is explicitly requested.
 - Do not implement or call write-unsafe or mutating RPC candidates in CrabRuntimeProbe.

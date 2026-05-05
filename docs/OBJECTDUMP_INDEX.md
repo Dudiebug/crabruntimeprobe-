@@ -200,6 +200,21 @@ Object dump presence is not runtime confirmation. All entries in this document a
 | `CrabHC.OwningC` | yes | no | unverified |
 | `CrabHealthInfo` | yes | no | unverified |
 
+## Roster Discovery Notes
+
+Static search for multiplayer roster terms found these read-only candidate anchors. Runtime confirmation still requires `multiplayer-roster-read` evidence.
+
+| Symbol | Objectdump discovered | Runtime confirmed | Notes |
+|---|---|---|---|
+| `GameStateBase.PlayerArray` | yes | no | Engine roster array of `PlayerState` objects; latest imported runtime evidence returned nil / not a Lua table. |
+| `CrabGS` | yes | no | Crab Champions GameState subclass; objectdump shows no CrabGS-specific `PlayerArray` property beyond inherited `GameStateBase.PlayerArray`. |
+| `GameStateBase` | yes | no | Runtime source identity candidate for GetFullName/GetName/GetClass only. |
+| `GameState` | yes | no | Runtime source identity fallback candidate for GetFullName/GetName/GetClass only. |
+| `PlayerState.PlayerNamePrivate` | yes | no | Identity value candidate; runtime probes must fingerprint/redact names. |
+| `PlayerState.UniqueId` | yes | no | Stable identity value candidate; runtime probes must fingerprint/redact IDs. |
+| `PlayerController.PlayerState` | yes | no | Controller-to-PlayerState candidate for capped `FindAllOf` discovery. |
+| `Pawn.PlayerState` | yes | no | Candidate noted but not currently probed to avoid broader actor/pawn traversal. |
+
 ## Notes and Limitations
 
 - The parser scans every supported input file in `objectdump/` and records failures instead of silently skipping parts.

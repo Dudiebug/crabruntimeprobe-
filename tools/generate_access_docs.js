@@ -221,10 +221,24 @@ if (identityEvidenceRows.length > 0) {
   const rawIdentityEvidence = hasRawIdentityLeak(identityEvidenceRows, false);
   const rosterResolved = hasConfirmedVisibleRosterEvidence(identityEvidenceRows);
   const sourcePaths = Array.from(new Set(identityEvidenceRows.map((row) => row.sourcePath).filter(Boolean))).sort();
+  const candidateRows = identityEvidenceRows.filter((row) => {
+    const id = row.probeId || row.probeName || row.event || '';
+    return /SourceCandidate$/.test(id) ||
+      id === 'Identity.PlayerArray.Shape' ||
+      id === 'Identity.FindAll.PlayerStateCandidates' ||
+      id === 'Identity.PlayerControllerCandidates';
+  });
+  const candidateNames = Array.from(new Set(candidateRows.map((row) => row.probeId || row.probeName || row.event).filter(Boolean))).sort();
+  const playerArrayNil = identityEvidenceRows.some((row) =>
+    /PlayerArray/.test(row.sourcePath || '') &&
+    (row.result === 'nil' || row.playerArrayValueKind === 'nil' || (row.localNotes || '').includes('not exposed as a Lua table'))
+  );
   index += '\n## Latest Identity Roster Summary\n\n';
   index += `- Local player identity visible: ${localVisible ? 'yes' : 'not proven'}\n`;
   index += `- Max visible player count observed: ${maxVisible}\n`;
+  index += `- Any candidate exposed more than one player: ${maxVisible > 1 ? 'yes' : 'no'}\n`;
   index += `- Source paths observed: ${sourcePaths.length > 0 ? sourcePaths.join(', ') : 'not found'}\n`;
+  index += `- Roster source candidates attempted: ${candidateNames.length > 0 ? candidateNames.join(', ') : 'none'}\n`;
   index += `- Raw IDs/names emitted: ${rawIdentityEvidence ? 'yes' : 'no; redacted/fingerprinted by default'}\n`;
   index += `- Visible roster source resolved: ${rosterResolved ? 'yes' : 'no'}\n`;
   index += '- PlayerState identity reads are safe and redacted; PlayerName and UniqueId can be fingerprinted without emitting raw values.\n';
@@ -232,7 +246,9 @@ if (identityEvidenceRows.length > 0) {
   if (rosterResolved) {
     index += '- Visible player roster source is confirmed; auto-room grouping still requires matched host and joined-client runs.\n';
   } else {
-    index += '- GameStateBase.PlayerArray returned nil / was not exposed as a Lua table in the latest roster run.\n';
+    index += playerArrayNil
+      ? '- GameStateBase.PlayerArray returned nil / was not exposed as a Lua table in the latest roster run.\n'
+      : '- GameStateBase.PlayerArray has not yet produced a resolved visible roster in imported evidence.\n';
     index += '- Visible player roster is still unresolved; auto-room grouping is not ready yet.\n';
   }
 }
@@ -288,6 +304,9 @@ const defaultUntested = [
   ['CrabPS.HealthInfo.*', 'multiplayer watch', 'UNTESTED', 'Multiplayer health scaling remains unproven until health-playerstate-watch evidence exists from multiplayer scenarios.'],
   ['CrabHC.HealthInfo.*', 'multiplayer', 'UNTESTED', 'Multiplayer max-health math is untested.'],
   ['GameState.PlayerArray', 'identity roster', 'UNTESTED', 'Roster reads require the explicit multiplayer-roster-read phase and must remain capped/redacted; latest evidence returned nil instead of a Lua table.'],
+  ['CrabGS', 'identity source candidate', 'UNTESTED', 'CrabGS availability is checked only in multiplayer-roster-read and must not recurse through arbitrary fields.'],
+  ['FindAllOf(PlayerState,CrabPS)', 'identity roster candidates', 'UNTESTED', 'Capped PlayerState-like discovery is gated by allowIdentityProbes and emits only redacted/fingerprinted identity values.'],
+  ['FindAllOf(PlayerController,CrabPC).PlayerState', 'identity controller candidates', 'UNTESTED', 'Capped controller discovery reads only PlayerState from valid controllers.'],
   ['PlayerState.UniqueId', 'identity', 'UNTESTED', 'Stable IDs must be fingerprinted unless allowRawIdentityEvidence is explicitly enabled.'],
   ['GameplayState.*', 'write', 'UNSAFE_DISABLED', 'Writes are disabled.'],
   ['RPC.*', 'rpc', 'UNSAFE_DISABLED', 'RPC probes are disabled.']

@@ -120,12 +120,14 @@ function hasConfirmedVisibleRosterEvidence(rows) {
     if (!isIdentityRow(row)) return false;
     const visibleCount = Number(row.visiblePlayerCount);
     if (Number.isFinite(visibleCount) && visibleCount > 1) return true;
+    if (row.rosterSourceResolved === true) return true;
     const id = row.probeName || row.probeId || row.event || '';
     return (
       id === 'Identity.VisiblePlayers.Sample' &&
       row.result === 'ok' &&
       row.sourceScope === 'runtime_roster' &&
-      (Number.isFinite(visibleCount) ? visibleCount > 0 : true)
+      row.playerArrayValueKind === 'table' &&
+      (Number.isFinite(visibleCount) ? visibleCount > 1 : false)
     );
   });
 }
@@ -305,12 +307,23 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
 
   const partial = [];
   if (!roster.visibleRosterConfirmed && roster.localIdentityConfirmed && !roster.rawIdentityLeak) {
+    const rosterCandidateRows = facts.rows.filter((row) => {
+      const id = row.probeName || row.probeId || row.event || '';
+      return /^Identity\./.test(id) && (
+        /SourceCandidate$/.test(id) ||
+        id === 'Identity.PlayerArray.Shape' ||
+        id === 'Identity.FindAll.PlayerStateCandidates' ||
+        id === 'Identity.PlayerControllerCandidates'
+      );
+    });
     partial.push({
       phaseId: 'multiplayer-roster-read',
-      status: 'local_identity_confirmed',
+      status: rosterCandidateRows.length > 0 ? 'roster_source_unresolved' : 'local_identity_confirmed',
       updatedAt: nowIso(),
       source: 'imported-evidence',
-      reason: 'Local PlayerState identity read confirmed; visible roster source remains unresolved.',
+      reason: rosterCandidateRows.length > 0
+        ? 'Local PlayerState identity read confirmed; roster source candidates were attempted but did not expose a visible multiplayer roster.'
+        : 'Local PlayerState identity read confirmed; visible roster source remains unresolved.',
       latestSessionId: facts.latestSessionId || '',
       latestCommit: facts.latestCommit || '',
       latestSummaryPath: facts.latestSummaryPath || ''
@@ -462,10 +475,10 @@ function markCollected(plan, state, phaseId, result) {
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
     });
-  } else if (phaseId === 'multiplayer-roster-read' && result.status === 'local_identity_confirmed') {
+  } else if (phaseId === 'multiplayer-roster-read' && (result.status === 'local_identity_confirmed' || result.status === 'roster_source_unresolved')) {
     out.partialPhases.push({
       phaseId,
-      status: 'local_identity_confirmed',
+      status: result.status,
       updatedAt: nowIso(),
       source: 'campaign-collect',
       reason: result.reason || 'Local PlayerState identity read confirmed; visible roster source remains unresolved.',
@@ -567,8 +580,22 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     const maxVisible = visibleCounts.length ? Math.max(...visibleCounts) : 0;
     const rawEnabled = hasRawIdentityLeak(identityRows, false);
     const rosterSourceResolved = hasConfirmedVisibleRosterEvidence(identityRows);
+    const candidateRows = identityRows.filter((row) => {
+      const id = row.probeName || row.probeId || row.event || '';
+      return /SourceCandidate$/.test(id) ||
+        id === 'Identity.PlayerArray.Shape' ||
+        id === 'Identity.FindAll.PlayerStateCandidates' ||
+        id === 'Identity.PlayerControllerCandidates';
+    });
+    const candidateNames = Array.from(new Set(candidateRows.map((row) => row.probeName || row.probeId || row.event).filter(Boolean))).sort();
+    const playerArrayNil = identityRows.some((row) =>
+      /PlayerArray/.test(row.sourcePath || '') &&
+      (row.result === 'nil' || row.playerArrayValueKind === 'nil' || (row.localNotes || '').includes('not exposed as a Lua table'))
+    );
     out += `- Local player identity visible: ${localVisible ? 'yes' : 'not proven'}\n`;
     out += `- Max visible player count observed: ${maxVisible}\n`;
+    out += `- Any candidate exposed more than one player: ${maxVisible > 1 ? 'yes' : 'no'}\n`;
+    out += `- Roster source candidates attempted: ${candidateNames.length ? candidateNames.join(', ') : 'none'}\n`;
     out += `- Visible roster source resolved: ${rosterSourceResolved ? 'yes' : 'no'}\n`;
     out += `- Raw IDs/names emitted: ${rawEnabled ? 'yes' : 'no, redacted/fingerprinted by default'}\n`;
     out += '- PlayerName and UniqueId can be fingerprinted from PlayerState identity reads without emitting raw values.\n';
@@ -576,7 +603,10 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     if (rosterSourceResolved) {
       out += '- Visible player roster source is confirmed; future auto-room grouping still requires matched host and joined-client runs.\n';
     } else {
-      out += '- `GameStateBase.PlayerArray` returned nil / was not exposed as a Lua table in the latest roster evidence.\n';
+      out += playerArrayNil
+        ? '- `GameStateBase.PlayerArray` returned nil / was not exposed as a Lua table in the latest roster evidence.\n'
+        : '- `GameStateBase.PlayerArray` has not yet produced a resolved visible roster in imported evidence.\n';
+      out += '- Newly attempted roster candidates should be treated as discovery evidence only until a source exposes more than one visible player or a resolved roster source.\n';
       out += '- Visible player roster remains unresolved, so future auto-room grouping is not ready.\n';
     }
   }
@@ -589,6 +619,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '\n## Untested Paths\n\n';
   out += '- Multiplayer health scaling remains unproven until `multiplayer-health-playerstate-watch` evidence exists.\n';
   out += '- Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.\n';
+  out += '- Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.\n';
   out += '- Crystals, slots, inventory arrays, `InventoryInfo`, and enhancements are placeholders until explicit probe sets are implemented.\n';
   out += '- Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.\n';
 

@@ -111,8 +111,12 @@ function Get-RosterEvidenceClassification {
     if ($hasVisibleCount -and $visibleCount -gt 1) {
       $visibleRosterConfirmed = $true
     }
+    if (($row.PSObject.Properties.Name -contains "rosterSourceResolved") -and $row.rosterSourceResolved -eq $true) {
+      $visibleRosterConfirmed = $true
+    }
     if ($name -eq "Identity.VisiblePlayers.Sample" -and $row.result -eq "ok" -and $row.sourceScope -eq "runtime_roster" -and
-        ((-not $hasVisibleCount) -or $visibleCount -gt 0)) {
+        ($row.PSObject.Properties.Name -contains "playerArrayValueKind") -and $row.playerArrayValueKind -eq "table" -and
+        $hasVisibleCount -and $visibleCount -gt 1) {
       $visibleRosterConfirmed = $true
     }
   }
@@ -322,8 +326,8 @@ if ($status -eq "passed" -and $phase.phaseId -eq "multiplayer-roster-read") {
   } elseif ($roster.visibleRosterConfirmed) {
     $status = "passed"
   } elseif ($roster.localIdentityConfirmed) {
-    $status = "local_identity_confirmed"
-    $reason = "Local PlayerState identity read confirmed; visible roster source remains unresolved."
+    $status = "roster_source_unresolved"
+    $reason = "Local PlayerState identity read confirmed; roster source candidates did not expose a visible multiplayer roster."
   } else {
     $status = "no_evidence"
     $reason = "Roster probes ran but did not confirm local identity or visible roster evidence."
@@ -361,6 +365,6 @@ Write-Host "phaseResult = $status"
 Write-Host "phaseId = $($phase.phaseId)"
 Write-Host "nextRecommendedPhase = $($updatedState.nextRecommendedPhase)"
 
-if ($status -ne "passed" -and $status -ne "local_identity_confirmed") {
+if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved") {
   exit 1
 }

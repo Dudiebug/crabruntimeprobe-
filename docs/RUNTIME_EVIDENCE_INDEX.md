@@ -40,7 +40,9 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 
 - Local player identity visible: yes
 - Max visible player count observed: 1
+- Any candidate exposed more than one player: no
 - Source paths observed: CrabPC.PlayerState, CrabPC.PlayerState identity fields, GameStateBase.PlayerArray
+- Roster source candidates attempted: none
 - Raw IDs/names emitted: no; redacted/fingerprinted by default
 - Visible roster source resolved: no
 - PlayerState identity reads are safe and redacted; PlayerName and UniqueId can be fingerprinted without emitting raw values.

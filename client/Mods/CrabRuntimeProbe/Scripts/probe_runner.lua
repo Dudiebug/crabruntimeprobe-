@@ -99,6 +99,12 @@ function runner.new(config, safe, writer, evidenceWriter)
       record.displayNameFingerprints = meta.displayNameFingerprints
       record.stableIdFingerprints = meta.stableIdFingerprints
       record.sourcePath = meta.sourcePath
+      record.sourceClass = meta.sourceClass
+      record.sourceName = meta.sourceName
+      record.candidateClasses = meta.candidateClasses
+      record.playerArrayValueKind = meta.playerArrayValueKind
+      record.playerArrayTableSampleCount = meta.playerArrayTableSampleCount
+      record.rosterSourceResolved = meta.rosterSourceResolved
       record.hostClientRoleConsistent = meta.hostClientRoleConsistent
       record.identityRawRedacted = meta.identityRawRedacted
       record.rawIdentityEvidence = meta.rawIdentityEvidence
@@ -140,6 +146,12 @@ function runner.new(config, safe, writer, evidenceWriter)
       row.displayNameFingerprints = meta.displayNameFingerprints
       row.stableIdFingerprints = meta.stableIdFingerprints
       row.sourcePath = meta.sourcePath
+      row.sourceClass = meta.sourceClass
+      row.sourceName = meta.sourceName
+      row.candidateClasses = meta.candidateClasses
+      row.playerArrayValueKind = meta.playerArrayValueKind
+      row.playerArrayTableSampleCount = meta.playerArrayTableSampleCount
+      row.rosterSourceResolved = meta.rosterSourceResolved
       row.hostClientRoleConsistent = meta.hostClientRoleConsistent
       row.identityRawRedacted = meta.identityRawRedacted
       row.rawIdentityEvidence = meta.rawIdentityEvidence

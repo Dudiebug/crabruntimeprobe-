@@ -1,11 +1,11 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T04:14:01.207Z
+- Updated: 2026-05-05T04:41:32.149Z
 - Current phase: `multiplayer-roster-read`
 - Next recommended phase: `multiplayer-roster-read`
 - Latest session: 20260505T035239Z
-- Latest commit: 7b9c773f133d5464a1f5d6046bdf4ebdd565c75f
+- Latest commit: 996578ac35c867b69687a243d60ebe5ab535e36c
 - Latest summary: evidence/runtime/20260505T035239Z/diagnostic_summary.txt
 
 ## Completed Phases
@@ -51,11 +51,14 @@
 
 - Local player identity visible: yes
 - Max visible player count observed: 1
+- Any candidate exposed more than one player: no
+- Roster source candidates attempted: none
 - Visible roster source resolved: no
 - Raw IDs/names emitted: no, redacted/fingerprinted by default
 - PlayerName and UniqueId can be fingerprinted from PlayerState identity reads without emitting raw values.
 - `solo-or-host` means local-player-present in the current detector; it is not proof that the run was solo and cannot distinguish true solo from multiplayer host-like local context.
 - `GameStateBase.PlayerArray` returned nil / was not exposed as a Lua table in the latest roster evidence.
+- Newly attempted roster candidates should be treated as discovery evidence only until a source exposes more than one visible player or a resolved roster source.
 - Visible player roster remains unresolved, so future auto-room grouping is not ready.
 
 ## Confirmed Unsafe Paths
@@ -68,6 +71,7 @@
 
 - Multiplayer health scaling remains unproven until `multiplayer-health-playerstate-watch` evidence exists.
 - Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.
+- Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.
 - Crystals, slots, inventory arrays, `InventoryInfo`, and enhancements are placeholders until explicit probe sets are implemented.
 - Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.
 

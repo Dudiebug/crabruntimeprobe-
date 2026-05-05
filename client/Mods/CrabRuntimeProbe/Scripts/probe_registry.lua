@@ -187,11 +187,122 @@ function registry.build(safe)
     return fallback, 'GameState', fallbackErr or err
   end
 
+  local function inspectObjectSource(obj, sourcePath, sourceClass, note)
+    local meta = {
+      sourceScope = 'runtime_roster_candidate',
+      sourcePath = sourcePath,
+      sourceClass = sourceClass,
+      sourceName = '',
+      fullName = '',
+      objectClass = '',
+      valueKind = 'object',
+      localPlayerPresent = false,
+      visiblePlayerCount = 0,
+      visiblePlayerCap = 0,
+      displayNameFingerprints = {},
+      stableIdFingerprints = {},
+      identityRawRedacted = true,
+      rawIdentityEvidence = false,
+      rosterSourceResolved = false,
+      localNotes = note
+    }
+    if not safe.isValidObject(obj) then
+      return 'nil', 'object', 'sourcePath=' .. tostring(sourcePath) .. ' result=nil rawIdentityEvidence=false', nil, meta
+    end
+
+    local fullName, fullNameErr = safe.getFullName(obj)
+    local name, nameErr = safe.getName(obj)
+    local className, classErr = safe.getObjectClassName(obj)
+    if fullNameErr then
+      return 'lua_error', nil, nil, 'GetFullName: ' .. tostring(fullNameErr)
+    end
+    meta.fullName = tostring(fullName or '')
+    meta.sourceName = nameErr and '' or tostring(name or '')
+    meta.objectClass = tostring(className or sourceClass or '')
+    if nameErr or classErr then
+      meta.localNotes = tostring(note) .. '; optional source name/class read error: ' .. tostring(nameErr or '') .. tostring(classErr or '')
+    end
+    local summary = 'sourcePath=' .. tostring(sourcePath)
+      .. ' sourceClass=' .. tostring(sourceClass)
+      .. ' sourceName=' .. tostring(meta.sourceName)
+      .. ' objectClass=' .. tostring(meta.objectClass)
+      .. ' rawIdentityEvidence=false'
+    return 'ok', 'object', summary, nil, meta
+  end
+
+  local function arrayShape(value)
+    local kind = type(value)
+    if value == nil then return 'nil', 0, false end
+    if kind ~= 'table' then return kind, 0, false end
+    local count = 0
+    for _, _ in ipairs(value) do
+      count = count + 1
+      if count >= 16 then break end
+    end
+    return 'table', count, true
+  end
+
   local function objectFromArrayElement(elem)
     local obj, err = safe.getArrayElement(elem)
     if err == nil and safe.isValidObject(obj) then return obj, nil end
     if safe.isValidObject(elem) then return elem, nil end
     return nil, err
+  end
+
+  local function collectPlayerStateSamplesFromArray(arr, cap, config)
+    local samples = {}
+    local rawNames = {}
+    local rawIds = {}
+    local count = 0
+    safe.forEachArrayLimited(arr, cap, function(_, elem)
+      local playerState = objectFromArrayElement(elem)
+      if safe.isValidObject(playerState) then
+        local sample = samplePlayerStateIdentity(playerState, config or {})
+        samples[#samples + 1] = sample
+        if config and config.allowRawIdentityEvidence == true then
+          rawNames[#rawNames + 1] = sample.rawDisplayName or ''
+          rawIds[#rawIds + 1] = sample.rawStableId or ''
+        end
+        count = count + 1
+      end
+    end)
+    return samples, rawNames, rawIds, count
+  end
+
+  local function findAllAvailability()
+    local ok, value = pcall(function() return type(FindAllOf) end)
+    if not ok then return false, 'lua_error', tostring(value) end
+    if value ~= 'function' then return false, 'nil', 'FindAllOf unavailable' end
+    return true, 'ok', nil
+  end
+
+  local function collectFindAllPlayerStates(classNames, cap, config)
+    local samples = {}
+    local rawNames = {}
+    local rawIds = {}
+    local attempted = {}
+    local count = 0
+    for _, className in ipairs(classNames) do
+      if count >= cap then break end
+      attempted[#attempted + 1] = className
+      local arr, err = safe.findAll(className)
+      if err then return nil, nil, nil, count, table.concat(attempted, ','), err end
+      if type(arr) == 'table' then
+        safe.forEachArrayLimited(arr, cap - count, function(_, elem)
+          local playerState = objectFromArrayElement(elem)
+          if safe.isValidObject(playerState) then
+            local sample = samplePlayerStateIdentity(playerState, config or {})
+            samples[#samples + 1] = sample
+            if config and config.allowRawIdentityEvidence == true then
+              rawNames[#rawNames + 1] = sample.rawDisplayName or ''
+              rawIds[#rawIds + 1] = sample.rawStableId or ''
+            end
+            count = count + 1
+          end
+        end)
+      end
+    end
+    return samples, rawNames, rawIds, count, table.concat(attempted, ','), nil
   end
 
   local function classifyCrabHCSource(fullName)
@@ -595,6 +706,231 @@ function registry.build(safe)
     sourceScope = 'player_state_scoped'
   })
 
+  probes[#probes + 1] = mk('Identity.GameState.SourceCandidate', 'identity', 'multiplayer-roster-read', 'gameStateSourceCandidate', function(ctx)
+    local gameState, sourceClass, err = getGameState()
+    ctx.cache.IdentityGameState = gameState
+    ctx.cache.IdentityGameStateSourceClass = sourceClass
+    if err and not safe.isValidObject(gameState) then return 'lua_error', nil, nil, err end
+    return inspectObjectSource(
+      gameState,
+      tostring(sourceClass),
+      tostring(sourceClass),
+      'FindFirstOf(GameStateBase) with GameState fallback; GetFullName/GetName/GetClass only; no roster or property traversal performed'
+    )
+  end, {
+    symbol = 'GameStateBase GameState',
+    owner = 'Runtime',
+    member = 'GameState',
+    accessMethod = 'FindFirstOf',
+    accessKind = 'identitySourceCandidate',
+    sourceScope = 'runtime_roster_candidate'
+  })
+
+  probes[#probes + 1] = mk('Identity.CrabGS.SourceCandidate', 'identity', 'multiplayer-roster-read', 'crabGsSourceCandidate', function(ctx)
+    local crabGs, err = safe.findFirst('CrabGS')
+    ctx.cache.IdentityCrabGS = crabGs
+    if err then return 'lua_error', nil, nil, err end
+    return inspectObjectSource(
+      crabGs,
+      'CrabGS',
+      'CrabGS',
+      'FindFirstOf(CrabGS); GetFullName/GetName/GetClass only; objectdump shows CrabGS extends GameStateBase but no CrabGS-specific PlayerArray property'
+    )
+  end, {
+    symbol = 'CrabGS',
+    owner = 'Runtime',
+    member = 'CrabGS',
+    accessMethod = 'FindFirstOf',
+    accessKind = 'identitySourceCandidate',
+    sourceScope = 'runtime_roster_candidate'
+  })
+
+  probes[#probes + 1] = mk('Identity.PlayerArray.Shape', 'identity', 'multiplayer-roster-read', 'playerArrayShape', function(ctx)
+    local cap = 16
+    local gameState = ctx.cache.IdentityGameState
+    local sourceClass = ctx.cache.IdentityGameStateSourceClass or 'GameStateBase'
+    if not safe.isValidObject(gameState) then
+      local err
+      gameState, sourceClass, err = getGameState()
+      if err and not safe.isValidObject(gameState) then return 'lua_error', nil, nil, err end
+    end
+    if not safe.isValidObject(gameState) then
+      return 'nil', 'identity_roster_shape', 'sourcePath=' .. tostring(sourceClass) .. '.PlayerArray valueKind=nil rawIdentityEvidence=false', nil, {
+        sourceScope = 'runtime_roster_candidate',
+        sourcePath = tostring(sourceClass) .. '.PlayerArray',
+        sourceClass = tostring(sourceClass),
+        visiblePlayerCount = 0,
+        visiblePlayerCap = cap,
+        displayNameFingerprints = {},
+        stableIdFingerprints = {},
+        identityRawRedacted = true,
+        rawIdentityEvidence = false,
+        playerArrayValueKind = 'nil',
+        playerArrayTableSampleCount = 0,
+        rosterSourceResolved = false,
+        localNotes = 'GameState unavailable; no PlayerArray traversal performed'
+      }
+    end
+
+    local playerArray, playerArrayErr = safe.getProperty(gameState, 'PlayerArray')
+    if playerArrayErr then return 'lua_error', nil, nil, playerArrayErr end
+    local kind, tableSampleCount, isTable = arrayShape(playerArray)
+    local result = isTable and 'ok' or 'nil'
+    local summary = 'sourcePath=' .. tostring(sourceClass) .. '.PlayerArray'
+      .. ' valueKind=' .. tostring(kind)
+      .. ' tableSampleCount=' .. tostring(tableSampleCount)
+      .. ' cap=' .. tostring(cap)
+      .. ' rawIdentityEvidence=false'
+    return result, 'identity_roster_shape', summary, nil, {
+      sourceScope = 'runtime_roster_candidate',
+      sourcePath = tostring(sourceClass) .. '.PlayerArray',
+      sourceClass = tostring(sourceClass),
+      visiblePlayerCount = 0,
+      visiblePlayerCap = cap,
+      displayNameFingerprints = {},
+      stableIdFingerprints = {},
+      identityRawRedacted = true,
+      rawIdentityEvidence = false,
+      playerArrayValueKind = kind,
+      playerArrayTableSampleCount = tableSampleCount,
+      rosterSourceResolved = false,
+      localNotes = 'Shape-only PlayerArray check; records nil/userdata/table/unsupported kind and samples table length up to cap; no recursive traversal'
+    }
+  end, {
+    symbol = 'GameStateBase.PlayerArray',
+    owner = 'GameStateBase',
+    member = 'PlayerArray',
+    accessMethod = 'GetPropertyValueShapeOnly',
+    accessKind = 'identityRosterShape',
+    sourceScope = 'runtime_roster_candidate'
+  })
+
+  probes[#probes + 1] = mk('Identity.FindAll.PlayerStateCandidates', 'identity', 'multiplayer-roster-read', 'findAllPlayerStateCandidates', function(ctx)
+    local cap = 16
+    local available, availabilityResult, availabilityErr = findAllAvailability()
+    if availabilityResult == 'lua_error' then return 'lua_error', nil, nil, availabilityErr end
+    if not available then
+      return 'nil', 'identity_roster_candidates', 'FindAllOf unavailable; visiblePlayerCount=0 cap=' .. tostring(cap) .. ' rawIdentityEvidence=false', nil, {
+        sourceScope = 'runtime_roster_candidate',
+        sourcePath = 'FindAllOf(PlayerState,CrabPS)',
+        sourceClass = 'PlayerState',
+        candidateClasses = { 'PlayerState', 'CrabPS' },
+        visiblePlayerCount = 0,
+        visiblePlayerCap = cap,
+        displayNameFingerprints = {},
+        stableIdFingerprints = {},
+        identityRawRedacted = ctx.config.allowRawIdentityEvidence ~= true,
+        rawIdentityEvidence = false,
+        rosterSourceResolved = false,
+        localNotes = 'FindAllOf availability check failed; no PlayerState candidates traversed'
+      }
+    end
+
+    local samples, rawNames, rawIds, count, attempted, err = collectFindAllPlayerStates({ 'PlayerState', 'CrabPS' }, cap, ctx.config or {})
+    if err then return 'lua_error', nil, nil, err end
+    local summary, display, ids = summarizeIdentitySamples(samples or {}, 'visiblePlayerCount=' .. tostring(count) .. ' cap=' .. tostring(cap) .. ' sourcePath=FindAllOf(' .. tostring(attempted) .. ')')
+    return count > 0 and 'ok' or 'nil', 'identity_roster_candidates', summary, nil, {
+      sourceScope = 'runtime_roster_candidate',
+      sourcePath = 'FindAllOf(' .. tostring(attempted) .. ')',
+      sourceClass = 'PlayerState',
+      candidateClasses = { 'PlayerState', 'CrabPS' },
+      localPlayerPresent = safe.isValidObject(ctx.cache.IdentityLocalPlayerState),
+      visiblePlayerCount = count,
+      visiblePlayerCap = cap,
+      displayNameFingerprints = display,
+      stableIdFingerprints = ids,
+      identityRawRedacted = ctx.config.allowRawIdentityEvidence ~= true,
+      rawIdentityEvidence = ctx.config.allowRawIdentityEvidence == true,
+      rawDisplayNames = ctx.config.allowRawIdentityEvidence == true and rawNames or nil,
+      rawStableIds = ctx.config.allowRawIdentityEvidence == true and rawIds or nil,
+      rosterSourceResolved = count > 1,
+      localNotes = 'FindAllOf availability checked before capped PlayerState-like candidate traversal; sampled PlayerState and CrabPS only, cap=16, no raw identity by default'
+    }
+  end, {
+    symbol = 'PlayerState CrabPS',
+    owner = 'Runtime',
+    member = 'PlayerState',
+    accessMethod = 'FindAllOfCapped',
+    accessKind = 'identityRosterCandidates',
+    sourceScope = 'runtime_roster_candidate'
+  })
+
+  probes[#probes + 1] = mk('Identity.PlayerControllerCandidates', 'identity', 'multiplayer-roster-read', 'playerControllerCandidates', function(ctx)
+    local cap = 8
+    local available, availabilityResult, availabilityErr = findAllAvailability()
+    if availabilityResult == 'lua_error' then return 'lua_error', nil, nil, availabilityErr end
+    if not available then
+      return 'nil', 'identity_controller_candidates', 'FindAllOf unavailable; visiblePlayerCount=0 cap=' .. tostring(cap) .. ' rawIdentityEvidence=false', nil, {
+        sourceScope = 'runtime_roster_candidate',
+        sourcePath = 'FindAllOf(PlayerController,CrabPC).PlayerState',
+        sourceClass = 'PlayerController',
+        candidateClasses = { 'PlayerController', 'CrabPC' },
+        visiblePlayerCount = 0,
+        visiblePlayerCap = cap,
+        displayNameFingerprints = {},
+        stableIdFingerprints = {},
+        identityRawRedacted = ctx.config.allowRawIdentityEvidence ~= true,
+        rawIdentityEvidence = false,
+        rosterSourceResolved = false,
+        localNotes = 'FindAllOf availability check failed; no PlayerController candidates traversed'
+      }
+    end
+
+    local samples = {}
+    local rawNames = {}
+    local rawIds = {}
+    local count = 0
+    local attempted = {}
+    for _, className in ipairs({ 'PlayerController', 'CrabPC' }) do
+      if count >= cap then break end
+      attempted[#attempted + 1] = className
+      local controllers, err = safe.findAll(className)
+      if err then return 'lua_error', nil, nil, err end
+      if type(controllers) == 'table' then
+        safe.forEachArrayLimited(controllers, cap - count, function(_, elem)
+          local controller = objectFromArrayElement(elem)
+          if safe.isValidObject(controller) then
+            local playerState = safe.getProperty(controller, 'PlayerState')
+            if safe.isValidObject(playerState) then
+              local sample = samplePlayerStateIdentity(playerState, ctx.config or {})
+              samples[#samples + 1] = sample
+              if ctx.config.allowRawIdentityEvidence == true then
+                rawNames[#rawNames + 1] = sample.rawDisplayName or ''
+                rawIds[#rawIds + 1] = sample.rawStableId or ''
+              end
+              count = count + 1
+            end
+          end
+        end)
+      end
+    end
+    local summary, display, ids = summarizeIdentitySamples(samples, 'visiblePlayerCount=' .. tostring(count) .. ' cap=' .. tostring(cap) .. ' sourcePath=FindAllOf(' .. table.concat(attempted, ',') .. ').PlayerState')
+    return count > 0 and 'ok' or 'nil', 'identity_controller_candidates', summary, nil, {
+      sourceScope = 'runtime_roster_candidate',
+      sourcePath = 'FindAllOf(' .. table.concat(attempted, ',') .. ').PlayerState',
+      sourceClass = 'PlayerController',
+      candidateClasses = { 'PlayerController', 'CrabPC' },
+      localPlayerPresent = safe.isValidObject(ctx.cache.IdentityLocalPlayerState),
+      visiblePlayerCount = count,
+      visiblePlayerCap = cap,
+      displayNameFingerprints = display,
+      stableIdFingerprints = ids,
+      identityRawRedacted = ctx.config.allowRawIdentityEvidence ~= true,
+      rawIdentityEvidence = ctx.config.allowRawIdentityEvidence == true,
+      rawDisplayNames = ctx.config.allowRawIdentityEvidence == true and rawNames or nil,
+      rawStableIds = ctx.config.allowRawIdentityEvidence == true and rawIds or nil,
+      rosterSourceResolved = count > 1,
+      localNotes = 'FindAllOf availability checked before capped PlayerController/CrabPC traversal; only PlayerState property was read from valid controllers, cap=8'
+    }
+  end, {
+    symbol = 'PlayerController CrabPC',
+    owner = 'Runtime',
+    member = 'PlayerController.PlayerState',
+    accessMethod = 'FindAllOfCapped',
+    accessKind = 'identityControllerCandidates',
+    sourceScope = 'runtime_roster_candidate'
+  })
+
   probes[#probes + 1] = mk('Identity.VisiblePlayers.Sample', 'identity', 'multiplayer-roster-read', 'visiblePlayers', function(ctx)
     local cap = 8
     local gameState, sourceClass, gameStateErr = getGameState()
@@ -603,6 +939,7 @@ function registry.build(safe)
       return 'nil', 'identity_roster', 'visiblePlayerCount=0 sourcePath=' .. tostring(sourceClass) .. '.PlayerArray rawIdentityEvidence=false', nil, {
         sourceScope = 'runtime_roster',
         sourcePath = tostring(sourceClass) .. '.PlayerArray',
+        sourceClass = tostring(sourceClass),
         localPlayerPresent = safe.isValidObject(ctx.cache.IdentityLocalPlayerState),
         visiblePlayerCount = 0,
         visiblePlayerCap = cap,
@@ -611,16 +948,21 @@ function registry.build(safe)
         hostClientRoleConsistent = ctx.role ~= 'unknown',
         identityRawRedacted = ctx.config.allowRawIdentityEvidence ~= true,
         rawIdentityEvidence = ctx.config.allowRawIdentityEvidence == true,
+        playerArrayValueKind = 'nil',
+        playerArrayTableSampleCount = 0,
+        rosterSourceResolved = false,
         localNotes = 'GameState unavailable; no roster traversal performed'
       }
     end
 
     local playerArray, playerArrayErr = safe.getProperty(gameState, 'PlayerArray')
     if playerArrayErr then return 'lua_error', nil, nil, playerArrayErr end
+    local kind, tableSampleCount = arrayShape(playerArray)
     if type(playerArray) ~= 'table' then
       return 'nil', 'identity_roster', 'visiblePlayerCount=0 sourcePath=' .. tostring(sourceClass) .. '.PlayerArray rawIdentityEvidence=false', nil, {
         sourceScope = 'runtime_roster',
         sourcePath = tostring(sourceClass) .. '.PlayerArray',
+        sourceClass = tostring(sourceClass),
         localPlayerPresent = safe.isValidObject(ctx.cache.IdentityLocalPlayerState),
         visiblePlayerCount = 0,
         visiblePlayerCap = cap,
@@ -629,31 +971,20 @@ function registry.build(safe)
         hostClientRoleConsistent = ctx.role ~= 'unknown',
         identityRawRedacted = ctx.config.allowRawIdentityEvidence ~= true,
         rawIdentityEvidence = ctx.config.allowRawIdentityEvidence == true,
+        playerArrayValueKind = kind,
+        playerArrayTableSampleCount = tableSampleCount,
+        rosterSourceResolved = false,
         localNotes = 'PlayerArray was not exposed as a Lua table; no recursive traversal performed'
       }
     end
 
-    local samples = {}
-    local rawNames = {}
-    local rawIds = {}
-    local count = 0
-    safe.forEachArrayLimited(playerArray, cap, function(_, elem)
-      local playerState = objectFromArrayElement(elem)
-      if safe.isValidObject(playerState) then
-        local sample = samplePlayerStateIdentity(playerState, ctx.config or {})
-        samples[#samples + 1] = sample
-        if ctx.config.allowRawIdentityEvidence == true then
-          rawNames[#rawNames + 1] = sample.rawDisplayName or ''
-          rawIds[#rawIds + 1] = sample.rawStableId or ''
-        end
-        count = count + 1
-      end
-    end)
+    local samples, rawNames, rawIds, count = collectPlayerStateSamplesFromArray(playerArray, cap, ctx.config or {})
 
     local summary, display, ids = summarizeIdentitySamples(samples, 'visiblePlayerCount=' .. tostring(count) .. ' cap=' .. tostring(cap) .. ' sourcePath=' .. tostring(sourceClass) .. '.PlayerArray')
     return 'ok', 'identity_roster', summary, nil, {
       sourceScope = 'runtime_roster',
       sourcePath = tostring(sourceClass) .. '.PlayerArray',
+      sourceClass = tostring(sourceClass),
       localPlayerPresent = safe.isValidObject(ctx.cache.IdentityLocalPlayerState),
       visiblePlayerCount = count,
       visiblePlayerCap = cap,
@@ -664,6 +995,9 @@ function registry.build(safe)
       rawIdentityEvidence = ctx.config.allowRawIdentityEvidence == true,
       rawDisplayNames = ctx.config.allowRawIdentityEvidence == true and rawNames or nil,
       rawStableIds = ctx.config.allowRawIdentityEvidence == true and rawIds or nil,
+      playerArrayValueKind = kind,
+      playerArrayTableSampleCount = tableSampleCount,
+      rosterSourceResolved = count > 1,
       localNotes = 'capped read-only GameState.PlayerArray identity sample; no recursive object walking'
     }
   end, {
@@ -673,6 +1007,85 @@ function registry.build(safe)
     accessMethod = 'GetPropertyValue',
     accessKind = 'identityRoster',
     sourceScope = 'runtime_roster'
+  })
+
+  probes[#probes + 1] = mk('Identity.VisiblePlayers.SourceCandidate', 'identity', 'multiplayer-roster-read', 'visiblePlayersSourceCandidate', function(ctx)
+    local cap = 16
+    local gameState = ctx.cache.IdentityGameState
+    local sourceClass = ctx.cache.IdentityGameStateSourceClass or 'GameStateBase'
+    if not safe.isValidObject(gameState) then
+      local err
+      gameState, sourceClass, err = getGameState()
+      if err and not safe.isValidObject(gameState) then return 'lua_error', nil, nil, err end
+    end
+    if not safe.isValidObject(gameState) then
+      return 'nil', 'identity_roster_candidate', 'visiblePlayerCount=0 sourcePath=' .. tostring(sourceClass) .. '.PlayerArray rawIdentityEvidence=false', nil, {
+        sourceScope = 'runtime_roster_candidate',
+        sourcePath = tostring(sourceClass) .. '.PlayerArray',
+        sourceClass = tostring(sourceClass),
+        localPlayerPresent = safe.isValidObject(ctx.cache.IdentityLocalPlayerState),
+        visiblePlayerCount = 0,
+        visiblePlayerCap = cap,
+        displayNameFingerprints = {},
+        stableIdFingerprints = {},
+        identityRawRedacted = ctx.config.allowRawIdentityEvidence ~= true,
+        rawIdentityEvidence = false,
+        playerArrayValueKind = 'nil',
+        playerArrayTableSampleCount = 0,
+        rosterSourceResolved = false,
+        localNotes = 'Visible roster source candidate: GameState unavailable; no PlayerArray traversal performed'
+      }
+    end
+
+    local playerArray, playerArrayErr = safe.getProperty(gameState, 'PlayerArray')
+    if playerArrayErr then return 'lua_error', nil, nil, playerArrayErr end
+    local kind, tableSampleCount = arrayShape(playerArray)
+    if type(playerArray) ~= 'table' then
+      return 'nil', 'identity_roster_candidate', 'visiblePlayerCount=0 sourcePath=' .. tostring(sourceClass) .. '.PlayerArray valueKind=' .. tostring(kind) .. ' rawIdentityEvidence=false', nil, {
+        sourceScope = 'runtime_roster_candidate',
+        sourcePath = tostring(sourceClass) .. '.PlayerArray',
+        sourceClass = tostring(sourceClass),
+        localPlayerPresent = safe.isValidObject(ctx.cache.IdentityLocalPlayerState),
+        visiblePlayerCount = 0,
+        visiblePlayerCap = cap,
+        displayNameFingerprints = {},
+        stableIdFingerprints = {},
+        identityRawRedacted = ctx.config.allowRawIdentityEvidence ~= true,
+        rawIdentityEvidence = false,
+        playerArrayValueKind = kind,
+        playerArrayTableSampleCount = tableSampleCount,
+        rosterSourceResolved = false,
+        localNotes = 'Visible roster source candidate: PlayerArray was not a Lua table; no recursive traversal performed'
+      }
+    end
+
+    local samples, rawNames, rawIds, count = collectPlayerStateSamplesFromArray(playerArray, cap, ctx.config or {})
+    local summary, display, ids = summarizeIdentitySamples(samples, 'visiblePlayerCount=' .. tostring(count) .. ' cap=' .. tostring(cap) .. ' sourcePath=' .. tostring(sourceClass) .. '.PlayerArray')
+    return count > 0 and 'ok' or 'nil', 'identity_roster_candidate', summary, nil, {
+      sourceScope = 'runtime_roster_candidate',
+      sourcePath = tostring(sourceClass) .. '.PlayerArray',
+      sourceClass = tostring(sourceClass),
+      localPlayerPresent = safe.isValidObject(ctx.cache.IdentityLocalPlayerState),
+      visiblePlayerCount = count,
+      visiblePlayerCap = cap,
+      displayNameFingerprints = display,
+      stableIdFingerprints = ids,
+      identityRawRedacted = ctx.config.allowRawIdentityEvidence ~= true,
+      rawIdentityEvidence = ctx.config.allowRawIdentityEvidence == true,
+      rawDisplayNames = ctx.config.allowRawIdentityEvidence == true and rawNames or nil,
+      rawStableIds = ctx.config.allowRawIdentityEvidence == true and rawIds or nil,
+      playerArrayValueKind = kind,
+      playerArrayTableSampleCount = tableSampleCount,
+      rosterSourceResolved = count > 1,
+      localNotes = 'Visible roster source candidate: capped read-only GameStateBase.PlayerArray path, cap=16; no recursive object walking'
+    }
+  end, {
+    symbol = 'GameStateBase.PlayerArray',
+    owner = 'GameStateBase',
+    member = 'PlayerArray',
+    accessMethod = 'GetPropertyValueCapped',
+    accessKind = 'identityRosterCandidate',
+    sourceScope = 'runtime_roster_candidate'
   })
 
   probes[#probes + 1] = mk('FindAllOf.CrabHC.Availability', 'health', 'health-hc-discovery-read', 'findAllAvailability', function()

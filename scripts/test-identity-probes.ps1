@@ -39,6 +39,31 @@ foreach ($key in @("allowIdentityProbes", "allowRawIdentityEvidence")) {
   }
 }
 
+$ProbeRegistryPath = Join-Path $RepoRoot "client\Mods\CrabRuntimeProbe\Scripts\probe_registry.lua"
+$ProbeRunnerPath = Join-Path $RepoRoot "client\Mods\CrabRuntimeProbe\Scripts\probe_runner.lua"
+$probeRegistry = Get-Content -Raw -LiteralPath $ProbeRegistryPath
+$probeRunner = Get-Content -Raw -LiteralPath $ProbeRunnerPath
+foreach ($required in @(
+  "Identity.GameState.SourceCandidate",
+  "Identity.CrabGS.SourceCandidate",
+  "Identity.PlayerArray.Shape",
+  "Identity.FindAll.PlayerStateCandidates",
+  "Identity.PlayerControllerCandidates",
+  "Identity.VisiblePlayers.SourceCandidate"
+)) {
+  if ($probeRegistry -notmatch [regex]::Escape($required)) {
+    throw "probe_registry.lua missing roster candidate probe: $required"
+  }
+}
+if ($probeRunner -notmatch [regex]::Escape("probe.set == 'multiplayer-roster-read' and not config.allowIdentityProbes")) {
+  throw "multiplayer-roster-read probes must remain gated by allowIdentityProbes."
+}
+foreach ($forbidden in @("allowWriteProbes = true", "allowRpcProbes = true", "allowHudTickHook = true", "allowDeepArrayProbes = true", "allowInventoryInfoProbes = true", "allowHealthProbes = true")) {
+  if ($probeRegistry -match [regex]::Escape($forbidden)) {
+    throw "identity roster probes must not enable or touch forbidden path: $forbidden"
+  }
+}
+
 $WorkRoot = Join-Path $RepoRoot "dist\test-identity-probes-work"
 if (Test-Path -LiteralPath $WorkRoot) {
   Remove-Item -LiteralPath $WorkRoot -Recurse -Force

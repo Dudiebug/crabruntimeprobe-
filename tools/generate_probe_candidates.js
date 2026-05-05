@@ -108,6 +108,7 @@ const groups = {
   'inventory-array-shallow': [],
   'inventory-array-deep': [],
   'inventory-info': [],
+  roster: [],
   health: [],
   'rpc-dryrun': [],
   'write-unsafe': [],
@@ -152,6 +153,13 @@ groups.health.push(candidate('health', 'CrabPS.GetPropertyValue.HealthInfo', 'Cr
 groups.health.push(candidate('health', 'CrabHC.GetPropertyValue.HealthInfo', 'CrabHC.HealthInfo', hasField('CrabHC', 'HealthInfo'), 'allowHealthProbes = true', 'Health component HealthInfo candidate.'));
 groups.health.push(candidate('health', 'CrabHC.GetPropertyValue.OwningC', 'CrabHC.OwningC', hasField('CrabHC', 'OwningC'), 'allowHealthProbes = true', 'Health owner candidate.'));
 
+groups.roster.push(candidate('roster', 'Identity.GameState.SourceCandidate', 'GameStateBase / GameState', hasClass('GameStateBase') || hasClass('GameState'), 'allowIdentityProbes = true', 'FindFirstOf source identity only: GetFullName/GetName/GetClass, no roster traversal.'));
+groups.roster.push(candidate('roster', 'Identity.CrabGS.SourceCandidate', 'CrabGS', hasClass('CrabGS'), 'allowIdentityProbes = true', 'FindFirstOf CrabGS source identity only. Objectdump shows CrabGS extends GameStateBase; no CrabGS-specific PlayerArray field was found.'));
+groups.roster.push(candidate('roster', 'Identity.PlayerArray.Shape', 'GameStateBase.PlayerArray', hasField('GameStateBase', 'PlayerArray'), 'allowIdentityProbes = true', 'Shape-only PlayerArray probe records nil/userdata/table/unsupported and samples table length up to cap without recursive traversal.'));
+groups.roster.push(candidate('roster', 'Identity.VisiblePlayers.SourceCandidate', 'GameStateBase.PlayerArray', hasField('GameStateBase', 'PlayerArray'), 'allowIdentityProbes = true', 'Capped read-only PlayerArray identity candidate. Emits only fingerprints/redacted identity values; raw identity remains disabled by default.'));
+groups.roster.push(candidate('roster', 'Identity.FindAll.PlayerStateCandidates', 'PlayerState / CrabPS', hasClass('PlayerState') || hasClass('CrabPS'), 'allowIdentityProbes = true', 'FindAllOf availability checked first, then capped PlayerState-like candidates only; no arbitrary property dumping.'));
+groups.roster.push(candidate('roster', 'Identity.PlayerControllerCandidates', 'PlayerController / CrabPC', hasClass('PlayerController') || hasClass('CrabPC'), 'allowIdentityProbes = true', 'FindAllOf availability checked first, then capped controller candidates; reads only PlayerState from valid controllers.'));
+
 for (const fn of KNOWN_RPC_FUNCTIONS) {
   const discovered = hasFunction(fn);
   const isMutatingServer = /^Server/.test(fn);
@@ -172,6 +180,7 @@ function sectionTitle(category) {
     'inventory-array-shallow': 'Inventory Array Shallow Probes',
     'inventory-array-deep': 'Inventory Array Deep Probes',
     'inventory-info': 'InventoryInfo Probes',
+    roster: 'Roster Identity Probes',
     health: 'Health Probes',
     'rpc-dryrun': 'RPC Dry-Run Candidates',
     'write-unsafe': 'Write-Unsafe Candidates',
@@ -195,7 +204,7 @@ md += '## Important Warning\n\n';
 md += 'Object dump presence does not mean runtime-safe. Candidates are documentation only until confirmed by ProbeRunner results.\n\n';
 md += `Generated from \`objectdump/objectdump_index.json\` at ${new Date().toISOString()}.\n\n`;
 
-for (const category of ['core', 'equipment', 'inventory-array-shallow', 'inventory-array-deep', 'inventory-info', 'health', 'rpc-dryrun', 'write-unsafe', 'unknown']) {
+for (const category of ['core', 'equipment', 'inventory-array-shallow', 'inventory-array-deep', 'inventory-info', 'roster', 'health', 'rpc-dryrun', 'write-unsafe', 'unknown']) {
   md += renderGroup(category, groups[category]);
 }
 
@@ -205,6 +214,7 @@ md += '- Switch to `mode = active` only after observe rows are stable and review
 md += '- Enable deep inventory candidates only with `allowDeepArrayProbes = true`.\n';
 md += '- Enable InventoryInfo candidates only with `allowInventoryInfoProbes = true`.\n';
 md += '- Enable health candidates only with `allowHealthProbes = true`.\n';
+md += '- Enable roster identity candidates only with `allowIdentityProbes = true`; keep `allowRawIdentityEvidence = false` unless private evidence capture is explicitly requested.\n';
 md += '- Do not implement or call write-unsafe or mutating RPC candidates in CrabRuntimeProbe.\n';
 
 fs.mkdirSync(path.dirname(outMd), { recursive: true });

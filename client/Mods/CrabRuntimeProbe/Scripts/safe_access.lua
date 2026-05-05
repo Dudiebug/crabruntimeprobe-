@@ -48,6 +48,20 @@ function safe.getName(obj)
   return try(function() return obj:GetName() end)
 end
 
+function safe.getClass(obj)
+  if not safe.isValidObject(obj) then return nil, 'invalid_object' end
+  return try(function() return obj:GetClass() end)
+end
+
+function safe.getObjectClassName(obj)
+  local classObj, classErr = safe.getClass(obj)
+  if classErr then return '', classErr end
+  if not safe.isValidObject(classObj) then return '', nil end
+  local className, nameErr = safe.getName(classObj)
+  if nameErr then return '', nameErr end
+  return tostring(className or ''), nil
+end
+
 function safe.parseIdentityFromFullName(fullName)
   if type(fullName) ~= 'string' or fullName == '' then
     return '', '', 'unavailable', 'fullName unavailable'

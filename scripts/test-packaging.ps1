@@ -30,6 +30,7 @@ function Assert-UnsafeGatesFalse {
     "allowDeepArrayProbes",
     "allowInventoryInfoProbes",
     "allowHealthProbes",
+    "allowRawIdentityEvidence",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -252,6 +253,12 @@ foreach ($required in @(
   "health-playerstate-read",
   "health-playerstate-watch",
   "Health.PlayerState.Sample",
+  "Identity.GameState.SourceCandidate",
+  "Identity.CrabGS.SourceCandidate",
+  "Identity.PlayerArray.Shape",
+  "Identity.FindAll.PlayerStateCandidates",
+  "Identity.PlayerControllerCandidates",
+  "Identity.VisiblePlayers.SourceCandidate",
   "health-hc-discovery-read"
 )) {
   if ($probeRegistry -notmatch [regex]::Escape($required)) {
