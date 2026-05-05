@@ -2,10 +2,10 @@
 
 Generated from imported runtime evidence under `evidence/runtime/`.
 
-- Access evidence files: 4
-- Probe result files: 4
-- Diagnostic summaries: 3
-- Evidence rows: 102
+- Access evidence files: 5
+- Probe result files: 5
+- Diagnostic summaries: 4
+- Evidence rows: 159
 - Health playerstate watch samples: 82
 - Objectdump symbols discovered: 0
 
@@ -24,16 +24,16 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 
 ## Latest Health PlayerState Watch Summary
 
-- Samples: 82
-- PlayerState watch probe ran: True
+- Samples: 0
+- PlayerState watch probe ran: False
 - CrabHC touched: False
 - Ambiguous CrabHC detected: False
 - Unsafe gates: HUD=false, deepArrays=false, InventoryInfo=false, writes=false, RPCs=false, unknownRole=false, joinedClientDeep=false
-- currentHealth first/last/min/max: 250 / 250 / 250 / 250
-- currentMaxHealth first/last/min/max: 250 / 250 / 250 / 250
-- baseMaxHealth first/last/min/max: 250 / 250 / 250 / 250
-- maxHealthMultiplier first/last/min/max: 1 / 1 / 1 / 1
-- Possible base health model: solo player CrabPS base appears 250
+- currentHealth first/last/min/max: not found / not found / not found / not found
+- currentMaxHealth first/last/min/max: not found / not found / not found / not found
+- baseMaxHealth first/last/min/max: not found / not found / not found / not found
+- maxHealthMultiplier first/last/min/max: not found / not found / not found / not found
+- Possible base health model: unknown
 
 ## Confirmed SAFE Access Rows
 
@@ -55,3 +55,4 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 | `CrabPS.HealthInfo.CurrentHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.HealthInfo.CurrentMaxHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabHC` | FindFirstOf | solo | solo-or-host | SAFE | ok | 20260505T002614Z | sourceScope=non_player_candidate; value=CrabHC found |
+| `Runtime.Context` | observe | lobby, solo, unknown | solo-or-host, unknown | SAFE | ok | 20260505T032627Z | context observation only; not arbitrary object access |

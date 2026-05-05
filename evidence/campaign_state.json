@@ -2,58 +2,68 @@
   "schemaVersion": 1,
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
-  "createdAt": "2026-05-05T03:17:51.912Z",
-  "updatedAt": "2026-05-05T03:17:51.912Z",
+  "createdAt": "2026-05-05T03:30:16.075Z",
+  "updatedAt": "2026-05-05T03:30:16.075Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
       "status": "complete",
-      "completedAt": "2026-05-05T03:17:51.911Z",
+      "completedAt": "2026-05-05T03:30:16.074Z",
       "source": "imported-evidence",
       "reason": "Imported evidence contains startup smoke.",
-      "latestSessionId": "20260505T025430Z",
-      "latestCommit": "55820ce4522abef78d690789ab1524ff6668bfe0",
-      "latestSummaryPath": "evidence/runtime/20260505T025430Z/diagnostic_summary.txt"
+      "latestSessionId": "20260505T032627Z",
+      "latestCommit": "94503bd65af8508b4efe3e13a9f865da67c2f410",
+      "latestSummaryPath": "evidence/runtime/20260505T032627Z/diagnostic_summary.txt"
     },
     {
       "phaseId": "executeDelay",
       "status": "complete",
-      "completedAt": "2026-05-05T03:17:51.912Z",
+      "completedAt": "2026-05-05T03:30:16.075Z",
       "source": "imported-evidence",
       "reason": "Imported evidence contains executeDelay runtime proof.",
-      "latestSessionId": "20260505T025430Z",
-      "latestCommit": "55820ce4522abef78d690789ab1524ff6668bfe0",
-      "latestSummaryPath": "evidence/runtime/20260505T025430Z/diagnostic_summary.txt"
+      "latestSessionId": "20260505T032627Z",
+      "latestCommit": "94503bd65af8508b4efe3e13a9f865da67c2f410",
+      "latestSummaryPath": "evidence/runtime/20260505T032627Z/diagnostic_summary.txt"
+    },
+    {
+      "phaseId": "observe-context",
+      "status": "complete",
+      "completedAt": "2026-05-05T03:30:16.075Z",
+      "source": "imported-evidence",
+      "reason": "Imported evidence contains Observe.Context rows.",
+      "latestSessionId": "20260505T032627Z",
+      "latestCommit": "94503bd65af8508b4efe3e13a9f865da67c2f410",
+      "latestSummaryPath": "evidence/runtime/20260505T032627Z/diagnostic_summary.txt"
     },
     {
       "phaseId": "equipment-property-read",
       "status": "complete",
-      "completedAt": "2026-05-05T03:17:51.912Z",
+      "completedAt": "2026-05-05T03:30:16.075Z",
       "source": "imported-evidence",
       "reason": "Imported evidence contains equipment property probes.",
-      "latestSessionId": "20260505T025430Z",
-      "latestCommit": "55820ce4522abef78d690789ab1524ff6668bfe0",
-      "latestSummaryPath": "evidence/runtime/20260505T025430Z/diagnostic_summary.txt"
+      "latestSessionId": "20260505T032627Z",
+      "latestCommit": "94503bd65af8508b4efe3e13a9f865da67c2f410",
+      "latestSummaryPath": "evidence/runtime/20260505T032627Z/diagnostic_summary.txt"
     },
     {
       "phaseId": "health-playerstate-read",
       "status": "complete",
-      "completedAt": "2026-05-05T03:17:51.912Z",
+      "completedAt": "2026-05-05T03:30:16.075Z",
       "source": "imported-evidence",
       "reason": "Imported evidence contains PlayerState health scalar probes.",
-      "latestSessionId": "20260505T025430Z",
-      "latestCommit": "55820ce4522abef78d690789ab1524ff6668bfe0",
-      "latestSummaryPath": "evidence/runtime/20260505T025430Z/diagnostic_summary.txt"
+      "latestSessionId": "20260505T032627Z",
+      "latestCommit": "94503bd65af8508b4efe3e13a9f865da67c2f410",
+      "latestSummaryPath": "evidence/runtime/20260505T032627Z/diagnostic_summary.txt"
     },
     {
       "phaseId": "health-playerstate-watch",
       "status": "complete",
-      "completedAt": "2026-05-05T03:17:51.912Z",
+      "completedAt": "2026-05-05T03:30:16.075Z",
       "source": "imported-evidence",
       "reason": "Imported evidence contains PlayerState health watch samples.",
-      "latestSessionId": "20260505T025430Z",
-      "latestCommit": "55820ce4522abef78d690789ab1524ff6668bfe0",
-      "latestSummaryPath": "evidence/runtime/20260505T025430Z/diagnostic_summary.txt"
+      "latestSessionId": "20260505T032627Z",
+      "latestCommit": "94503bd65af8508b4efe3e13a9f865da67c2f410",
+      "latestSummaryPath": "evidence/runtime/20260505T032627Z/diagnostic_summary.txt"
     }
   ],
   "failedPhases": [],
@@ -95,10 +105,10 @@
     }
   ],
   "currentPhase": null,
-  "nextRecommendedPhase": "observe-context",
-  "latestSessionId": "20260505T025430Z",
-  "latestCommit": "55820ce4522abef78d690789ab1524ff6668bfe0",
-  "latestSummaryPath": "evidence/runtime/20260505T025430Z/diagnostic_summary.txt",
+  "nextRecommendedPhase": "multiplayer-health-playerstate-watch",
+  "latestSessionId": "20260505T032627Z",
+  "latestCommit": "94503bd65af8508b4efe3e13a9f865da67c2f410",
+  "latestSummaryPath": "evidence/runtime/20260505T032627Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {
       "status": "complete",
@@ -115,7 +125,7 @@
       "mode": "observe"
     },
     "observe-context": {
-      "status": "pending",
+      "status": "complete",
       "riskTier": "baseline",
       "probeSet": "shallow-core",
       "tickDriver": "executeDelay",

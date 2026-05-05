@@ -1,17 +1,18 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T03:17:51.912Z
+- Updated: 2026-05-05T03:30:16.075Z
 - Current phase: none
-- Next recommended phase: `observe-context`
-- Latest session: 20260505T025430Z
-- Latest commit: 55820ce4522abef78d690789ab1524ff6668bfe0
-- Latest summary: evidence/runtime/20260505T025430Z/diagnostic_summary.txt
+- Next recommended phase: `multiplayer-health-playerstate-watch`
+- Latest session: 20260505T032627Z
+- Latest commit: 94503bd65af8508b4efe3e13a9f865da67c2f410
+- Latest summary: evidence/runtime/20260505T032627Z/diagnostic_summary.txt
 
 ## Completed Phases
 
 - `smoke-startup` - Startup smoke
 - `executeDelay` - executeDelay tick driver
+- `observe-context` - Observe runtime context
 - `equipment-property-read` - Equipment data asset property reads
 - `health-playerstate-read` - PlayerState health scalar reads
 - `health-playerstate-watch` - Solo PlayerState health watch
@@ -32,7 +33,6 @@
 
 ## Pending Phases
 
-- `observe-context` - Observe runtime context
 - `multiplayer-health-playerstate-watch` - Multiplayer PlayerState health watch
 
 ## Confirmed Safe Paths
