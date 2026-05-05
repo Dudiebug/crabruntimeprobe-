@@ -16,6 +16,7 @@ const ALL_GATES = [
   'allowIdentityProbes',
   'allowRawIdentityEvidence',
   'allowResourceVisibilityProbes',
+  'allowInventoryArrayShallowProbes',
   'allowWriteProbes',
   'allowRpcProbes'
 ];
@@ -237,6 +238,63 @@ function classifyResourceVisibilityEvidence(rows) {
   };
 }
 
+function isLocalInventoryArrayRow(row) {
+  return /^Inventory\.Local(Arrays|Slots)\./.test(row.probeName || row.probeId || row.event || '');
+}
+
+function classifyLocalInventoryArrayEvidence(rows) {
+  const inventoryRows = rows.filter(isLocalInventoryArrayRow);
+  const fieldsReadable = Array.from(new Set(inventoryRows.flatMap((row) => flattenStringList(row.fieldsReadable)))).sort();
+  const fieldsNilOrUnsupported = Array.from(new Set(inventoryRows.flatMap((row) => flattenStringList(row.fieldsNilOrUnsupported)))).sort();
+  const localPlayerStatePresent = inventoryRows.some((row) => row.localPlayerStatePresent === true);
+  const noElementDereference = inventoryRows.length > 0 && inventoryRows.every((row) => row.noElementDereference !== false);
+  const hasCount = inventoryRows.some((row) => {
+    if (Number.isFinite(Number(row.arrayCount))) return true;
+    const counts = row.arrayCounts;
+    return counts && typeof counts === 'object' && Object.values(counts).some((value) => Number.isFinite(Number(value)));
+  });
+  const hasValidShape = fieldsReadable.length > 0 || inventoryRows.some((row) => {
+    const kinds = row.arrayValueKinds;
+    if (kinds && typeof kinds === 'object') {
+      return Object.values(kinds).some((value) => value === 'table' || value === 'userdata');
+    }
+    return row.arrayValueKind === 'table' || row.arrayValueKind === 'userdata';
+  });
+  const safetyViolation = inventoryRows.some((row) => {
+    const gates = row && row.safetyGates ? row.safetyGates : {};
+    return gates.allowDeepArrayProbes === true ||
+      gates.allowInventoryInfoProbes === true ||
+      gates.allowWriteProbes === true ||
+      gates.allowRpcProbes === true ||
+      gates.allowHudTickHook === true ||
+      gates.allowRawIdentityEvidence === true ||
+      row.noElementDereference === false;
+  });
+  let status = 'no_evidence';
+  let classification = 'unresolved';
+  if (safetyViolation) {
+    status = 'failed';
+  } else if (inventoryRows.length > 0 && (hasCount || hasValidShape)) {
+    status = 'passed';
+    classification = 'local_inventory_visible';
+  } else if (inventoryRows.length > 0) {
+    status = 'local_inventory_unresolved';
+    classification = 'unresolved';
+  }
+  return {
+    localInventoryArrayEvidenceFound: inventoryRows.length > 0,
+    localPlayerStatePresent,
+    fieldsReadable,
+    fieldsNilOrUnsupported,
+    noElementDereference,
+    hasCount,
+    hasValidShape,
+    safetyViolation,
+    classification,
+    status
+  };
+}
+
 function formatReadableCount(count, total) {
   const denominator = Number.isFinite(Number(total)) && Number(total) > 0 ? Number(total) : 0;
   return `${count}/${denominator}`;
@@ -280,6 +338,9 @@ function validatePhaseSafety(phase, gates = gateConfigForPhaseUnchecked(phase)) 
   }
   if (gates.allowResourceVisibilityProbes && phase.phaseId !== 'multiplayer-resource-visibility-read') {
     throw new Error(`${phase.phaseId} may not enable allowResourceVisibilityProbes.`);
+  }
+  if (gates.allowInventoryArrayShallowProbes && phase.phaseId !== 'local-inventory-array-shallow-read') {
+    throw new Error(`${phase.phaseId} may not enable allowInventoryArrayShallowProbes.`);
   }
   if (gates.allowHealthProbes && !/^health-|^multiplayer-health-/.test(phase.phaseId) && phase.phaseId !== 'multiplayer-resource-visibility-read') {
     throw new Error(`${phase.phaseId} may not enable allowHealthProbes.`);
@@ -446,6 +507,21 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
       latestSummaryPath: facts.latestSummaryPath || ''
     });
   }
+  const localInventory = classifyLocalInventoryArrayEvidence(facts.rows);
+  if (localInventory.status === 'passed') {
+    add('local-inventory-array-shallow-read', 'Imported evidence contains local PlayerState inventory array shallow shape/count visibility.');
+  } else if (localInventory.localInventoryArrayEvidenceFound && localInventory.status !== 'failed') {
+    partial.push({
+      phaseId: 'local-inventory-array-shallow-read',
+      status: localInventory.status,
+      updatedAt: nowIso(),
+      source: 'imported-evidence',
+      reason: 'Local PlayerState inventory array fields were nil or unsupported in shallow reads.',
+      latestSessionId: facts.latestSessionId || '',
+      latestCommit: facts.latestCommit || '',
+      latestSummaryPath: facts.latestSummaryPath || ''
+    });
+  }
 
   return { completed, partial, facts };
 }
@@ -462,12 +538,19 @@ function blockedPhaseIds(state) {
   return new Set((state.blockedPhases || []).map((entry) => entry.phaseId || entry));
 }
 
+function advanceablePartialPhaseIds(state) {
+  return new Set((state.partialPhases || [])
+    .filter((entry) => entry.status === 'remote_resources_partial')
+    .map((entry) => entry.phaseId || entry));
+}
+
 function findNextRunnablePhase(plan, state) {
   const completed = completedPhaseIds(state);
   const failed = failedPhaseIds(state);
   const blocked = blockedPhaseIds(state);
+  const advanceablePartial = advanceablePartialPhaseIds(state);
   for (const phase of plan.phases) {
-    if (completed.has(phase.phaseId) || failed.has(phase.phaseId) || blocked.has(phase.phaseId)) continue;
+    if (completed.has(phase.phaseId) || failed.has(phase.phaseId) || blocked.has(phase.phaseId) || advanceablePartial.has(phase.phaseId)) continue;
     if (phase.implemented !== true) continue;
     gateConfigForPhase(phase);
     return phase;
@@ -619,6 +702,17 @@ function markCollected(plan, state, phaseId, result) {
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
     });
+  } else if (phaseId === 'local-inventory-array-shallow-read' && result.status === 'local_inventory_unresolved') {
+    out.partialPhases.push({
+      phaseId,
+      status: result.status,
+      updatedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || 'Local inventory arrays were nil or unsupported in shallow reads.',
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
   } else {
     out.failedPhases.push({
       phaseId,
@@ -666,7 +760,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '## Completed Phases\n\n';
   out += renderList(listByStatus(plan, state, 'complete'));
   out += '\n## Partial Phases\n\n';
-  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$/.test(phaseStatus(state, phase.phaseId)));
+  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$|^local_inventory_unresolved$/.test(phaseStatus(state, phase.phaseId)));
   if (!partial.length) {
     out += '- None.\n';
   } else {
@@ -702,6 +796,8 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   const resourceVisibility = classifyResourceVisibilityEvidence(facts.rows);
   if (resourceVisibility.status === 'passed') safeSignals.push('remote-visible multiplayer PlayerState resource reads');
   else if (resourceVisibility.remoteResourceVisible) safeSignals.push('partial remote multiplayer PlayerState resource reads for crystals, slots, equipment, and health scalars');
+  const localInventory = classifyLocalInventoryArrayEvidence(facts.rows);
+  if (localInventory.status === 'passed') safeSignals.push('local PlayerState inventory array shallow shape/count reads');
   if (!safeSignals.length) out += '- None imported yet.\n';
   else out += safeSignals.map((item) => `- ${item}\n`).join('');
 
@@ -768,6 +864,21 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     out += '- No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.\n';
   }
 
+  out += '\n## Local Inventory Array Visibility\n\n';
+  if (!localInventory.localInventoryArrayEvidenceFound) {
+    out += '- Summary: unresolved; no `local-inventory-array-shallow-read` evidence has been imported yet.\n';
+    out += '- Local PlayerState present: not proven\n';
+    out += '- Inventory item metadata remains untested; `InventoryInfo` and Enhancements remain disabled.\n';
+  } else {
+    out += `- Summary: ${localInventory.classification}\n`;
+    out += `- Local inventory array status: ${localInventory.status}\n`;
+    out += `- Local PlayerState present: ${localInventory.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
+    out += `- Fields readable by shallow shape/count: ${localInventory.fieldsReadable.length ? localInventory.fieldsReadable.join(', ') : 'none'}\n`;
+    out += `- Fields nil or unsupported: ${localInventory.fieldsNilOrUnsupported.length ? localInventory.fieldsNilOrUnsupported.join(', ') : 'none'}\n`;
+    out += `- Array elements dereferenced: ${localInventory.noElementDereference ? 'no' : 'yes'}\n`;
+    out += '- Inventory item metadata is still untested; `InventoryInfo` and Enhancements remain disabled.\n';
+  }
+
   out += '\n## Confirmed Unsafe Paths\n\n';
   out += '- HUD ReceiveDrawHUD tick hook remains blocked by default.\n';
   out += '- `FindFirstOf.CrabHC` is not confirmed as a player-health source; imported evidence has seen an unscoped destructible/barrel candidate.\n';
@@ -778,6 +889,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.\n';
   out += '- Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.\n';
   out += '- Crystals, slots, equipment, and inventory array counts are only covered by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.\n';
+  out += '- Local inventory array visibility is separate from remote PlayerState resource visibility and is covered only by `local-inventory-array-shallow-read` after imported evidence exists.\n';
   out += '- `InventoryInfo` and enhancements remain placeholders until explicit probe sets are implemented.\n';
   out += '- Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.\n';
 
@@ -787,6 +899,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- `allowHealthProbes` is enabled only for explicit health phases and `multiplayer-resource-visibility-read` health scalar checks.\n';
   out += '- `allowIdentityProbes` is enabled only for the explicit multiplayer roster and resource visibility phases; `allowRawIdentityEvidence` remains false by default.\n';
   out += '- `allowResourceVisibilityProbes` is enabled only for `multiplayer-resource-visibility-read`.\n';
+  out += '- `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.\n';
   out += '- `allowDeepArrayProbes` and `allowInventoryInfoProbes` are not enabled by implemented phases.\n';
   return out;
 }
@@ -797,6 +910,7 @@ module.exports = {
   DOC_PATH,
   PLAN_PATH,
   STATE_PATH,
+  classifyLocalInventoryArrayEvidence,
   classifyResourceVisibilityEvidence,
   classifyRosterEvidence,
   completedPhaseIds,

@@ -300,6 +300,7 @@ Use:
 - `allowIdentityProbes = false`
 - `allowRawIdentityEvidence = false`
 - `allowResourceVisibilityProbes = false`
+- `allowInventoryArrayShallowProbes = false`
 - `allowWriteProbes = false`
 - `allowRpcProbes = false`
 
@@ -485,6 +486,8 @@ Interpretation rules:
 
 - `objectdump discovered` means the symbol exists in static dump data.
 - `runtime confirmed` remains false until ProbeRunner results prove a specific access path.
+- Local inventory array visibility and remote PlayerState inventory array visibility are separate research questions. `local-inventory-array-shallow-read` only checks local `CrabPC -> PlayerState -> CrabPS` array shapes/counts and slot scalars; it does not dereference elements, read DA fields, read `InventoryInfo`, read Enhancements, write, call RPCs, use HUD hooks, or touch `CrabHC`.
+- Inventory item metadata is still untested. Remote inventory array counts remain partial/unresolved in the latest resource visibility evidence, while local inventory arrays require their own imported evidence.
 - Deep inventory, InventoryInfo, health, write, and RPC candidates stay disabled unless a later explicit runtime research pass enables the relevant safety gate.
 
 ## Crash collection

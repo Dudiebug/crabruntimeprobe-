@@ -584,6 +584,122 @@ function registry.build(safe)
       .. ' rawIdentityEvidence=false'
   end
 
+  local LOCAL_INVENTORY_ARRAY_FIELDS = { 'WeaponMods', 'AbilityMods', 'MeleeMods', 'Perks', 'Relics' }
+  local LOCAL_INVENTORY_SLOT_FIELDS = { 'NumWeaponModSlots', 'NumAbilityModSlots', 'NumMeleeModSlots', 'NumPerkSlots' }
+  local LOCAL_INVENTORY_ARRAY_COUNT_CAP = 64
+
+  local function buildLocalInventoryArrayCache(ctx)
+    if ctx.cache.LocalInventoryArrays then return ctx.cache.LocalInventoryArrays end
+
+    local playerState, playerStateErr = getCrabPlayerState(ctx)
+    if playerStateErr then
+      ctx.cache.LocalInventoryArrays = { error = playerStateErr }
+      return ctx.cache.LocalInventoryArrays
+    end
+
+    local stats = {
+      sourceScope = 'local_player_state_inventory_arrays',
+      sourcePath = 'CrabPC.PlayerState',
+      sourceClass = 'CrabPS',
+      localPlayerStatePresent = safe.isValidObject(playerState),
+      arrayFieldNames = LOCAL_INVENTORY_ARRAY_FIELDS,
+      arrayValueKinds = {},
+      arrayCounts = {},
+      arrayCountCap = LOCAL_INVENTORY_ARRAY_COUNT_CAP,
+      slotScalarValues = {},
+      fieldResults = {},
+      fieldsReadable = {},
+      fieldsNilOrUnsupported = {},
+      noElementDereference = true
+    }
+
+    if not stats.localPlayerStatePresent then
+      for _, fieldName in ipairs(LOCAL_INVENTORY_ARRAY_FIELDS) do
+        stats.arrayValueKinds[fieldName] = 'nil'
+        stats.fieldResults[fieldName] = 'no_local_player_state'
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      end
+      ctx.cache.LocalInventoryArrays = stats
+      return stats
+    end
+
+    for _, fieldName in ipairs(LOCAL_INVENTORY_SLOT_FIELDS) do
+      local value, err = safe.getProperty(playerState, fieldName)
+      if err then
+        stats.slotScalarValues[fieldName] = 'error:' .. tostring(err)
+      elseif value == nil then
+        stats.slotScalarValues[fieldName] = nil
+      else
+        stats.slotScalarValues[fieldName] = value
+      end
+    end
+
+    for _, fieldName in ipairs(LOCAL_INVENTORY_ARRAY_FIELDS) do
+      local value, err = safe.getProperty(playerState, fieldName)
+      if err then
+        stats.arrayValueKinds[fieldName] = 'error'
+        stats.fieldResults[fieldName] = 'error'
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      elseif value == nil then
+        stats.arrayValueKinds[fieldName] = 'nil'
+        stats.fieldResults[fieldName] = 'nil'
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      else
+        local kind = type(value)
+        stats.arrayValueKinds[fieldName] = kind
+        if kind == 'table' then
+          local count, countErr = safe.countArrayLimited(value, LOCAL_INVENTORY_ARRAY_COUNT_CAP)
+          if countErr then
+            stats.fieldResults[fieldName] = 'unsupported'
+            stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+          else
+            stats.arrayCounts[fieldName] = count
+            stats.fieldResults[fieldName] = 'count'
+            stats.fieldsReadable[#stats.fieldsReadable + 1] = fieldName
+          end
+        elseif kind == 'userdata' then
+          stats.fieldResults[fieldName] = 'shape'
+          stats.fieldsReadable[#stats.fieldsReadable + 1] = fieldName
+        else
+          stats.fieldResults[fieldName] = 'unsupported'
+          stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+        end
+      end
+    end
+
+    ctx.cache.LocalInventoryArrays = stats
+    return stats
+  end
+
+  local function localInventoryMeta(stats, note)
+    return {
+      sourceScope = stats.sourceScope,
+      sourcePath = stats.sourcePath,
+      sourceClass = stats.sourceClass,
+      candidateClasses = { 'CrabPC', 'CrabPS' },
+      localPlayerStatePresent = stats.localPlayerStatePresent == true,
+      arrayFieldNames = stats.arrayFieldNames,
+      arrayValueKinds = stats.arrayValueKinds,
+      arrayCounts = stats.arrayCounts,
+      arrayCountCap = stats.arrayCountCap,
+      slotScalarValues = stats.slotScalarValues,
+      fieldResults = stats.fieldResults,
+      fieldsReadable = stats.fieldsReadable,
+      fieldsNilOrUnsupported = stats.fieldsNilOrUnsupported,
+      noElementDereference = true,
+      localNotes = note
+    }
+  end
+
+  local function localInventorySummary(stats, category)
+    return 'category=' .. tostring(category)
+      .. ' localPlayerStatePresent=' .. tostring(stats.localPlayerStatePresent == true)
+      .. ' fieldsReadable=' .. tostring(#(stats.fieldsReadable or {}))
+      .. ' fieldsNilOrUnsupported=' .. tostring(#(stats.fieldsNilOrUnsupported or {}))
+      .. ' countCap=' .. tostring(stats.arrayCountCap or LOCAL_INVENTORY_ARRAY_COUNT_CAP)
+      .. ' noElementDereference=true'
+  end
+
   local function classifyCrabHCSource(fullName)
     local text = tostring(fullName or '')
     if text:find('Destructible') or text:find('Barrel') or text:find('ChaoticBarrel') then
@@ -1455,6 +1571,59 @@ function registry.build(safe)
     accessMethod = 'GetPropertyValueCountOnly',
     accessKind = 'getPropertyCountOnly',
     sourceScope = 'runtime_resource_visibility'
+  })
+
+  probes[#probes + 1] = mk('Inventory.LocalSlots.Sample', 'inventory-local', 'local-inventory-array-shallow-read', 'localSlotScalars', function(ctx)
+    local stats = buildLocalInventoryArrayCache(ctx)
+    if stats.error then return 'lua_error', nil, nil, stats.error end
+    local hasSlot = false
+    for _, value in pairs(stats.slotScalarValues or {}) do
+      if value ~= nil then hasSlot = true end
+    end
+    return hasSlot and 'ok' or 'nil', 'local_inventory_slots',
+      localInventorySummary(stats, 'slots'), nil,
+      localInventoryMeta(stats, 'Read-only local CrabPC -> PlayerState slot scalar sample for inventory array correlation')
+  end, {
+    symbol = 'CrabPS.NumWeaponModSlots',
+    owner = 'CrabPS',
+    member = 'NumWeaponModSlots NumAbilityModSlots NumMeleeModSlots NumPerkSlots',
+    accessMethod = 'GetPropertyValue',
+    accessKind = 'localSlotScalars',
+    sourceScope = 'local_player_state_inventory_arrays'
+  })
+
+  probes[#probes + 1] = mk('Inventory.LocalArrays.Shape', 'inventory-local', 'local-inventory-array-shallow-read', 'localInventoryArrayShape', function(ctx)
+    local stats = buildLocalInventoryArrayCache(ctx)
+    if stats.error then return 'lua_error', nil, nil, stats.error end
+    return (#(stats.fieldsReadable or {}) > 0) and 'ok' or 'nil', 'local_inventory_array_shape',
+      localInventorySummary(stats, 'array-shape'), nil,
+      localInventoryMeta(stats, 'Read-only local CrabPC -> PlayerState -> CrabPS array shape check; no element dereference, InventoryInfo, Enhancements, writes, or RPCs')
+  end, {
+    symbol = 'CrabPS.WeaponMods',
+    owner = 'CrabPS',
+    member = 'WeaponMods AbilityMods MeleeMods Perks Relics',
+    accessMethod = 'GetPropertyValueShapeOnly',
+    accessKind = 'localInventoryArrayShape',
+    sourceScope = 'local_player_state_inventory_arrays'
+  })
+
+  probes[#probes + 1] = mk('Inventory.LocalArrays.CountOnly', 'inventory-local', 'local-inventory-array-shallow-read', 'localInventoryArrayCountOnly', function(ctx)
+    local stats = buildLocalInventoryArrayCache(ctx)
+    if stats.error then return 'lua_error', nil, nil, stats.error end
+    local hasCount = false
+    for _, count in pairs(stats.arrayCounts or {}) do
+      if type(count) == 'number' then hasCount = true end
+    end
+    return (hasCount or #(stats.fieldsReadable or {}) > 0) and 'ok' or 'nil', 'local_inventory_array_count_only',
+      localInventorySummary(stats, 'array-count-only'), nil,
+      localInventoryMeta(stats, 'Count-only local inventory array check; table counts are capped and elements are never dereferenced')
+  end, {
+    symbol = 'CrabPS.WeaponMods',
+    owner = 'CrabPS',
+    member = 'WeaponMods AbilityMods MeleeMods Perks Relics',
+    accessMethod = 'GetPropertyValueCountOnly',
+    accessKind = 'localInventoryArrayCountOnly',
+    sourceScope = 'local_player_state_inventory_arrays'
   })
 
   probes[#probes + 1] = mk('FindAllOf.CrabHC.Availability', 'health', 'health-hc-discovery-read', 'findAllAvailability', function()

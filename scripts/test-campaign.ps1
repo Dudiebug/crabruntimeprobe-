@@ -63,7 +63,7 @@ if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "tickDri
 if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "probeSet") -ne "shallow-core") {
   throw "default config probeSet must remain shallow-core."
 }
-foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowWriteProbes", "allowRpcProbes")) {
+foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowInventoryArrayShallowProbes", "allowWriteProbes", "allowRpcProbes")) {
   if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key $key) -ne "false") {
     throw "default config expected $key = false."
   }
@@ -118,6 +118,9 @@ for (const phase of plan.phases) {
   assert(gates.allowDeepArrayProbes === false, `${phase.phaseId} enabled deep arrays`);
   assert(gates.allowInventoryInfoProbes === false, `${phase.phaseId} enabled InventoryInfo`);
   assert(gates.allowRawIdentityEvidence === false, `${phase.phaseId} enabled raw identity evidence`);
+  if (phase.phaseId !== 'local-inventory-array-shallow-read') {
+    assert(gates.allowInventoryArrayShallowProbes === false, `${phase.phaseId} enabled local inventory arrays outside local phase`);
+  }
   if (!/^health-|^multiplayer-health-/.test(phase.phaseId) && phase.phaseId !== 'multiplayer-resource-visibility-read') {
     assert(gates.allowHealthProbes === false, `${phase.phaseId} enabled health outside health phases`);
   }
@@ -189,6 +192,19 @@ resources = helpers.classifyResourceVisibilityEvidence([
 ]);
 assert(resources.status === 'passed' && resources.classification === 'remote-visible', 'complete multi-player resource visibility should pass');
 
+let localInventory = helpers.classifyLocalInventoryArrayEvidence([
+  { probeName: 'Inventory.LocalArrays.Shape', result: 'ok', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], fieldsNilOrUnsupported: ['Relics'], arrayValueKinds: { WeaponMods: 'table', Relics: 'nil' }, arrayCounts: { WeaponMods: 0 }, noElementDereference: true, safetyGates: { allowInventoryArrayShallowProbes: true, allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false, allowRawIdentityEvidence: false } }
+]);
+assert(localInventory.status === 'passed', `local inventory shape/count should pass, got ${localInventory.status}`);
+localInventory = helpers.classifyLocalInventoryArrayEvidence([
+  { probeName: 'Inventory.LocalArrays.Shape', result: 'nil', localPlayerStatePresent: true, fieldsReadable: [], fieldsNilOrUnsupported: ['WeaponMods'], arrayValueKinds: { WeaponMods: 'nil' }, noElementDereference: true, safetyGates: { allowInventoryArrayShallowProbes: true, allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false, allowRawIdentityEvidence: false } }
+]);
+assert(localInventory.status === 'local_inventory_unresolved', `all nil local inventory arrays should be unresolved, got ${localInventory.status}`);
+localInventory = helpers.classifyLocalInventoryArrayEvidence([
+  { probeName: 'Inventory.LocalArrays.Shape', result: 'ok', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], noElementDereference: false, safetyGates: { allowDeepArrayProbes: true } }
+]);
+assert(localInventory.status === 'failed', 'element dereference or unsafe gates must fail local inventory evidence');
+
 const partialState = helpers.markCollected(plan, afterObserve, 'multiplayer-roster-read', {
   status: 'local_identity_confirmed',
   latestSessionId: '20260505T035239Z',
@@ -206,6 +222,15 @@ const unresolvedState = helpers.markCollected(plan, afterObserve, 'multiplayer-r
 });
 assert(unresolvedState.phaseStatuses['multiplayer-roster-read'].status === 'roster_source_unresolved', 'candidate-only roster evidence should be partial unresolved, not complete');
 assert(unresolvedState.nextRecommendedPhase === 'multiplayer-roster-read', `unresolved roster should keep next phase at multiplayer-roster-read, got ${unresolvedState.nextRecommendedPhase}`);
+
+const remotePartialState = helpers.markCollected(plan, state, 'multiplayer-resource-visibility-read', {
+  status: 'remote_resources_partial',
+  latestSessionId: '20260505T063937Z',
+  latestCommit: 'e0702326d778d31d3b5b84430e99640ee44d603e',
+  latestSummaryPath: 'evidence/runtime/20260505T063937Z/diagnostic_summary.txt'
+});
+assert(remotePartialState.phaseStatuses['multiplayer-resource-visibility-read'].status === 'remote_resources_partial', 'remote resource visibility should remain partial');
+assert(remotePartialState.nextRecommendedPhase === 'local-inventory-array-shallow-read', `remote resource partial should advance to local inventory phase, got ${remotePartialState.nextRecommendedPhase}`);
 '@
 node $NodeTestPath (Join-Path $RepoRoot "tools\campaign_helpers.js") $RepoRoot
 if ($LASTEXITCODE -ne 0) { throw "campaign helper tests failed." }
@@ -259,6 +284,15 @@ if ($prepareRan) {
     foreach ($key in @("allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowJoinedClientDeepProbes")) {
       if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
         throw "resource visibility campaign phase expected $key = false."
+      }
+    }
+  } elseif ($preparedPhase -eq "local-inventory-array-shallow-read") {
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowInventoryArrayShallowProbes") -ne "true") {
+      throw "local inventory array campaign phase expected allowInventoryArrayShallowProbes = true."
+    }
+    foreach ($key in @("allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
+      if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+        throw "local inventory campaign phase expected $key = false."
       }
     }
   }

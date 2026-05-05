@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { parseIdentityFromFullName, extractFullNameFromSummary } = require('./identity_helpers');
-const { classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasRawIdentityLeak } = require('./campaign_helpers');
+const { classifyLocalInventoryArrayEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasRawIdentityLeak } = require('./campaign_helpers');
 
 function walk(dir, name) {
   if (!fs.existsSync(dir)) return [];
@@ -284,6 +284,21 @@ if (!resourceVisibility.resourceVisibilityEvidenceFound) {
 }
 index += '- Raw identity values are not emitted by this summary; PlayerName and UniqueId evidence remains fingerprint-only.\n';
 index += '- No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.\n';
+const localInventory = classifyLocalInventoryArrayEvidence(evidenceRows);
+index += '\n## Local Inventory Array Visibility Summary\n\n';
+if (!localInventory.localInventoryArrayEvidenceFound) {
+  index += '- Summary: unresolved; no `local-inventory-array-shallow-read` evidence has been imported yet.\n';
+  index += '- Local PlayerState present: not proven\n';
+} else {
+  index += `- Summary: ${localInventory.classification}\n`;
+  index += `- Local inventory array status: ${localInventory.status}\n`;
+  index += `- Local PlayerState present: ${localInventory.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
+  index += `- Fields readable by shallow shape/count: ${localInventory.fieldsReadable.length ? localInventory.fieldsReadable.join(', ') : 'none'}\n`;
+  index += `- Fields nil or unsupported: ${localInventory.fieldsNilOrUnsupported.length ? localInventory.fieldsNilOrUnsupported.join(', ') : 'none'}\n`;
+  index += `- Array elements dereferenced: ${localInventory.noElementDereference ? 'no' : 'yes'}\n`;
+}
+index += '- Local inventory array visibility is separate from remote PlayerState inventory array visibility.\n';
+index += '- Inventory item metadata is still untested; `InventoryInfo` and Enhancements remain disabled.\n';
 index += '\n## Confirmed SAFE Access Rows\n\n';
 const safeRows = rows.filter((row) => bestStatus(row.statuses) === 'SAFE');
 if (safeRows.length === 0) {
@@ -341,7 +356,8 @@ const defaultUntested = [
   ['FindAllOf(PlayerController,CrabPC).PlayerState', 'identity controller candidates', 'UNTESTED', 'Capped controller discovery reads only PlayerState from valid controllers.'],
   ['FindAllOf(PlayerState,CrabPS)', 'resource visibility candidates', 'UNTESTED', 'Capped resource visibility discovery is gated by allowResourceVisibilityProbes and reads only explicitly named PlayerState fields.'],
   ['CrabPS.Crystals', 'GetPropertyValue', 'UNTESTED', 'Resource visibility probes are disabled by default.'],
-  ['CrabPS.WeaponMods', 'GetPropertyValueCountOnly', 'UNTESTED', 'Inventory arrays are count-only in resource visibility; no element dereference.'],
+  ['CrabPS.WeaponMods', 'RemotePlayerStateCountOnly', 'UNTESTED', 'Remote inventory arrays are count-only in resource visibility and remain unresolved until evidence proves visibility.'],
+  ['CrabPS.WeaponMods', 'GetPropertyValueCountOnly', 'UNTESTED', 'Local inventory arrays require local-inventory-array-shallow-read; no element dereference.'],
   ['PlayerState.UniqueId', 'identity', 'UNTESTED', 'Stable IDs must be fingerprinted unless allowRawIdentityEvidence is explicitly enabled.'],
   ['GameplayState.*', 'write', 'UNSAFE_DISABLED', 'Writes are disabled.'],
   ['RPC.*', 'rpc', 'UNSAFE_DISABLED', 'RPC probes are disabled.']

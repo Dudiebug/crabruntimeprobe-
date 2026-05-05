@@ -398,6 +398,65 @@ if ($status -eq "passed" -and $phase.phaseId -eq "multiplayer-resource-visibilit
   }
 }
 
+if ($status -eq "passed" -and $phase.phaseId -eq "local-inventory-array-shallow-read") {
+  $rows = Read-JsonLines -Paths @(
+    $(if ($null -ne $latestProbeFile) { $latestProbeFile.FullName } else { "" }),
+    $(if ($null -ne $latestAccessFile) { $latestAccessFile.FullName } else { "" })
+  )
+  $inventoryRows = @($rows | Where-Object {
+    $name = ""
+    foreach ($field in @("probeName", "probeId", "event")) {
+      if ($_.PSObject.Properties.Name -contains $field) {
+        $name = [string]$_.$field
+        if (-not [string]::IsNullOrWhiteSpace($name)) { break }
+      }
+    }
+    $name -match "^Inventory\.Local(Arrays|Slots)\."
+  })
+
+  $hasCountOrShape = $false
+  $safetyViolation = $false
+  foreach ($row in $inventoryRows) {
+    if (($row.PSObject.Properties.Name -contains "noElementDereference") -and $row.noElementDereference -eq $false) {
+      $safetyViolation = $true
+    }
+    if (($row.PSObject.Properties.Name -contains "safetyGates") -and $null -ne $row.safetyGates) {
+      foreach ($gate in @("allowDeepArrayProbes", "allowInventoryInfoProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowRawIdentityEvidence")) {
+        if (($row.safetyGates.PSObject.Properties.Name -contains $gate) -and $row.safetyGates.$gate -eq $true) {
+          $safetyViolation = $true
+        }
+      }
+    }
+    if (($row.PSObject.Properties.Name -contains "fieldsReadable") -and @($row.fieldsReadable).Count -gt 0) {
+      $hasCountOrShape = $true
+    }
+    if (($row.PSObject.Properties.Name -contains "arrayCounts") -and $null -ne $row.arrayCounts) {
+      foreach ($property in $row.arrayCounts.PSObject.Properties) {
+        $n = 0
+        if ([int]::TryParse([string]$property.Value, [ref]$n)) { $hasCountOrShape = $true }
+      }
+    }
+    if (($row.PSObject.Properties.Name -contains "arrayValueKinds") -and $null -ne $row.arrayValueKinds) {
+      foreach ($property in $row.arrayValueKinds.PSObject.Properties) {
+        if ($property.Value -eq "table" -or $property.Value -eq "userdata") { $hasCountOrShape = $true }
+      }
+    }
+  }
+
+  if ($inventoryRows.Count -eq 0) {
+    $status = "no_evidence"
+    $reason = "No local inventory array shallow probe evidence was found."
+  } elseif ($safetyViolation) {
+    $status = "failed"
+    $reason = "Local inventory array shallow evidence violated safety gates or dereferenced an array element."
+  } elseif ($hasCountOrShape) {
+    $status = "passed"
+  } else {
+    $status = "local_inventory_unresolved"
+    $reason = "Local inventory array fields were nil or unsupported in shallow reads."
+  }
+}
+
 if ($null -ne $latestManifestFile) {
   try {
     & (Join-Path $PSScriptRoot "import-latest-runtime-evidence.ps1") -From $ResultsRoot
@@ -429,6 +488,6 @@ Write-Host "phaseResult = $status"
 Write-Host "phaseId = $($phase.phaseId)"
 Write-Host "nextRecommendedPhase = $($updatedState.nextRecommendedPhase)"
 
-if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial") {
+if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved") {
   exit 1
 }

@@ -123,6 +123,19 @@ function runner.new(config, safe, writer, evidenceWriter)
       record.fieldsOnlyVisibleOnLocal = meta.fieldsOnlyVisibleOnLocal
       record.fieldsNilOrErrors = meta.fieldsNilOrErrors
       record.nonIdentityResourceCategoryEvaluated = meta.nonIdentityResourceCategoryEvaluated
+      record.localPlayerStatePresent = meta.localPlayerStatePresent
+      record.arrayFieldName = meta.arrayFieldName
+      record.arrayFieldNames = meta.arrayFieldNames
+      record.arrayValueKind = meta.arrayValueKind
+      record.arrayValueKinds = meta.arrayValueKinds
+      record.arrayCount = meta.arrayCount
+      record.arrayCounts = meta.arrayCounts
+      record.arrayCountCap = meta.arrayCountCap
+      record.slotScalarValues = meta.slotScalarValues
+      record.fieldResults = meta.fieldResults
+      record.fieldsReadable = meta.fieldsReadable
+      record.fieldsNilOrUnsupported = meta.fieldsNilOrUnsupported
+      record.noElementDereference = meta.noElementDereference
     end
     evidenceWriter:writeEvidence(record)
   end
@@ -183,6 +196,19 @@ function runner.new(config, safe, writer, evidenceWriter)
       row.fieldsOnlyVisibleOnLocal = meta.fieldsOnlyVisibleOnLocal
       row.fieldsNilOrErrors = meta.fieldsNilOrErrors
       row.nonIdentityResourceCategoryEvaluated = meta.nonIdentityResourceCategoryEvaluated
+      row.localPlayerStatePresent = meta.localPlayerStatePresent
+      row.arrayFieldName = meta.arrayFieldName
+      row.arrayFieldNames = meta.arrayFieldNames
+      row.arrayValueKind = meta.arrayValueKind
+      row.arrayValueKinds = meta.arrayValueKinds
+      row.arrayCount = meta.arrayCount
+      row.arrayCounts = meta.arrayCounts
+      row.arrayCountCap = meta.arrayCountCap
+      row.slotScalarValues = meta.slotScalarValues
+      row.fieldResults = meta.fieldResults
+      row.fieldsReadable = meta.fieldsReadable
+      row.fieldsNilOrUnsupported = meta.fieldsNilOrUnsupported
+      row.noElementDereference = meta.noElementDereference
     end
     writer:write(row)
     writeEvidence(probe, result, kind, summary, err, meta)
@@ -194,10 +220,11 @@ function runner.new(config, safe, writer, evidenceWriter)
     if (probe.set == 'health-read' or probe.set == 'health-baseline-read' or probe.set == 'health-playerstate-read' or probe.set == 'health-playerstate-watch' or probe.set == 'health-hc-discovery-read') and not config.allowHealthProbes then return false, 'unsafe_disabled' end
     if probe.set == 'multiplayer-roster-read' and not config.allowIdentityProbes then return false, 'unsafe_disabled' end
     if probe.set == 'multiplayer-resource-visibility-read' and not (config.allowIdentityProbes and config.allowHealthProbes and config.allowResourceVisibilityProbes) then return false, 'unsafe_disabled' end
+    if probe.set == 'local-inventory-array-shallow-read' and not config.allowInventoryArrayShallowProbes then return false, 'unsafe_disabled' end
     if probe.set == 'rpc-dryrun' and not config.allowRpcProbes then return false, 'unsafe_disabled' end
     if probe.set == 'write' and not config.allowWriteProbes then return false, 'unsafe_disabled' end
-    if state.role == 'unknown' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
-    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
+    if state.role == 'unknown' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'local-inventory-array-shallow-read' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
+    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'local-inventory-array-shallow-read' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
     if probe.set ~= config.probeSet and config.probeSet ~= 'all-readonly' then return false, 'skipped_by_config' end
     return true
   end

@@ -1,11 +1,11 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T06:52:20.118Z
-- Current phase: `multiplayer-resource-visibility-read`
-- Next recommended phase: `multiplayer-resource-visibility-read`
+- Updated: 2026-05-05T07:19:40.800Z
+- Current phase: `local-inventory-array-shallow-read`
+- Next recommended phase: `local-inventory-array-shallow-read`
 - Latest session: 20260505T063937Z
-- Latest commit: 84e06d51e1b1183b30e5136e005544f4eeff35c5
+- Latest commit: e0702326d778d31d3b5b84430e99640ee44d603e
 - Latest summary: evidence/runtime/20260505T063937Z/diagnostic_summary.txt
 
 ## Completed Phases
@@ -79,6 +79,12 @@
 - Raw IDs/names emitted: no, redacted/fingerprinted by default
 - No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.
 
+## Local Inventory Array Visibility
+
+- Summary: unresolved; no `local-inventory-array-shallow-read` evidence has been imported yet.
+- Local PlayerState present: not proven
+- Inventory item metadata remains untested; `InventoryInfo` and Enhancements remain disabled.
+
 ## Confirmed Unsafe Paths
 
 - HUD ReceiveDrawHUD tick hook remains blocked by default.
@@ -91,6 +97,7 @@
 - Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.
 - Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.
 - Crystals, slots, equipment, and inventory array counts are only covered by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.
+- Local inventory array visibility is separate from remote PlayerState resource visibility and is covered only by `local-inventory-array-shallow-read` after imported evidence exists.
 - `InventoryInfo` and enhancements remain placeholders until explicit probe sets are implemented.
 - Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.
 
@@ -101,4 +108,5 @@
 - `allowHealthProbes` is enabled only for explicit health phases and `multiplayer-resource-visibility-read` health scalar checks.
 - `allowIdentityProbes` is enabled only for the explicit multiplayer roster and resource visibility phases; `allowRawIdentityEvidence` remains false by default.
 - `allowResourceVisibilityProbes` is enabled only for `multiplayer-resource-visibility-read`.
+- `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.
 - `allowDeepArrayProbes` and `allowInventoryInfoProbes` are not enabled by implemented phases.

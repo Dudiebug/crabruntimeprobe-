@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-05T06:52:20.118Z",
+  "updatedAt": "2026-05-05T07:19:40.800Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -134,10 +134,10 @@
       "reason": "Probe set is not implemented yet."
     }
   ],
-  "currentPhase": "multiplayer-resource-visibility-read",
-  "nextRecommendedPhase": "multiplayer-resource-visibility-read",
+  "currentPhase": "local-inventory-array-shallow-read",
+  "nextRecommendedPhase": "local-inventory-array-shallow-read",
   "latestSessionId": "20260505T063937Z",
-  "latestCommit": "84e06d51e1b1183b30e5136e005544f4eeff35c5",
+  "latestCommit": "e0702326d778d31d3b5b84430e99640ee44d603e",
   "latestSummaryPath": "evidence/runtime/20260505T063937Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {
@@ -203,6 +203,13 @@
       "tickDriver": "executeDelay",
       "mode": "active",
       "reason": "Multiple PlayerState candidates were sampled and some resource fields were visible remotely, but visibility was partial."
+    },
+    "local-inventory-array-shallow-read": {
+      "status": "current",
+      "riskTier": "cautious-read",
+      "probeSet": "local-inventory-array-shallow-read",
+      "tickDriver": "executeDelay",
+      "mode": "active"
     },
     "crystals-read": {
       "status": "blocked",

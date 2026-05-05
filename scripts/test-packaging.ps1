@@ -32,6 +32,7 @@ function Assert-UnsafeGatesFalse {
     "allowHealthProbes",
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
+    "allowInventoryArrayShallowProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -52,6 +53,7 @@ function Assert-HealthBaselineGates {
     "allowIdentityProbes",
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
+    "allowInventoryArrayShallowProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -123,6 +125,7 @@ function Write-TestSessionManifest {
       allowIdentityProbes = $false
       allowRawIdentityEvidence = $false
       allowResourceVisibilityProbes = $false
+      allowInventoryArrayShallowProbes = $false
       allowWriteProbes = $false
       allowRpcProbes = $false
       allowJoinedClientDeepProbes = $false
@@ -209,6 +212,7 @@ foreach ($key in @(
   "allowJoinedClientDeepProbes",
   "allowDeepArrayProbes",
   "allowInventoryInfoProbes",
+  "allowInventoryArrayShallowProbes",
   "allowWriteProbes",
   "allowRpcProbes"
 )) {

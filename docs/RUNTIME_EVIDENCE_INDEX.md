@@ -68,6 +68,13 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 - Raw identity values are not emitted by this summary; PlayerName and UniqueId evidence remains fingerprint-only.
 - No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.
 
+## Local Inventory Array Visibility Summary
+
+- Summary: unresolved; no `local-inventory-array-shallow-read` evidence has been imported yet.
+- Local PlayerState present: not proven
+- Local inventory array visibility is separate from remote PlayerState inventory array visibility.
+- Inventory item metadata is still untested; `InventoryInfo` and Enhancements remain disabled.
+
 ## Confirmed SAFE Access Rows
 
 | Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |
