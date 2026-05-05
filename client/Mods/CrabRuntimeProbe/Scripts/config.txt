@@ -15,6 +15,7 @@ probeIntervalTicks = 10
 startupWarmupTicks = 60
 contextStableTicksRequired = 10
 maxProbesPerSession = 100
+repeatProbeSet = false
 
 allowUnknownRoleProbes = false
 allowJoinedClientDeepProbes = false

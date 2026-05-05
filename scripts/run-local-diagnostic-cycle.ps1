@@ -10,10 +10,12 @@ param(
   [switch]$PrepareEquipmentProperty,
   [switch]$PrepareHealthBaseline,
   [switch]$PrepareHealthPlayerState,
+  [switch]$PrepareHealthPlayerStateWatch,
   [switch]$Collect,
   [switch]$CollectEquipmentProperty,
   [switch]$CollectHealthBaseline,
   [switch]$CollectHealthPlayerState,
+  [switch]$CollectHealthPlayerStateWatch,
   [switch]$ExpectObserveContext,
   [switch]$NoDiagnosticDebug
 )
@@ -31,14 +33,16 @@ function Get-CycleMode {
   if ($PrepareEquipmentProperty) { $modes += "PrepareEquipmentProperty" }
   if ($PrepareHealthBaseline) { $modes += "PrepareHealthBaseline" }
   if ($PrepareHealthPlayerState) { $modes += "PrepareHealthPlayerState" }
+  if ($PrepareHealthPlayerStateWatch) { $modes += "PrepareHealthPlayerStateWatch" }
   if ($Collect) { $modes += "Collect" }
   if ($CollectEquipmentProperty) { $modes += "CollectEquipmentProperty" }
   if ($CollectHealthBaseline) { $modes += "CollectHealthBaseline" }
   if ($CollectHealthPlayerState) { $modes += "CollectHealthPlayerState" }
+  if ($CollectHealthPlayerStateWatch) { $modes += "CollectHealthPlayerStateWatch" }
 
   $unique = @($modes | Sort-Object -Unique)
   if ($unique.Count -ne 1) {
-    throw "Choose exactly one mode: -PrepareSmoke, -CollectSmoke, -PrepareTickDriver <driver>, -PrepareEquipmentProperty, -PrepareHealthBaseline, -PrepareHealthPlayerState, -Collect, -CollectEquipmentProperty, -CollectHealthBaseline, or -CollectHealthPlayerState."
+    throw "Choose exactly one mode: -PrepareSmoke, -CollectSmoke, -PrepareTickDriver <driver>, -PrepareEquipmentProperty, -PrepareHealthBaseline, -PrepareHealthPlayerState, -PrepareHealthPlayerStateWatch, -Collect, -CollectEquipmentProperty, -CollectHealthBaseline, -CollectHealthPlayerState, or -CollectHealthPlayerStateWatch."
   }
 
   return $unique[0]
@@ -438,6 +442,65 @@ function Format-EvidenceSummary {
   return ($parts -join " ")
 }
 
+function Convert-CrabRuntimeProbeNullableDouble {
+  param([string]$Value)
+
+  if ([string]::IsNullOrWhiteSpace($Value) -or $Value -eq "not found") { return $null }
+  $parsed = [double]::NaN
+  if ([double]::TryParse($Value, [System.Globalization.NumberStyles]::Float, [System.Globalization.CultureInfo]::InvariantCulture, [ref]$parsed)) {
+    return $parsed
+  }
+  return $null
+}
+
+function Get-RecordNumericValue {
+  param(
+    [object]$Record,
+    [string]$Name
+  )
+
+  if ($Record.PSObject.Properties.Name -contains $Name) {
+    $value = Convert-CrabRuntimeProbeNullableDouble -Value ([string]$Record.$Name)
+    if ($null -ne $value) { return $value }
+  }
+
+  $summary = Get-RecordValue -Record $Record -Names @("valueSummary")
+  if ($summary -match "(^|\s)$([regex]::Escape($Name))=([-+]?\d+(?:\.\d+)?)($|\s)") {
+    return Convert-CrabRuntimeProbeNullableDouble -Value $matches[2]
+  }
+
+  return $null
+}
+
+function Get-NumericSeriesStats {
+  param(
+    [object[]]$Records,
+    [string]$Name
+  )
+
+  $values = @()
+  foreach ($record in $Records) {
+    $value = Get-RecordNumericValue -Record $record -Name $Name
+    if ($null -ne $value) { $values += $value }
+  }
+
+  if ($values.Count -eq 0) {
+    return [pscustomobject]@{
+      First = "not found"
+      Last = "not found"
+      Min = "not found"
+      Max = "not found"
+    }
+  }
+
+  return [pscustomobject]@{
+    First = $values[0].ToString("G", [System.Globalization.CultureInfo]::InvariantCulture)
+    Last = $values[-1].ToString("G", [System.Globalization.CultureInfo]::InvariantCulture)
+    Min = (@($values | Measure-Object -Minimum)[0].Minimum).ToString("G", [System.Globalization.CultureInfo]::InvariantCulture)
+    Max = (@($values | Measure-Object -Maximum)[0].Maximum).ToString("G", [System.Globalization.CultureInfo]::InvariantCulture)
+  }
+}
+
 function Add-CountLines {
   param(
     [string[]]$Lines,
@@ -473,6 +536,7 @@ function Set-InstalledSmokeConfig {
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "tickDriver" -Value "none"
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugTickHeartbeat" -Value "false"
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugWriterSelfTest" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "repeatProbeSet" -Value "false"
   foreach ($key in @(
     "allowHudTickHook",
     "allowUnknownRoleProbes",
@@ -503,6 +567,7 @@ function Set-InstalledTickDriverConfig {
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugTickHeartbeat" -Value ($(if ($NoDebug) { "false" } else { "true" }))
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugWriterSelfTest" -Value ($(if ($NoDebug) { "false" } else { "true" }))
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "probeSet" -Value "shallow-core"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "repeatProbeSet" -Value "false"
   foreach ($key in @(
     "allowHudTickHook",
     "allowUnknownRoleProbes",
@@ -525,6 +590,7 @@ function Set-InstalledEquipmentPropertyConfig {
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "probeSet" -Value "equipment-property-read"
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugTickHeartbeat" -Value "true"
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugWriterSelfTest" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "repeatProbeSet" -Value "false"
   foreach ($key in @(
     "allowHudTickHook",
     "allowUnknownRoleProbes",
@@ -548,6 +614,7 @@ function Set-InstalledHealthBaselineConfig {
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugTickHeartbeat" -Value "true"
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugWriterSelfTest" -Value "true"
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "allowHealthProbes" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "repeatProbeSet" -Value "false"
   foreach ($key in @(
     "allowHudTickHook",
     "allowUnknownRoleProbes",
@@ -569,6 +636,31 @@ function Set-InstalledHealthPlayerStateConfig {
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "probeSet" -Value "health-playerstate-read"
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugTickHeartbeat" -Value "true"
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugWriterSelfTest" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "allowHealthProbes" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "repeatProbeSet" -Value "false"
+  foreach ($key in @(
+    "allowHudTickHook",
+    "allowUnknownRoleProbes",
+    "allowJoinedClientDeepProbes",
+    "allowDeepArrayProbes",
+    "allowInventoryInfoProbes",
+    "allowWriteProbes",
+    "allowRpcProbes"
+  )) {
+    Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key $key -Value "false"
+  }
+}
+
+function Set-InstalledHealthPlayerStateWatchConfig {
+  param([string]$ConfigPath)
+
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "tickDriver" -Value "executeDelay"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "mode" -Value "active"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "probeSet" -Value "health-playerstate-watch"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugTickHeartbeat" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugWriterSelfTest" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "repeatProbeSet" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "maxProbesPerSession" -Value "180"
   Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "allowHealthProbes" -Value "true"
   foreach ($key in @(
     "allowHudTickHook",
@@ -603,7 +695,7 @@ if (-not (Test-Path -LiteralPath $GameBinFull -PathType Container)) {
   throw "Game bin path does not exist: $GameBinFull"
 }
 
-if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "PrepareEquipmentProperty" -or $Mode -eq "PrepareHealthBaseline" -or $Mode -eq "PrepareHealthPlayerState") {
+if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "PrepareEquipmentProperty" -or $Mode -eq "PrepareHealthBaseline" -or $Mode -eq "PrepareHealthPlayerState" -or $Mode -eq "PrepareHealthPlayerStateWatch") {
   & (Join-Path $PSScriptRoot "install-client-to-game.ps1") $GameBinFull
   & (Join-Path $PSScriptRoot "verify-installed-client.ps1") $GameBinFull
 
@@ -615,11 +707,13 @@ if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "Pr
     Set-InstalledHealthBaselineConfig -ConfigPath $InstalledConfigPath
   } elseif ($Mode -eq "PrepareHealthPlayerState") {
     Set-InstalledHealthPlayerStateConfig -ConfigPath $InstalledConfigPath
+  } elseif ($Mode -eq "PrepareHealthPlayerStateWatch") {
+    Set-InstalledHealthPlayerStateWatchConfig -ConfigPath $InstalledConfigPath
   } else {
     Set-InstalledTickDriverConfig -ConfigPath $InstalledConfigPath -TickDriver $PrepareTickDriver -NoDebug:$NoDiagnosticDebug
   }
 
-  Assert-CrabRuntimeProbeInstalledSafety -ConfigPath $InstalledConfigPath -AllowHealthProbes:($Mode -eq "PrepareHealthBaseline" -or $Mode -eq "PrepareHealthPlayerState")
+  Assert-CrabRuntimeProbeInstalledSafety -ConfigPath $InstalledConfigPath -AllowHealthProbes:($Mode -eq "PrepareHealthBaseline" -or $Mode -eq "PrepareHealthPlayerState" -or $Mode -eq "PrepareHealthPlayerStateWatch")
   $removed = Clear-CrabRuntimeProbeRuntimeFiles -GameBinFull $GameBinFull -ScriptsRoot $InstallScriptsRoot
   $buildInfoText = Read-TextFileOrEmpty -Path $BuildInfoPath
   $prepareMarkerPath = Write-CrabRuntimeProbePrepareMarker `
@@ -661,6 +755,11 @@ if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "Pr
     Write-Host " 2. Start a solo run, note current/max health if visible, and stay alive/in world for 30 to 60 seconds."
     Write-Host " 3. Quit the game."
     Write-Host " 4. Run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-health-playerstate-collect.ps1"
+  } elseif ($Mode -eq "PrepareHealthPlayerStateWatch") {
+    Write-Host " 2. Start a solo run and stay in-world for 60 to 120 seconds."
+    Write-Host " 3. If a max-health-changing pickup/perk naturally appears, pick it up; otherwise do not force it."
+    Write-Host " 4. Quit the game."
+    Write-Host " 5. Run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-health-playerstate-watch-collect.ps1"
   } else {
     Write-Host " 2. Sit at the menu for 20 to 30 seconds."
     Write-Host " 3. Quit the game."
@@ -669,7 +768,7 @@ if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "Pr
   exit 0
 }
 
-$safetyErrors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $InstalledConfigPath -AllowHealthProbes:($Mode -eq "CollectHealthBaseline" -or $Mode -eq "CollectHealthPlayerState")
+$safetyErrors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $InstalledConfigPath -AllowHealthProbes:($Mode -eq "CollectHealthBaseline" -or $Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch")
 $logText = Read-TextFileOrEmpty -Path $Ue4ssLogPath
 $logLines = @()
 if (Test-Path -LiteralPath $Ue4ssLogPath -PathType Leaf) {
@@ -747,7 +846,15 @@ $playerStateHealthProbeNames = @(
   "CrabPS.GetPropertyValue.MaxHealthMultiplier"
 )
 $playerStateHealthRecords = @($jsonlRecords | Where-Object { $playerStateHealthProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) })
+$healthPlayerStateWatchRecords = @($jsonlRecords | Where-Object { (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) -eq "Health.PlayerState.Sample" })
+$healthPlayerStateWatchCurrentHealthStats = Get-NumericSeriesStats -Records $healthPlayerStateWatchRecords -Name "currentHealth"
+$healthPlayerStateWatchCurrentMaxHealthStats = Get-NumericSeriesStats -Records $healthPlayerStateWatchRecords -Name "currentMaxHealth"
+$healthPlayerStateWatchBaseMaxHealthStats = Get-NumericSeriesStats -Records $healthPlayerStateWatchRecords -Name "baseMaxHealth"
+$healthPlayerStateWatchMaxHealthMultiplierStats = Get-NumericSeriesStats -Records $healthPlayerStateWatchRecords -Name "maxHealthMultiplier"
 $findFirstCrabHCRecords = @($jsonlRecords | Where-Object { (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) -eq "FindFirstOf.CrabHC" })
+$crabHcTouchedRecords = @(($jsonlRecords + $accessEvidenceRecords) | Where-Object {
+  (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event", "symbol", "owner")) -match 'CrabHC'
+})
 function Get-LatestProbeSummary {
   param(
     [object[]]$Records,
@@ -771,7 +878,12 @@ if ($unscopedCrabHCFullName -eq "not found") {
 }
 $ambiguousCrabHCDetected = ($findFirstCrabHCRecords.Count -gt 0) -or ($unscopedCrabHCFullName -ne "not found")
 $unscopedCrabHCAppearsNonPlayer = $unscopedCrabHCFullName -match 'Destructible|Barrel|ChaoticBarrel'
-$possibleBaseHealthModel = if (($latestCrabPSCurrentMaxHealth -match '(^|[^0-9])250(\.0+)?([^0-9]|$)') -or ($latestCrabPSBaseMaxHealth -match '(^|[^0-9])250(\.0+)?([^0-9]|$)')) {
+$possibleBaseHealthModel = if (
+  ($latestCrabPSCurrentMaxHealth -match '(^|[^0-9])250(\.0+)?([^0-9]|$)') -or
+  ($latestCrabPSBaseMaxHealth -match '(^|[^0-9])250(\.0+)?([^0-9]|$)') -or
+  ($healthPlayerStateWatchCurrentMaxHealthStats.Last -match '(^|[^0-9])250(\.0+)?([^0-9]|$)') -or
+  ($healthPlayerStateWatchBaseMaxHealthStats.Last -match '(^|[^0-9])250(\.0+)?([^0-9]|$)')
+) {
   if ($unscopedCrabHCAppearsNonPlayer) {
     "solo player CrabPS base appears 250; unscoped CrabHC appears non-player/destructible, do not use as player health"
   } else {
@@ -968,6 +1080,53 @@ if ($Mode -eq "CollectHealthPlayerState") {
   }
 }
 
+if ($Mode -eq "CollectHealthPlayerStateWatch") {
+  if ($installedMode -ne "active") { $failures.Add("Health playerstate watch collect expected mode = active, got '$installedMode'.") | Out-Null }
+  if ($tickDriver -ne "executeDelay") { $failures.Add("Health playerstate watch collect expected tickDriver = executeDelay, got '$tickDriver'.") | Out-Null }
+  if ($probeSet -ne "health-playerstate-watch") { $failures.Add("Health playerstate watch collect expected probeSet = health-playerstate-watch, got '$probeSet'.") | Out-Null }
+  if (-not $prepareMarkerFound) { $failures.Add("Health playerstate watch collect expected prepare_marker.json from quick-health-playerstate-watch-prepare.ps1.") | Out-Null }
+  if ($null -eq $latestSessionManifestFile) {
+    $failures.Add("No session_manifest_*.json exists for the prepared health-playerstate-watch run.") | Out-Null
+  } else {
+    if ($latestManifestGitCommit -ne "not found" -and $installedGitCommit -ne "not found" -and $latestManifestGitCommit -ne $installedGitCommit) {
+      $failures.Add("Latest manifest commit '$latestManifestGitCommit' does not match installed build_info commit '$installedGitCommit'.") | Out-Null
+    }
+    if ($latestManifestProbeSet -ne "health-playerstate-watch") {
+      $failures.Add("Health playerstate watch collect expected latest manifest probeSet = health-playerstate-watch, got '$latestManifestProbeSet'.") | Out-Null
+    }
+    if ($latestManifestProbeSet -eq "health-baseline-read") {
+      $failures.Add("Stale baseline artifact detected: expected health-playerstate-watch but latest manifest says health-baseline-read.") | Out-Null
+    }
+    if ($latestManifestTickDriver -ne "executeDelay") {
+      $failures.Add("Health playerstate watch collect expected latest manifest tickDriver = executeDelay, got '$latestManifestTickDriver'.") | Out-Null
+    }
+    if (-not $artifactSessionMatchesPrepare) {
+      $failures.Add("Latest session manifest does not match prepare_marker.json expected commit/probeSet/tickDriver/mode or is older than prepare.") | Out-Null
+    }
+    if (-not $ue4ssLogContainsLatestSession) {
+      $failures.Add("UE4SS.log does not contain latest sessionId '$latestManifestSessionId'.") | Out-Null
+    }
+    if ($installedGitCommit -ne "not found" -and -not $ue4ssLogContainsInstalledCommit) {
+      $failures.Add("UE4SS.log does not contain installed git commit '$installedGitCommit'.") | Out-Null
+    }
+    if (-not $evidenceFilesMatchInstalledConfigProbeSet) {
+      $failures.Add("Latest evidence files do not match installed config/probeSet/session.") | Out-Null
+    }
+  }
+  if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowHealthProbes") -ne "true") {
+    $failures.Add("Health playerstate watch collect expected allowHealthProbes = true for this explicit phase.") | Out-Null
+  }
+  if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "repeatProbeSet") -ne "true") {
+    $failures.Add("Health playerstate watch collect expected repeatProbeSet = true.") | Out-Null
+  }
+  if ($healthPlayerStateWatchRecords.Count -eq 0) {
+    $failures.Add("Expected Health.PlayerState.Sample during health playerstate watch collection, but it did not run.") | Out-Null
+  }
+  if ($crabHcTouchedRecords.Count -gt 0) {
+    $failures.Add("CrabHC evidence appeared during playerstate-only health watch collection.") | Out-Null
+  }
+}
+
 $crashSuspicion = "none"
 if (-not $startupSmoke) {
   $crashSuspicion = "startup smoke missing; crash likely occurred before or during pure file-I/O startup smoke write"
@@ -1054,12 +1213,31 @@ $summaryLines = @(
   "latest_CrabPS_BaseMaxHealth = $latestCrabPSBaseMaxHealth",
   "latest_CrabPS_MaxHealthMultiplier = $latestCrabPSMaxHealthMultiplier",
   "playerstate_health_probe_ran = $($playerStateHealthRecords.Count -gt 0)",
+  "playerstate_health_watch_probe_ran = $($healthPlayerStateWatchRecords.Count -gt 0)",
   "ambiguous_crabhc_detected = $ambiguousCrabHCDetected",
+  "crab_hc_touched = $($crabHcTouchedRecords.Count -gt 0)",
   "unscoped_crabhc_fullName = $unscopedCrabHCFullName",
   "playerstate_current_health = $latestCrabPSCurrentHealth",
   "playerstate_current_max_health = $latestCrabPSCurrentMaxHealth",
   "playerstate_base_max_health = $latestCrabPSBaseMaxHealth",
   "playerstate_max_health_multiplier = $latestCrabPSMaxHealthMultiplier",
+  "health_playerstate_watch_sample_count = $($healthPlayerStateWatchRecords.Count)",
+  "health_playerstate_watch_currentHealth_first = $($healthPlayerStateWatchCurrentHealthStats.First)",
+  "health_playerstate_watch_currentHealth_last = $($healthPlayerStateWatchCurrentHealthStats.Last)",
+  "health_playerstate_watch_currentHealth_min = $($healthPlayerStateWatchCurrentHealthStats.Min)",
+  "health_playerstate_watch_currentHealth_max = $($healthPlayerStateWatchCurrentHealthStats.Max)",
+  "health_playerstate_watch_currentMaxHealth_first = $($healthPlayerStateWatchCurrentMaxHealthStats.First)",
+  "health_playerstate_watch_currentMaxHealth_last = $($healthPlayerStateWatchCurrentMaxHealthStats.Last)",
+  "health_playerstate_watch_currentMaxHealth_min = $($healthPlayerStateWatchCurrentMaxHealthStats.Min)",
+  "health_playerstate_watch_currentMaxHealth_max = $($healthPlayerStateWatchCurrentMaxHealthStats.Max)",
+  "health_playerstate_watch_baseMaxHealth_first = $($healthPlayerStateWatchBaseMaxHealthStats.First)",
+  "health_playerstate_watch_baseMaxHealth_last = $($healthPlayerStateWatchBaseMaxHealthStats.Last)",
+  "health_playerstate_watch_baseMaxHealth_min = $($healthPlayerStateWatchBaseMaxHealthStats.Min)",
+  "health_playerstate_watch_baseMaxHealth_max = $($healthPlayerStateWatchBaseMaxHealthStats.Max)",
+  "health_playerstate_watch_maxHealthMultiplier_first = $($healthPlayerStateWatchMaxHealthMultiplierStats.First)",
+  "health_playerstate_watch_maxHealthMultiplier_last = $($healthPlayerStateWatchMaxHealthMultiplierStats.Last)",
+  "health_playerstate_watch_maxHealthMultiplier_min = $($healthPlayerStateWatchMaxHealthMultiplierStats.Min)",
+  "health_playerstate_watch_maxHealthMultiplier_max = $($healthPlayerStateWatchMaxHealthMultiplierStats.Max)",
   "possible_base_health_model = $possibleBaseHealthModel",
   "unique_contexts_seen = $(if ($uniqueContexts.Count -gt 0) { $uniqueContexts -join ', ' } else { "none" })",
   "unique_roles_seen = $(if ($uniqueRoles.Count -gt 0) { $uniqueRoles -join ', ' } else { "none" })",
@@ -1191,7 +1369,7 @@ if ($errorLines.Count -eq 0) {
   }
 }
 
-if ($Mode -eq "CollectHealthPlayerState") {
+if ($Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch") {
   $summaryLines += ""
   $summaryLines += "files_to_upload:"
   $summaryLines += " - $SummaryPath"

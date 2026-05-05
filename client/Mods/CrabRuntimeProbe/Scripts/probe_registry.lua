@@ -30,6 +30,41 @@ function registry.build(safe)
     return crabPs, crabPsErr
   end
 
+  local function readPlayerStateHealthSample(ctx)
+    local crabPs, crabPsErr = getCrabPlayerState(ctx)
+    if crabPsErr then return 'lua_error', nil, nil, crabPsErr end
+    if not safe.isValidObject(crabPs) then return 'nil', 'object', 'PlayerState invalid' end
+
+    local healthInfo, healthInfoErr = safe.getProperty(crabPs, 'HealthInfo')
+    ctx.cache.CrabPSHealthInfo = healthInfo
+    if healthInfoErr then return 'lua_error', nil, nil, healthInfoErr end
+    if healthInfo == nil then return 'nil', 'table', 'HealthInfo nil' end
+
+    local currentHealth, currentHealthErr = safe.getStructField(healthInfo, 'CurrentHealth')
+    if currentHealthErr then return 'lua_error', nil, nil, 'HealthInfo.CurrentHealth: ' .. tostring(currentHealthErr) end
+    local currentMaxHealth, currentMaxHealthErr = safe.getStructField(healthInfo, 'CurrentMaxHealth')
+    if currentMaxHealthErr then return 'lua_error', nil, nil, 'HealthInfo.CurrentMaxHealth: ' .. tostring(currentMaxHealthErr) end
+    local baseMaxHealth, baseMaxHealthErr = safe.getProperty(crabPs, 'BaseMaxHealth')
+    if baseMaxHealthErr then return 'lua_error', nil, nil, 'BaseMaxHealth: ' .. tostring(baseMaxHealthErr) end
+    local maxHealthMultiplier, multiplierErr = safe.getProperty(crabPs, 'MaxHealthMultiplier')
+    if multiplierErr then return 'lua_error', nil, nil, 'MaxHealthMultiplier: ' .. tostring(multiplierErr) end
+
+    ctx.cache.HealthPlayerStateWatchSampleIndex = (ctx.cache.HealthPlayerStateWatchSampleIndex or 0) + 1
+    local summary = 'currentHealth=' .. tostring(currentHealth)
+      .. ' currentMaxHealth=' .. tostring(currentMaxHealth)
+      .. ' baseMaxHealth=' .. tostring(baseMaxHealth)
+      .. ' maxHealthMultiplier=' .. tostring(maxHealthMultiplier)
+    return 'ok', 'health_sample', summary, nil, {
+      sourceScope = 'player_state_scoped',
+      localNotes = 'CrabPC -> PlayerState -> CrabPS -> HealthInfo read-only sample',
+      currentHealth = currentHealth,
+      currentMaxHealth = currentMaxHealth,
+      baseMaxHealth = baseMaxHealth,
+      maxHealthMultiplier = maxHealthMultiplier,
+      sampleIndex = ctx.cache.HealthPlayerStateWatchSampleIndex
+    }
+  end
+
   local function summarizeIdentityOrDefault(obj, fallback)
     local summary, summaryErr, identity = safe.summarizeObjectIdentity(obj)
     return summary or fallback, summaryErr, identity
@@ -369,6 +404,17 @@ function registry.build(safe)
       sourceScope = 'player_state_scoped'
     })
   end
+
+  probes[#probes + 1] = mk('Health.PlayerState.Sample', 'health', 'health-playerstate-watch', 'sample', function(ctx)
+    return readPlayerStateHealthSample(ctx)
+  end, {
+    symbol = 'CrabPS.HealthInfo',
+    owner = 'CrabPS',
+    member = 'HealthInfo',
+    accessMethod = 'PlayerStateHealthSample',
+    accessKind = 'health',
+    sourceScope = 'player_state_scoped'
+  })
 
   probes[#probes + 1] = mk('FindAllOf.CrabHC.Availability', 'health', 'health-hc-discovery-read', 'findAllAvailability', function()
     local ok, value = pcall(function() return type(FindAllOf) end)

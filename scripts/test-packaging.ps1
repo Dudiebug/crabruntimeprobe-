@@ -189,6 +189,24 @@ Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "activ
 Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "health-playerstate-read"
 Assert-HealthBaselineGates -ConfigPath $InstalledConfigPath
 
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareHealthPlayerStateWatch
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected "executeDelay"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "active"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "health-playerstate-watch"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "repeatProbeSet" -Expected "true"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "allowHealthProbes" -Expected "true"
+foreach ($key in @(
+  "allowHudTickHook",
+  "allowUnknownRoleProbes",
+  "allowJoinedClientDeepProbes",
+  "allowDeepArrayProbes",
+  "allowInventoryInfoProbes",
+  "allowWriteProbes",
+  "allowRpcProbes"
+)) {
+  Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key $key -Expected "false"
+}
+
 $gameplayPrepareScript = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "quick-gameplay-observe-prepare.ps1")
 if ($gameplayPrepareScript -notmatch 'PrepareTickDriver executeDelay') {
   throw "quick-gameplay-observe-prepare.ps1 must prepare executeDelay explicitly."
@@ -215,6 +233,14 @@ $healthPlayerStateCollectScript = Get-Content -Raw -LiteralPath (Join-Path $PSSc
 if ($healthPlayerStateCollectScript -notmatch 'validate-latest-crash-bundle\.ps1' -or $healthPlayerStateCollectScript -notmatch 'health-playerstate-read') {
   throw "quick-health-playerstate-collect.ps1 must run the stale bundle validator for health-playerstate-read."
 }
+$healthPlayerStateWatchPrepareScript = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "quick-health-playerstate-watch-prepare.ps1")
+if ($healthPlayerStateWatchPrepareScript -notmatch 'PrepareHealthPlayerStateWatch') {
+  throw "quick-health-playerstate-watch-prepare.ps1 must use the health playerstate watch prepare path."
+}
+$healthPlayerStateWatchCollectScript = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "quick-health-playerstate-watch-collect.ps1")
+if ($healthPlayerStateWatchCollectScript -notmatch 'validate-latest-crash-bundle\.ps1' -or $healthPlayerStateWatchCollectScript -notmatch 'health-playerstate-watch') {
+  throw "quick-health-playerstate-watch-collect.ps1 must run the stale bundle validator for health-playerstate-watch."
+}
 
 $probeRegistry = Get-Content -Raw -LiteralPath (Join-Path $SourceModRoot "Scripts\probe_registry.lua")
 foreach ($required in @(
@@ -224,6 +250,8 @@ foreach ($required in @(
   "equipment-direct-field-read",
   "health-baseline-read",
   "health-playerstate-read",
+  "health-playerstate-watch",
+  "Health.PlayerState.Sample",
   "health-hc-discovery-read"
 )) {
   if ($probeRegistry -notmatch [regex]::Escape($required)) {
@@ -238,6 +266,9 @@ if ($equipmentPropertyPrepareScript -match "equipment-direct-field-read") {
 }
 if ($healthPlayerStatePrepareScript -match "FindFirstOf.CrabHC") {
   throw "quick-health-playerstate-prepare.ps1 must not mention FindFirstOf.CrabHC."
+}
+if ($healthPlayerStateWatchPrepareScript -match "FindFirstOf.CrabHC|FindAllOf.CrabHC|InventoryInfo|allowWriteProbes\s*=\s*true|allowRpcProbes\s*=\s*true|allowHudTickHook\s*=\s*true") {
+  throw "quick-health-playerstate-watch-prepare.ps1 must stay on the safe playerstate-only watch path."
 }
 
 $hudFailed = $false
@@ -454,6 +485,79 @@ foreach ($required in @(
   if ($playerStateHealthSummary -notmatch [regex]::Escape($required)) {
     throw "health playerstate diagnostic_summary.txt missing expected content: $required"
   }
+}
+
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareHealthPlayerStateWatch
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected "executeDelay"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "active"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "health-playerstate-watch"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "repeatProbeSet" -Expected "true"
+Assert-HealthBaselineGates -ConfigPath $InstalledConfigPath
+$healthPlayerStateWatchPrepareMarker = Get-Content -Raw -LiteralPath (Join-Path $resultsRoot "prepare_marker.json") | ConvertFrom-Json
+if ($healthPlayerStateWatchPrepareMarker.expectedProbeSet -ne "health-playerstate-watch" -or $healthPlayerStateWatchPrepareMarker.expectedTickDriver -ne "executeDelay" -or $healthPlayerStateWatchPrepareMarker.expectedMode -ne "active") {
+  throw "health playerstate watch prepare marker did not record the expected prepared run contract."
+}
+
+New-Item -ItemType Directory -Force -Path $resultsRoot | Out-Null
+$healthPlayerStateWatchBuildCommit = Get-TestBuildInfoValue -ScriptsRoot $scriptsRoot -Key "git_commit"
+Write-TestSessionManifest -ResultsRoot $resultsRoot -SessionId "watch" -GitCommit $healthPlayerStateWatchBuildCommit -ProbeSet "health-playerstate-watch" -TickDriver "executeDelay"
+Set-Content -LiteralPath (Join-Path $TestGameBin "UE4SS.log") -Encoding ASCII -Value @(
+  "[CrabRuntimeProbe] boot phase: config loaded",
+  "[CrabRuntimeProbe] started session=watch mode=active",
+  "[CrabRuntimeProbe] build git_commit = $healthPlayerStateWatchBuildCommit",
+  "[CrabRuntimeProbe] tickDriver=executeDelay",
+  "[CrabRuntimeProbe] tick driver register begin: executeDelay",
+  "[CrabRuntimeProbe] tick source registered: executeDelay",
+  "[CrabRuntimeProbe] boot phase: startup complete",
+  "[CrabRuntimeProbe] tick heartbeat tick=100 mode=active"
+)
+Set-Content -LiteralPath (Join-Path $resultsRoot "probe_results_health_playerstate_watch.jsonl") -Encoding ASCII -Value @(
+  '{"timestamp":"2026-05-04T00:00:01Z","sessionId":"watch","event":"Debug.StartupSmoke","probeId":"Debug.StartupSmoke","probeName":"Debug.StartupSmoke","result":"ok"}',
+  '{"timestamp":"2026-05-04T00:00:02Z","sessionId":"watch","event":"Debug.WriterSelfTest","probeId":"Debug.WriterSelfTest","probeName":"Debug.WriterSelfTest","result":"ok"}',
+  '{"timestamp":"2026-05-04T00:00:03Z","sessionId":"watch","probeId":"Health.PlayerState.Sample","probeName":"Health.PlayerState.Sample","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"currentHealth=250 currentMaxHealth=250 baseMaxHealth=250 maxHealthMultiplier=1","currentHealth":250,"currentMaxHealth":250,"baseMaxHealth":250,"maxHealthMultiplier":1,"sampleIndex":1}',
+  '{"timestamp":"2026-05-04T00:00:04Z","sessionId":"watch","probeId":"Health.PlayerState.Sample","probeName":"Health.PlayerState.Sample","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"currentHealth=225 currentMaxHealth=275 baseMaxHealth=250 maxHealthMultiplier=1.1","currentHealth":225,"currentMaxHealth":275,"baseMaxHealth":250,"maxHealthMultiplier":1.1,"sampleIndex":2}',
+  '{"timestamp":"2026-05-04T00:00:05Z","sessionId":"watch","probeId":"Health.PlayerState.Sample","probeName":"Health.PlayerState.Sample","category":"health","result":"ok","context":"solo","role":"solo-or-host","lifecycleState":"stable","valueSummary":"currentHealth=275 currentMaxHealth=275 baseMaxHealth=250 maxHealthMultiplier=1.1","currentHealth":275,"currentMaxHealth":275,"baseMaxHealth":250,"maxHealthMultiplier":1.1,"sampleIndex":3}'
+)
+Set-Content -LiteralPath (Join-Path $resultsRoot "access_evidence_watch.jsonl") -Encoding ASCII -Value @(
+  '{"timestamp":"2026-05-04T00:00:03Z","sessionId":"watch","game":"Crab Champions","mod":"CrabRuntimeProbe","schemaVersion":1,"probeId":"Health.PlayerState.Sample","probeName":"Health.PlayerState.Sample","probeSet":"health-playerstate-watch","category":"health","symbol":"CrabPS.HealthInfo","owner":"CrabPS","member":"HealthInfo","accessMethod":"PlayerStateHealthSample","accessKind":"health","mode":"active","tickDriver":"executeDelay","tick":100,"context":"solo","role":"solo-or-host","lifecycleState":"stable","result":"ok","runtimeStatus":"SAFE","valueKind":"health_sample","valueSummary":"currentHealth=250 currentMaxHealth=250 baseMaxHealth=250 maxHealthMultiplier=1","currentHealth":250,"currentMaxHealth":250,"baseMaxHealth":250,"maxHealthMultiplier":1,"sampleIndex":1,"sourceScope":"player_state_scoped","safetyGates":{"allowHudTickHook":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":true,"allowWriteProbes":false,"allowRpcProbes":false,"allowJoinedClientDeepProbes":false,"allowUnknownRoleProbes":false}}'
+)
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -CollectHealthPlayerStateWatch
+
+$playerStateHealthWatchSummary = Get-Content -Raw -LiteralPath $summaryPath
+foreach ($required in @(
+  "probeSet = health-playerstate-watch",
+  "allowHealthProbes = true",
+  "playerstate_health_watch_probe_ran = True",
+  "ambiguous_crabhc_detected = False",
+  "crab_hc_touched = False",
+  "health_playerstate_watch_sample_count = 3",
+  "health_playerstate_watch_currentHealth_first = 250",
+  "health_playerstate_watch_currentHealth_last = 275",
+  "health_playerstate_watch_currentHealth_min = 225",
+  "health_playerstate_watch_currentHealth_max = 275",
+  "health_playerstate_watch_currentMaxHealth_first = 250",
+  "health_playerstate_watch_currentMaxHealth_last = 275",
+  "health_playerstate_watch_currentMaxHealth_min = 250",
+  "health_playerstate_watch_currentMaxHealth_max = 275",
+  "health_playerstate_watch_baseMaxHealth_first = 250",
+  "health_playerstate_watch_baseMaxHealth_last = 250",
+  "health_playerstate_watch_baseMaxHealth_min = 250",
+  "health_playerstate_watch_baseMaxHealth_max = 250",
+  "health_playerstate_watch_maxHealthMultiplier_first = 1",
+  "health_playerstate_watch_maxHealthMultiplier_last = 1.1",
+  "health_playerstate_watch_maxHealthMultiplier_min = 1",
+  "health_playerstate_watch_maxHealthMultiplier_max = 1.1",
+  "failures:",
+  " - none"
+)) {
+  if ($playerStateHealthWatchSummary -notmatch [regex]::Escape($required)) {
+    throw "health playerstate watch diagnostic_summary.txt missing expected content: $required"
+  }
+}
+
+& $powerShellExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "validate-latest-crash-bundle.ps1") -GameBin $TestGameBin -ExpectedProbeSet "health-playerstate-watch" -ExpectedTickDriver "executeDelay" -ExpectedMode "active" -RequirePreparedRun | Out-Host
+if ($LASTEXITCODE -ne 0) {
+  throw "validate-latest-crash-bundle.ps1 must pass for a clean health-playerstate-watch bundle."
 }
 
 & (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareHealthPlayerState

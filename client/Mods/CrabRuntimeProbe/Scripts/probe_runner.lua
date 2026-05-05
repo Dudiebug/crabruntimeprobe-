@@ -87,12 +87,18 @@ function runner.new(config, safe, writer, evidenceWriter)
       record.objectClass = meta.objectClass or ''
       record.sourceScope = meta.sourceScope or record.sourceScope
       record.localNotes = meta.localNotes or nil
+      record.currentHealth = meta.currentHealth
+      record.currentMaxHealth = meta.currentMaxHealth
+      record.baseMaxHealth = meta.baseMaxHealth
+      record.maxHealthMultiplier = meta.maxHealthMultiplier
+      record.sampleIndex = meta.sampleIndex
     end
     evidenceWriter:writeEvidence(record)
   end
 
   local function emit(probe, result, kind, summary, err, meta)
-    writer:write({
+    local row = {
+      event = probe.id,
       tick = state.tick,
       mode = config.mode,
       probeId = probe.id,
@@ -107,14 +113,24 @@ function runner.new(config, safe, writer, evidenceWriter)
       valueSummary = summary or '',
       error = err or '',
       durationMs = 0
-    })
+    }
+    if type(meta) == 'table' then
+      row.currentHealth = meta.currentHealth
+      row.currentMaxHealth = meta.currentMaxHealth
+      row.baseMaxHealth = meta.baseMaxHealth
+      row.maxHealthMultiplier = meta.maxHealthMultiplier
+      row.sampleIndex = meta.sampleIndex
+      row.sourceScope = meta.sourceScope
+      row.localNotes = meta.localNotes
+    end
+    writer:write(row)
     writeEvidence(probe, result, kind, summary, err, meta)
   end
 
   local function allowedByConfig(probe)
     if probe.set == 'inventory-array-deep' and not config.allowDeepArrayProbes then return false, 'unsafe_disabled' end
     if probe.set == 'inventory-info' and not config.allowInventoryInfoProbes then return false, 'unsafe_disabled' end
-    if (probe.set == 'health-read' or probe.set == 'health-baseline-read' or probe.set == 'health-playerstate-read' or probe.set == 'health-hc-discovery-read') and not config.allowHealthProbes then return false, 'unsafe_disabled' end
+    if (probe.set == 'health-read' or probe.set == 'health-baseline-read' or probe.set == 'health-playerstate-read' or probe.set == 'health-playerstate-watch' or probe.set == 'health-hc-discovery-read') and not config.allowHealthProbes then return false, 'unsafe_disabled' end
     if probe.set == 'rpc-dryrun' and not config.allowRpcProbes then return false, 'unsafe_disabled' end
     if probe.set == 'write' and not config.allowWriteProbes then return false, 'unsafe_disabled' end
     if state.role == 'unknown' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
@@ -223,7 +239,14 @@ function runner.new(config, safe, writer, evidenceWriter)
     if (self.tick % probeInterval) ~= 0 then return end
 
     local probe = probes[idx]
-    if not probe then return end
+    if not probe then
+      if config.repeatProbeSet == true and #probes > 0 then
+        idx = 1
+        probe = probes[idx]
+      else
+        return
+      end
+    end
     idx = idx + 1
 
     local allowed, reason = allowedByConfig(probe)

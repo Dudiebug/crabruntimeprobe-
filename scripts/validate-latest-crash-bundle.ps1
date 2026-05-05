@@ -90,6 +90,45 @@ function Test-JsonlAllRecordsMatch {
   return "true"
 }
 
+function Test-JsonlHasRecord {
+  param(
+    [object[]]$Files,
+    [string[]]$Names,
+    [string]$Expected
+  )
+
+  foreach ($file in $Files) {
+    foreach ($line in @(Get-Content -LiteralPath $file.FullName -ErrorAction SilentlyContinue)) {
+      if ([string]::IsNullOrWhiteSpace($line)) { continue }
+      try {
+        $record = $line | ConvertFrom-Json -ErrorAction Stop
+      } catch {
+        continue
+      }
+      foreach ($name in $Names) {
+        if ($record.PSObject.Properties.Name -contains $name -and [string]$record.$name -eq $Expected) {
+          return $true
+        }
+      }
+    }
+  }
+  return $false
+}
+
+function Test-JsonlMentions {
+  param(
+    [object[]]$Files,
+    [string]$Pattern
+  )
+
+  foreach ($file in $Files) {
+    foreach ($line in @(Get-Content -LiteralPath $file.FullName -ErrorAction SilentlyContinue)) {
+      if ($line -match $Pattern) { return $true }
+    }
+  }
+  return $false
+}
+
 function Get-LatestFile {
   param(
     [string]$Directory,
@@ -202,6 +241,9 @@ if (-not [string]::IsNullOrWhiteSpace($expectedProbeSetFromMarker) -and $manifes
 if (-not [string]::IsNullOrWhiteSpace($expectedTickDriverFromMarker) -and $manifestTickDriver -ne "not found" -and $manifestTickDriver -ne $expectedTickDriverFromMarker) { $failures.Add("Expected tickDriver '$expectedTickDriverFromMarker' but latest manifest says '$manifestTickDriver'.") | Out-Null }
 if (-not [string]::IsNullOrWhiteSpace($expectedModeFromMarker) -and $installedMode -ne $expectedModeFromMarker) { $failures.Add("Expected installed mode '$expectedModeFromMarker' but config says '$installedMode'.") | Out-Null }
 if ($ExpectedProbeSet -eq "health-playerstate-read" -and $manifestProbeSet -eq "health-baseline-read") { $failures.Add("Stale baseline artifact: expected health-playerstate-read but latest manifest says health-baseline-read.") | Out-Null }
+if ($ExpectedProbeSet -eq "health-playerstate-watch" -and $manifestProbeSet -eq "health-baseline-read") { $failures.Add("Stale baseline artifact: expected health-playerstate-watch but latest manifest says health-baseline-read.") | Out-Null }
+if ($ExpectedProbeSet -eq "health-playerstate-watch" -and -not (Test-JsonlHasRecord -Files $currentSessionFiles -Names @("event", "probeName", "probeId") -Expected "Health.PlayerState.Sample")) { $failures.Add("Expected Health.PlayerState.Sample in latest watch evidence.") | Out-Null }
+if ($ExpectedProbeSet -eq "health-playerstate-watch" -and (Test-JsonlMentions -Files $currentSessionFiles -Pattern 'CrabHC|FindFirstOf\.CrabHC|FindAllOf\.CrabHC')) { $failures.Add("CrabHC evidence appeared during health-playerstate-watch validation.") | Out-Null }
 if ($manifestSessionId -ne "not found" -and -not $logContainsSession) { $failures.Add("UE4SS.log does not contain latest sessionId '$manifestSessionId'.") | Out-Null }
 if ($installedCommit -ne "missing" -and -not $logContainsCommit) { $failures.Add("UE4SS.log does not contain installed git commit '$installedCommit'.") | Out-Null }
 if ($artifactOlderThanPrepare) { $failures.Add("Latest evidence appears older than prepare_marker.json preparedAt.") | Out-Null }

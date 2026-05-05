@@ -27,6 +27,7 @@ $script:CrabRuntimeProbeRequiredConfigDefaults = [ordered]@{
   startupWarmupTicks = "60"
   contextStableTicksRequired = "10"
   maxProbesPerSession = "100"
+  repeatProbeSet = "false"
   allowUnknownRoleProbes = "false"
   allowJoinedClientDeepProbes = "false"
   allowDeepArrayProbes = "false"
@@ -100,7 +101,18 @@ function Get-CrabRuntimeProbeConfigMatches {
   )
 
   $pattern = "^\s*$([regex]::Escape($Key))\s*=\s*(.*?)\s*$"
-  return @(Get-Content -LiteralPath $ConfigPath | ForEach-Object {
+  $lines = $null
+  for ($attempt = 1; $attempt -le 50; $attempt++) {
+    try {
+      $lines = @(Get-Content -LiteralPath $ConfigPath -ErrorAction Stop)
+      break
+    } catch {
+      if ($attempt -eq 50) { throw }
+      Start-Sleep -Milliseconds 200
+    }
+  }
+
+  return @($lines | ForEach-Object {
     if ($_ -match $pattern) {
       $matches[1].Trim()
     }

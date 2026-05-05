@@ -198,6 +198,43 @@ Then import the resulting evidence and rebuild docs/wiki staging:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\import-latest-runtime-evidence.ps1
 ```
 
+After the single player-state snapshot, run the read-only health watch phase to
+capture time-series evidence from the same safe path:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-health-playerstate-watch-prepare.ps1
+```
+
+User run:
+
+1. Launch Crab Champions.
+2. Start a solo run.
+3. Stay in-world for 60 to 120 seconds.
+4. If a max-health-changing pickup/perk naturally appears, pick it up.
+5. Otherwise do not force it.
+6. Quit.
+
+Then collect and validate:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-health-playerstate-watch-collect.ps1
+```
+
+Then import the resulting evidence and rebuild docs/wiki staging:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\import-latest-runtime-evidence.ps1
+```
+
+`health-playerstate-watch` repeatedly emits one combined
+`Health.PlayerState.Sample` row with `CurrentHealth`, `CurrentMaxHealth`,
+`BaseMaxHealth`, and `MaxHealthMultiplier`. It exists to gather time-series
+evidence before any CrabInvSync v2 health math is designed. It is read-only,
+uses `CrabPC -> PlayerState -> CrabPS -> HealthInfo`, avoids `CrabHC`, avoids
+item arrays and `InventoryInfo`, and does not write or call RPCs. Multiplayer
+health scaling remains unproven until multiplayer watch evidence exists; do not
+infer production health math from one static solo snapshot.
+
 Player-owned `CrabHC` discovery is a separate research phase. The
 `health-hc-discovery-read` probe set currently records `FindAllOf` availability
 only; capped candidate traversal and ownership linkage stay deferred until that

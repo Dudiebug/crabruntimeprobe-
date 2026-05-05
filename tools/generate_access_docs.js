@@ -79,6 +79,7 @@ function classifyHealthSource(row, sessionCrabHcFullName) {
 const evidenceRoot = path.join(process.cwd(), 'evidence', 'runtime');
 const evidenceFiles = walk(evidenceRoot, 'access_evidence.jsonl');
 const probeResultFiles = walk(evidenceRoot, 'probe_results.jsonl');
+const diagnosticFiles = walk(evidenceRoot, 'diagnostic_summary.txt');
 const evidenceRows = evidenceFiles.flatMap(readJsonl);
 const objectdumpSymbols = readObjectdumpSymbols();
 const probeCandidatesPath = path.join(process.cwd(), 'docs', 'PROBE_CANDIDATES.md');
@@ -92,6 +93,25 @@ for (const row of evidenceRows) {
     sessionCrabHcFullNames.set(row.sessionId, row.valueSummary);
   }
 }
+
+function parseDiagnosticSummary(text) {
+  const out = {};
+  for (const line of text.split(/\r?\n/)) {
+    const match = line.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*?)\s*$/);
+    if (match) out[match[1]] = match[2];
+  }
+  return out;
+}
+
+const diagnosticRows = diagnosticFiles.map((file) => ({
+  file,
+  values: parseDiagnosticSummary(fs.readFileSync(file, 'utf8'))
+}));
+const watchEvidenceRows = evidenceRows.filter((row) => (row.probeId || row.probeName) === 'Health.PlayerState.Sample');
+const latestWatchDiagnostic = diagnosticRows
+  .filter((row) => row.values.health_playerstate_watch_sample_count)
+  .sort((a, b) => a.file.localeCompare(b.file))
+  .pop();
 
 const byAccess = new Map();
 for (const row of evidenceRows) {
@@ -164,14 +184,28 @@ let index = '# Runtime Evidence Index\n\n';
 index += 'Generated from imported runtime evidence under `evidence/runtime/`.\n\n';
 index += `- Access evidence files: ${evidenceFiles.length}\n`;
 index += `- Probe result files: ${probeResultFiles.length}\n`;
+index += `- Diagnostic summaries: ${diagnosticFiles.length}\n`;
 index += `- Evidence rows: ${evidenceRows.length}\n`;
+index += `- Health playerstate watch samples: ${watchEvidenceRows.length}\n`;
 index += `- Objectdump symbols discovered: ${objectdumpSymbols.size}\n\n`;
 index += `- Probe candidates doc present: ${probeCandidatesText ? 'yes' : 'no'}\n\n`;
 index += 'Objectdump discovery means a symbol exists in static dump data. It does not mean runtime access is safe.\n';
 index += '\n## Health Source Scope Notes\n\n';
 index += '- `CrabPS` health rows are player-state-scoped because the probe path starts from `CrabPC -> PlayerState -> CrabPS`.\n';
+index += '- `CrabPC -> PlayerState -> CrabPS -> HealthInfo` is the only currently confirmed safe player health read path.\n';
 index += '- `FindFirstOf.CrabHC` is unscoped and ambiguous as a player-health source. Session `20260505T002614Z` observed `BP_Destructible_ChaoticBarrel10.HC`, so unscoped `CrabHC` must not be used as the CrabInvSync v2 player health source.\n';
 index += '- `CrabHC` read success proves only that the observed component can be read. It does not prove player ownership unless a later discovery phase establishes that relationship.\n';
+index += '- `health-playerstate-watch` is a read-only time-series diagnostic. Do not infer CrabInvSync v2 health math from a single static health snapshot.\n';
+index += '- Multiplayer health scaling remains unproven until watch evidence exists from multiplayer scenarios.\n';
+if (latestWatchDiagnostic) {
+  const v = latestWatchDiagnostic.values;
+  index += '\n## Latest Health PlayerState Watch Summary\n\n';
+  index += `- Samples: ${v.health_playerstate_watch_sample_count || 'not found'}\n`;
+  index += `- currentHealth first/last/min/max: ${v.health_playerstate_watch_currentHealth_first || 'not found'} / ${v.health_playerstate_watch_currentHealth_last || 'not found'} / ${v.health_playerstate_watch_currentHealth_min || 'not found'} / ${v.health_playerstate_watch_currentHealth_max || 'not found'}\n`;
+  index += `- currentMaxHealth first/last/min/max: ${v.health_playerstate_watch_currentMaxHealth_first || 'not found'} / ${v.health_playerstate_watch_currentMaxHealth_last || 'not found'} / ${v.health_playerstate_watch_currentMaxHealth_min || 'not found'} / ${v.health_playerstate_watch_currentMaxHealth_max || 'not found'}\n`;
+  index += `- baseMaxHealth first/last/min/max: ${v.health_playerstate_watch_baseMaxHealth_first || 'not found'} / ${v.health_playerstate_watch_baseMaxHealth_last || 'not found'} / ${v.health_playerstate_watch_baseMaxHealth_min || 'not found'} / ${v.health_playerstate_watch_baseMaxHealth_max || 'not found'}\n`;
+  index += `- maxHealthMultiplier first/last/min/max: ${v.health_playerstate_watch_maxHealthMultiplier_first || 'not found'} / ${v.health_playerstate_watch_maxHealthMultiplier_last || 'not found'} / ${v.health_playerstate_watch_maxHealthMultiplier_min || 'not found'} / ${v.health_playerstate_watch_maxHealthMultiplier_max || 'not found'}\n`;
+}
 index += '\n## Confirmed SAFE Access Rows\n\n';
 const safeRows = rows.filter((row) => bestStatus(row.statuses) === 'SAFE');
 if (safeRows.length === 0) {
@@ -182,7 +216,7 @@ if (safeRows.length === 0) {
 
 let matrix = '# Safe Access Matrix\n\n';
 matrix += 'SAFE status is scoped to the contexts, roles, lifecycle states, and access method shown in the evidence. DirectField and GetPropertyValue are separate access paths.\n\n';
-matrix += 'Health source scope matters: `CrabPS` health rows are player-state-scoped; unscoped `FindFirstOf.CrabHC` is ambiguous and has already found `BP_Destructible_ChaoticBarrel10.HC`, so it is not player-health proof.\n\n';
+matrix += 'Health source scope matters: `CrabPC -> PlayerState -> CrabPS -> HealthInfo` is the only currently confirmed safe player health read path. Unscoped `FindFirstOf.CrabHC` is ambiguous and has already found `BP_Destructible_ChaoticBarrel10.HC`, so it is not player-health proof. `health-playerstate-watch` is read-only time-series evidence; multiplayer health scaling remains unproven until multiplayer watch rows exist.\n\n';
 matrix += matrixTable(rows);
 
 const byOwner = new Map();
@@ -201,6 +235,7 @@ for (const owner of Array.from(byOwner.keys()).sort()) {
 let unsafe = '# Known Unsafe Paths\n\n';
 unsafe += '- HUD ReceiveDrawHUD tick hook is known unsafe in current Crab Champions/UE4SS evidence and remains blocked by default.\n';
 unsafe += '- `FindFirstOf.CrabHC` is not a safe player-health source. It is unscoped and session `20260505T002614Z` found `BP_Destructible_ChaoticBarrel10.HC`, a destructible/barrel component.\n';
+unsafe += '- Do not use unscoped `CrabHC` discovery, item arrays, `InventoryInfo`, writes, RPCs, or HUD hooks for `health-playerstate-watch`.\n';
 const unsafeRows = rows.filter((row) => ['LUA_ERROR', 'UNSAFE_DISABLED'].includes(bestStatus(row.statuses)));
 if (unsafeRows.length > 0) {
   unsafe += '\n' + matrixTable(unsafeRows);
@@ -219,6 +254,7 @@ const defaultUntested = [
   ['CrabHC.PlayerOwnership', 'discovery', 'UNTESTED', 'Player-owned CrabHC discovery is not proven yet; unscoped FindFirstOf.CrabHC is ambiguous.'],
   ['CrabPS.HealthInfo.*', 'write', 'UNTESTED', 'Health writes are disabled.'],
   ['CrabPS.HealthInfo.*', 'joined-client', 'UNTESTED', 'Multiplayer/joined-client health evidence does not exist yet.'],
+  ['CrabPS.HealthInfo.*', 'multiplayer watch', 'UNTESTED', 'Multiplayer health scaling remains unproven until health-playerstate-watch evidence exists from multiplayer scenarios.'],
   ['CrabHC.HealthInfo.*', 'multiplayer', 'UNTESTED', 'Multiplayer max-health math is untested.'],
   ['GameplayState.*', 'write', 'UNSAFE_DISABLED', 'Writes are disabled.'],
   ['RPC.*', 'rpc', 'UNSAFE_DISABLED', 'RPC probes are disabled.']

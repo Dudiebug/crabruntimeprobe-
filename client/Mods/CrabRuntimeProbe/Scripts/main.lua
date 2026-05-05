@@ -20,6 +20,7 @@ local DEFAULT_CONFIG = {
   startupWarmupTicks = 60,
   contextStableTicksRequired = 10,
   maxProbesPerSession = 100,
+  repeatProbeSet = false,
   allowUnknownRoleProbes = false,
   allowJoinedClientDeepProbes = false,
   allowDeepArrayProbes = false,

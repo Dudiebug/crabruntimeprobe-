@@ -1,0 +1,197 @@
+CrabRuntimeProbe diagnostic summary
+timestamp = 2026-05-04T18:11:00.6002532-07:00
+collection_mode = CollectHealthPlayerState
+source_repo_path = <REDACTED_LOCAL_PATH>
+game_bin_path = <REDACTED_LOCAL_PATH>
+installed_mod_path = <REDACTED_LOCAL_PATH>
+installed_config_path = <REDACTED_LOCAL_PATH>
+ue4ss_log_path = <REDACTED_LOCAL_PATH>
+jsonl_file_count = 1
+jsonl_event_count = 7
+access_evidence_file_count = 1
+access_evidence_event_count = 5
+session_manifest_file_count = 1
+prepare_marker_found = True
+prepare_marker_path = <REDACTED_LOCAL_PATH>
+prepare_marker_preparedAt = 2026-05-05T01:08:40.4107279Z
+expected_git_commit = 514fb26ac71d75f1786ea9e3dad9142e2a311011
+expected_probeSet = health-playerstate-read
+expected_tickDriver = executeDelay
+expected_mode = active
+installed_git_commit = 514fb26ac71d75f1786ea9e3dad9142e2a311011
+latest_session_manifest_file = <REDACTED_LOCAL_PATH>
+latest_manifest_sessionId = 20260505T010858Z
+latest_manifest_git_commit = 514fb26ac71d75f1786ea9e3dad9142e2a311011
+latest_manifest_probeSet = health-playerstate-read
+latest_manifest_tickDriver = executeDelay
+latest_probe_results_file = <REDACTED_LOCAL_PATH>
+latest_access_evidence_file = <REDACTED_LOCAL_PATH>
+artifact_session_matches_prepare = True
+ue4ss_log_contains_session = True
+ue4ss_log_contains_installed_git_commit = True
+evidence_files_match_installed_config_probeSet = True
+latest_evidence_older_than_prepare = False
+stale_artifact_suspected = False
+jsonl_first_timestamp = 2026-05-05T01:08:58Z
+jsonl_last_timestamp = 2026-05-05T01:09:10Z
+observe_context_count = 0
+debug_startup_smoke_count = 1
+debug_writer_self_test_count = 1
+tickDriver = executeDelay
+mode = active
+probeSet = health-playerstate-read
+direct_field_probe_ran = False
+equipment_property_probe_ran = False
+equipment_property_weapon_count = 0
+equipment_property_ability_count = 0
+equipment_property_melee_count = 0
+latest_WeaponDA_value_summary = not found
+latest_AbilityDA_value_summary = not found
+latest_MeleeDA_value_summary = not found
+health_probe_ran = True
+latest_CrabHC_CurrentHealth = not found
+latest_CrabHC_CurrentMaxHealth = not found
+latest_CrabHC_BaseMaxHealth = not found
+latest_CrabPS_CurrentHealth = 250.0
+latest_CrabPS_CurrentMaxHealth = 250.0
+latest_CrabPS_BaseMaxHealth = 250.0
+latest_CrabPS_MaxHealthMultiplier = 1.0
+playerstate_health_probe_ran = True
+ambiguous_crabhc_detected = False
+unscoped_crabhc_fullName = not found
+playerstate_current_health = 250.0
+playerstate_current_max_health = 250.0
+playerstate_base_max_health = 250.0
+playerstate_max_health_multiplier = 1.0
+possible_base_health_model = solo player CrabPS base appears 250
+unique_contexts_seen = solo, startup
+unique_roles_seen = solo-or-host, unknown
+first_context = startup
+last_context = solo
+crabruntimeprobe_started = True
+startup_smoke_appeared = True
+writer_self_test_appeared = True
+observe_context_appeared = False
+tick_source_registered = executeDelay
+hud_receive_draw_hud_used = False
+crabinventorysync_appeared_unexpectedly = False
+last_crabruntimeprobe_log_line = [2026-05-05 01:10:47] [Lua] [CrabRuntimeProbe] tick heartbeat tick=1000 mode=active
+crash_suspicion = none
+startup_complete_reached = True
+tick_registration_happened = True
+probe_breadcrumbs_appeared = True
+likely_crash_phase = after current-run probe breadcrumbs appeared
+allowHudTickHook = false
+allowUnknownRoleProbes = false
+allowJoinedClientDeepProbes = false
+allowDeepArrayProbes = false
+allowInventoryInfoProbes = false
+allowHealthProbes = true
+allowWriteProbes = false
+allowRpcProbes = false
+observe_context_latest_context = not found
+observe_context_latest_role = not found
+observe_context_latest_lifecycle = not found
+observe_context_latest_world = not found
+observe_context_latest_map = not found
+observe_context_latest_player = not found
+
+installed_build_info:
+ - action = install
+ - git_commit = 514fb26ac71d75f1786ea9e3dad9142e2a311011
+ - git_branch = main
+ - timestamp = 2026-05-04T18:08:40.2479974-07:00
+ - source_repo_path = <REDACTED_LOCAL_PATH>
+
+installed_config:
+ - enabled = true
+ - mode = active
+ - tickDriver = executeDelay
+ - debugBreadcrumbs = true
+ - debugTickHeartbeat = true
+ - debugWriterSelfTest = true
+ - allowHudTickHook = false
+ - writeJsonlResults = true
+ - writeMarkdownSnapshots = false
+ - observeIntervalTicks = 10
+ - probeIntervalTicks = 10
+ - startupWarmupTicks = 60
+ - contextStableTicksRequired = 10
+ - maxProbesPerSession = 100
+ - allowUnknownRoleProbes = false
+ - allowJoinedClientDeepProbes = false
+ - allowDeepArrayProbes = false
+ - allowInventoryInfoProbes = false
+ - allowHealthProbes = true
+ - allowWriteProbes = false
+ - allowRpcProbes = false
+ - probeSet = health-playerstate-read
+
+jsonl_event_type_counts:
+ - CrabPS.GetPropertyValue.BaseMaxHealth: 1
+ - CrabPS.GetPropertyValue.HealthInfo: 1
+ - CrabPS.GetPropertyValue.MaxHealthMultiplier: 1
+ - CrabPS.HealthInfo.CurrentHealth: 1
+ - CrabPS.HealthInfo.CurrentMaxHealth: 1
+ - Debug.StartupSmoke: 1
+ - Debug.WriterSelfTest: 1
+
+probe_result_counts_by_probe_name:
+ - CrabPS.GetPropertyValue.BaseMaxHealth: 1
+ - CrabPS.GetPropertyValue.HealthInfo: 1
+ - CrabPS.GetPropertyValue.MaxHealthMultiplier: 1
+ - CrabPS.HealthInfo.CurrentHealth: 1
+ - CrabPS.HealthInfo.CurrentMaxHealth: 1
+ - Debug.StartupSmoke: 1
+ - Debug.WriterSelfTest: 1
+
+access_evidence_counts_by_symbol_accessMethod:
+ - CrabPS.BaseMaxHealth / GetPropertyValue: 1
+ - CrabPS.HealthInfo / GetPropertyValue: 1
+ - CrabPS.HealthInfo.CurrentHealth / HealthInfoStructField: 1
+ - CrabPS.HealthInfo.CurrentMaxHealth / HealthInfoStructField: 1
+ - CrabPS.MaxHealthMultiplier / GetPropertyValue: 1
+
+jsonl_files:
+ - <REDACTED_LOCAL_PATH>
+
+access_evidence_files:
+ - <REDACTED_LOCAL_PATH>
+
+session_manifest_files:
+ - <REDACTED_LOCAL_PATH>
+
+last_5_crabruntimeprobe_log_lines:
+ - [2026-05-05 01:10:03] [Lua] [CrabRuntimeProbe] tick heartbeat tick=600 mode=active
+ - [2026-05-05 01:10:14] [Lua] [CrabRuntimeProbe] tick heartbeat tick=700 mode=active
+ - [2026-05-05 01:10:25] [Lua] [CrabRuntimeProbe] tick heartbeat tick=800 mode=active
+ - [2026-05-05 01:10:36] [Lua] [CrabRuntimeProbe] tick heartbeat tick=900 mode=active
+ - [2026-05-05 01:10:47] [Lua] [CrabRuntimeProbe] tick heartbeat tick=1000 mode=active
+
+last_5_jsonl_events:
+ - ts=2026-05-05T01:09:05Z tick=70 event=CrabPS.GetPropertyValue.HealthInfo result=ok context=solo role=solo-or-host summary=HealthInfo obtained
+ - ts=2026-05-05T01:09:06Z tick=80 event=CrabPS.HealthInfo.CurrentHealth result=ok context=solo role=solo-or-host summary=250.0
+ - ts=2026-05-05T01:09:08Z tick=90 event=CrabPS.HealthInfo.CurrentMaxHealth result=ok context=solo role=solo-or-host summary=250.0
+ - ts=2026-05-05T01:09:09Z tick=100 event=CrabPS.GetPropertyValue.BaseMaxHealth result=ok context=solo role=solo-or-host summary=250.0
+ - ts=2026-05-05T01:09:10Z tick=110 event=CrabPS.GetPropertyValue.MaxHealthMultiplier result=ok context=solo role=solo-or-host summary=1.0
+
+latest_5_access_evidence_rows:
+ - ts=2026-05-05T01:09:05Z symbol=CrabPS.HealthInfo accessMethod=GetPropertyValue status=SAFE context=solo role=solo-or-host summary=HealthInfo obtained
+ - ts=2026-05-05T01:09:06Z symbol=CrabPS.HealthInfo.CurrentHealth accessMethod=HealthInfoStructField status=SAFE context=solo role=solo-or-host summary=250.0
+ - ts=2026-05-05T01:09:08Z symbol=CrabPS.HealthInfo.CurrentMaxHealth accessMethod=HealthInfoStructField status=SAFE context=solo role=solo-or-host summary=250.0
+ - ts=2026-05-05T01:09:09Z symbol=CrabPS.BaseMaxHealth accessMethod=GetPropertyValue status=SAFE context=solo role=solo-or-host summary=250.0
+ - ts=2026-05-05T01:09:10Z symbol=CrabPS.MaxHealthMultiplier accessMethod=GetPropertyValue status=SAFE context=solo role=solo-or-host summary=1.0
+
+crabruntimeprobe_error_lines:
+ - none
+
+files_to_upload:
+ - <REDACTED_LOCAL_PATH>
+ - <REDACTED_LOCAL_PATH>
+ - <REDACTED_LOCAL_PATH>
+ - <REDACTED_LOCAL_PATH>
+ - <REDACTED_LOCAL_PATH>
+ - crash files only if a crash happened
+
+failures:
+ - none
