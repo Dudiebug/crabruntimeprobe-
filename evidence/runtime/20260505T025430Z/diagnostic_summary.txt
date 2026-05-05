@@ -1,0 +1,205 @@
+CrabRuntimeProbe diagnostic summary
+timestamp = 2026-05-04T19:56:12.9776765-07:00
+collection_mode = CollectHealthPlayerStateWatch
+source_repo_path = <REDACTED_LOCAL_PATH>
+game_bin_path = <REDACTED_LOCAL_PATH>
+installed_mod_path = <REDACTED_LOCAL_PATH>
+installed_config_path = <REDACTED_LOCAL_PATH>
+ue4ss_log_path = <REDACTED_LOCAL_PATH>
+jsonl_file_count = 1
+jsonl_event_count = 84
+access_evidence_file_count = 1
+access_evidence_event_count = 82
+session_manifest_file_count = 1
+prepare_marker_found = True
+prepare_marker_path = <REDACTED_LOCAL_PATH>
+prepare_marker_preparedAt = 2026-05-05T02:54:08.7455826Z
+expected_git_commit = 55820ce4522abef78d690789ab1524ff6668bfe0
+expected_probeSet = health-playerstate-watch
+expected_tickDriver = executeDelay
+expected_mode = active
+installed_git_commit = 55820ce4522abef78d690789ab1524ff6668bfe0
+latest_session_manifest_file = <REDACTED_LOCAL_PATH>
+latest_manifest_sessionId = 20260505T025430Z
+latest_manifest_git_commit = 55820ce4522abef78d690789ab1524ff6668bfe0
+latest_manifest_probeSet = health-playerstate-watch
+latest_manifest_tickDriver = executeDelay
+latest_probe_results_file = <REDACTED_LOCAL_PATH>
+latest_access_evidence_file = <REDACTED_LOCAL_PATH>
+artifact_session_matches_prepare = True
+ue4ss_log_contains_session = True
+ue4ss_log_contains_installed_git_commit = True
+evidence_files_match_installed_config_probeSet = True
+latest_evidence_older_than_prepare = False
+stale_artifact_suspected = False
+jsonl_first_timestamp = 2026-05-05T02:54:31Z
+jsonl_last_timestamp = 2026-05-05T02:56:07Z
+observe_context_count = 0
+debug_startup_smoke_count = 1
+debug_writer_self_test_count = 1
+tickDriver = executeDelay
+mode = active
+probeSet = health-playerstate-watch
+direct_field_probe_ran = False
+equipment_property_probe_ran = False
+equipment_property_weapon_count = 0
+equipment_property_ability_count = 0
+equipment_property_melee_count = 0
+latest_WeaponDA_value_summary = not found
+latest_AbilityDA_value_summary = not found
+latest_MeleeDA_value_summary = not found
+health_probe_ran = True
+latest_CrabHC_CurrentHealth = not found
+latest_CrabHC_CurrentMaxHealth = not found
+latest_CrabHC_BaseMaxHealth = not found
+latest_CrabPS_CurrentHealth = not found
+latest_CrabPS_CurrentMaxHealth = not found
+latest_CrabPS_BaseMaxHealth = not found
+latest_CrabPS_MaxHealthMultiplier = not found
+playerstate_health_probe_ran = False
+playerstate_health_watch_probe_ran = True
+ambiguous_crabhc_detected = False
+crab_hc_touched = False
+unscoped_crabhc_fullName = not found
+playerstate_current_health = not found
+playerstate_current_max_health = not found
+playerstate_base_max_health = not found
+playerstate_max_health_multiplier = not found
+health_playerstate_watch_sample_count = 82
+health_playerstate_watch_currentHealth_first = 250
+health_playerstate_watch_currentHealth_last = 250
+health_playerstate_watch_currentHealth_min = 250
+health_playerstate_watch_currentHealth_max = 250
+health_playerstate_watch_currentMaxHealth_first = 250
+health_playerstate_watch_currentMaxHealth_last = 250
+health_playerstate_watch_currentMaxHealth_min = 250
+health_playerstate_watch_currentMaxHealth_max = 250
+health_playerstate_watch_baseMaxHealth_first = 250
+health_playerstate_watch_baseMaxHealth_last = 250
+health_playerstate_watch_baseMaxHealth_min = 250
+health_playerstate_watch_baseMaxHealth_max = 250
+health_playerstate_watch_maxHealthMultiplier_first = 1
+health_playerstate_watch_maxHealthMultiplier_last = 1
+health_playerstate_watch_maxHealthMultiplier_min = 1
+health_playerstate_watch_maxHealthMultiplier_max = 1
+possible_base_health_model = solo player CrabPS base appears 250
+unique_contexts_seen = solo, startup
+unique_roles_seen = solo-or-host, unknown
+first_context = startup
+last_context = solo
+crabruntimeprobe_started = True
+startup_smoke_appeared = True
+writer_self_test_appeared = True
+observe_context_appeared = False
+tick_source_registered = executeDelay
+hud_receive_draw_hud_used = False
+crabinventorysync_appeared_unexpectedly = False
+last_crabruntimeprobe_log_line = [2026-05-05 02:56:07] [Lua] [CrabRuntimeProbe][breadcrumb] Health.PlayerState.Sample exit
+crash_suspicion = none
+startup_complete_reached = True
+tick_registration_happened = True
+probe_breadcrumbs_appeared = True
+likely_crash_phase = after current-run probe breadcrumbs appeared
+allowHudTickHook = false
+allowUnknownRoleProbes = false
+allowJoinedClientDeepProbes = false
+allowDeepArrayProbes = false
+allowInventoryInfoProbes = false
+allowHealthProbes = true
+allowWriteProbes = false
+allowRpcProbes = false
+observe_context_latest_context = not found
+observe_context_latest_role = not found
+observe_context_latest_lifecycle = not found
+observe_context_latest_world = not found
+observe_context_latest_map = not found
+observe_context_latest_player = not found
+
+installed_build_info:
+ - action = install
+ - git_commit = 55820ce4522abef78d690789ab1524ff6668bfe0
+ - git_branch = main
+ - timestamp = 2026-05-04T19:54:08.5588247-07:00
+ - source_repo_path = <REDACTED_LOCAL_PATH>
+
+installed_config:
+ - enabled = true
+ - mode = active
+ - tickDriver = executeDelay
+ - debugBreadcrumbs = true
+ - debugTickHeartbeat = true
+ - debugWriterSelfTest = true
+ - allowHudTickHook = false
+ - writeJsonlResults = true
+ - writeMarkdownSnapshots = false
+ - observeIntervalTicks = 10
+ - probeIntervalTicks = 10
+ - startupWarmupTicks = 60
+ - contextStableTicksRequired = 10
+ - maxProbesPerSession = 180
+ - repeatProbeSet = true
+ - allowUnknownRoleProbes = false
+ - allowJoinedClientDeepProbes = false
+ - allowDeepArrayProbes = false
+ - allowInventoryInfoProbes = false
+ - allowHealthProbes = true
+ - allowWriteProbes = false
+ - allowRpcProbes = false
+ - probeSet = health-playerstate-watch
+
+jsonl_event_type_counts:
+ - Debug.StartupSmoke: 1
+ - Debug.WriterSelfTest: 1
+ - Health.PlayerState.Sample: 82
+
+probe_result_counts_by_probe_name:
+ - Debug.StartupSmoke: 1
+ - Debug.WriterSelfTest: 1
+ - Health.PlayerState.Sample: 82
+
+access_evidence_counts_by_symbol_accessMethod:
+ - CrabPS.HealthInfo / PlayerStateHealthSample: 82
+
+jsonl_files:
+ - <REDACTED_LOCAL_PATH>
+
+access_evidence_files:
+ - <REDACTED_LOCAL_PATH>
+
+session_manifest_files:
+ - <REDACTED_LOCAL_PATH>
+
+last_5_crabruntimeprobe_log_lines:
+ - [2026-05-05 02:56:05] [Lua] [CrabRuntimeProbe][breadcrumb] Health.PlayerState.Sample exit
+ - [2026-05-05 02:56:06] [Lua] [CrabRuntimeProbe][breadcrumb] Health.PlayerState.Sample enter
+ - [2026-05-05 02:56:06] [Lua] [CrabRuntimeProbe][breadcrumb] Health.PlayerState.Sample exit
+ - [2026-05-05 02:56:07] [Lua] [CrabRuntimeProbe][breadcrumb] Health.PlayerState.Sample enter
+ - [2026-05-05 02:56:07] [Lua] [CrabRuntimeProbe][breadcrumb] Health.PlayerState.Sample exit
+
+last_5_jsonl_events:
+ - ts=2026-05-05T02:56:03Z tick=840 event=Health.PlayerState.Sample result=ok context=solo role=solo-or-host summary=currentHealth=250.0 currentMaxHealth=250.0 baseMaxHealth=250.0 maxHealthMultiplier=1.0
+ - ts=2026-05-05T02:56:04Z tick=850 event=Health.PlayerState.Sample result=ok context=solo role=solo-or-host summary=currentHealth=250.0 currentMaxHealth=250.0 baseMaxHealth=250.0 maxHealthMultiplier=1.0
+ - ts=2026-05-05T02:56:05Z tick=860 event=Health.PlayerState.Sample result=ok context=solo role=solo-or-host summary=currentHealth=250.0 currentMaxHealth=250.0 baseMaxHealth=250.0 maxHealthMultiplier=1.0
+ - ts=2026-05-05T02:56:06Z tick=870 event=Health.PlayerState.Sample result=ok context=solo role=solo-or-host summary=currentHealth=250.0 currentMaxHealth=250.0 baseMaxHealth=250.0 maxHealthMultiplier=1.0
+ - ts=2026-05-05T02:56:07Z tick=880 event=Health.PlayerState.Sample result=ok context=solo role=solo-or-host summary=currentHealth=250.0 currentMaxHealth=250.0 baseMaxHealth=250.0 maxHealthMultiplier=1.0
+
+latest_5_access_evidence_rows:
+ - ts=2026-05-05T02:56:03Z symbol=CrabPS.HealthInfo accessMethod=PlayerStateHealthSample status=SAFE context=solo role=solo-or-host summary=currentHealth=250.0 currentMaxHealth=250.0 baseMaxHealth=250.0 maxHealthMultiplier=1.0
+ - ts=2026-05-05T02:56:04Z symbol=CrabPS.HealthInfo accessMethod=PlayerStateHealthSample status=SAFE context=solo role=solo-or-host summary=currentHealth=250.0 currentMaxHealth=250.0 baseMaxHealth=250.0 maxHealthMultiplier=1.0
+ - ts=2026-05-05T02:56:05Z symbol=CrabPS.HealthInfo accessMethod=PlayerStateHealthSample status=SAFE context=solo role=solo-or-host summary=currentHealth=250.0 currentMaxHealth=250.0 baseMaxHealth=250.0 maxHealthMultiplier=1.0
+ - ts=2026-05-05T02:56:06Z symbol=CrabPS.HealthInfo accessMethod=PlayerStateHealthSample status=SAFE context=solo role=solo-or-host summary=currentHealth=250.0 currentMaxHealth=250.0 baseMaxHealth=250.0 maxHealthMultiplier=1.0
+ - ts=2026-05-05T02:56:07Z symbol=CrabPS.HealthInfo accessMethod=PlayerStateHealthSample status=SAFE context=solo role=solo-or-host summary=currentHealth=250.0 currentMaxHealth=250.0 baseMaxHealth=250.0 maxHealthMultiplier=1.0
+
+crabruntimeprobe_error_lines:
+ - none
+
+files_to_upload:
+ - <REDACTED_LOCAL_PATH>
+ - <REDACTED_LOCAL_PATH>
+ - <REDACTED_LOCAL_PATH>
+ - <REDACTED_LOCAL_PATH>
+ - <REDACTED_LOCAL_PATH>
+ - crash files only if a crash happened
+
+failures:
+ - none

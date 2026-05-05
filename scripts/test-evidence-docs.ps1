@@ -107,6 +107,40 @@ Set-Content -LiteralPath (Join-Path $GameResults "probe_results_$SessionId.jsonl
   '{"timestamp":"2026-05-04T00:00:01Z","sessionId":"testsession","probeId":"CrabPS.GetPropertyValue.WeaponDA","probeName":"CrabPS.GetPropertyValue.WeaponDA","result":"ok"}'
 )
 Set-Content -LiteralPath (Join-Path $GameResults "session_manifest_$SessionId.json") -Encoding ASCII -Value '{"sessionId":"testsession","tickDriver":"executeDelay","probeSet":"health-baseline-read","warning":"one or more unsafe gates are true","safetyGates":{"allowHudTickHook":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":true,"allowWriteProbes":false,"allowRpcProbes":false,"allowJoinedClientDeepProbes":false,"allowUnknownRoleProbes":false}}'
+Set-Content -LiteralPath (Join-Path $GameResults "diagnostic_summary.txt") -Encoding ASCII -Value @(
+  "CrabRuntimeProbe diagnostic summary",
+  "collection_mode = CollectHealthPlayerStateWatch",
+  "playerstate_health_watch_probe_ran = True",
+  "ambiguous_crabhc_detected = False",
+  "crab_hc_touched = False",
+  "health_playerstate_watch_sample_count = 1",
+  "health_playerstate_watch_currentHealth_first = 250",
+  "health_playerstate_watch_currentHealth_last = 250",
+  "health_playerstate_watch_currentHealth_min = 250",
+  "health_playerstate_watch_currentHealth_max = 250",
+  "health_playerstate_watch_currentMaxHealth_first = 250",
+  "health_playerstate_watch_currentMaxHealth_last = 250",
+  "health_playerstate_watch_currentMaxHealth_min = 250",
+  "health_playerstate_watch_currentMaxHealth_max = 250",
+  "health_playerstate_watch_baseMaxHealth_first = 250",
+  "health_playerstate_watch_baseMaxHealth_last = 250",
+  "health_playerstate_watch_baseMaxHealth_min = 250",
+  "health_playerstate_watch_baseMaxHealth_max = 250",
+  "health_playerstate_watch_maxHealthMultiplier_first = 1",
+  "health_playerstate_watch_maxHealthMultiplier_last = 1",
+  "health_playerstate_watch_maxHealthMultiplier_min = 1",
+  "health_playerstate_watch_maxHealthMultiplier_max = 1",
+  "possible_base_health_model = solo player CrabPS base appears 250",
+  "allowHudTickHook = false",
+  "allowUnknownRoleProbes = false",
+  "allowJoinedClientDeepProbes = false",
+  "allowDeepArrayProbes = false",
+  "allowInventoryInfoProbes = false",
+  "allowWriteProbes = false",
+  "allowRpcProbes = false",
+  "failures:",
+  " - none"
+)
 
 Push-Location $WorkRoot
 try {
@@ -133,6 +167,9 @@ Assert-Contains -Path $MatrixPath -Expected 'BP_Destructible_ChaoticBarrel10.HC'
 Assert-Contains -Path $MatrixPath -Expected '| `CrabHC` | FindFirstOf | solo | solo-or-host | SAFE | ok | testsession | sourceScope=non_player_candidate; value=CrabHC found |'
 Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected '| `CrabPS.WeaponDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | testsession | sourceScope=player_state_scoped; shortName=DA_Weapon_Minigun nameSource=fullNameFallback objectClass=CrabWeaponDA |'
 Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'Health playerstate watch samples: 1'
+Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'CrabHC touched: False'
+Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'Unsafe gates: HUD=false, deepArrays=false, InventoryInfo=false, writes=false, RPCs=false, unknownRole=false, joinedClientDeep=false'
+Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'Possible base health model: solo player CrabPS base appears 250'
 Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'Do not infer CrabInvSync v2 health math from a single static health snapshot.'
 Assert-Contains -Path (Join-Path $WorkRoot "docs\KNOWN_UNSAFE_PATHS.md") -Expected '`FindFirstOf.CrabHC` is not a safe player-health source.'
 Assert-Contains -Path (Join-Path $WorkRoot "docs\UNTESTED_ACCESS_PATHS.md") -Expected 'Multiplayer health scaling remains unproven until health-playerstate-watch evidence exists from multiplayer scenarios.'

@@ -201,10 +201,15 @@ if (latestWatchDiagnostic) {
   const v = latestWatchDiagnostic.values;
   index += '\n## Latest Health PlayerState Watch Summary\n\n';
   index += `- Samples: ${v.health_playerstate_watch_sample_count || 'not found'}\n`;
+  index += `- PlayerState watch probe ran: ${v.playerstate_health_watch_probe_ran || 'not found'}\n`;
+  index += `- CrabHC touched: ${v.crab_hc_touched || 'not found'}\n`;
+  index += `- Ambiguous CrabHC detected: ${v.ambiguous_crabhc_detected || 'not found'}\n`;
+  index += `- Unsafe gates: HUD=${v.allowHudTickHook || 'not found'}, deepArrays=${v.allowDeepArrayProbes || 'not found'}, InventoryInfo=${v.allowInventoryInfoProbes || 'not found'}, writes=${v.allowWriteProbes || 'not found'}, RPCs=${v.allowRpcProbes || 'not found'}, unknownRole=${v.allowUnknownRoleProbes || 'not found'}, joinedClientDeep=${v.allowJoinedClientDeepProbes || 'not found'}\n`;
   index += `- currentHealth first/last/min/max: ${v.health_playerstate_watch_currentHealth_first || 'not found'} / ${v.health_playerstate_watch_currentHealth_last || 'not found'} / ${v.health_playerstate_watch_currentHealth_min || 'not found'} / ${v.health_playerstate_watch_currentHealth_max || 'not found'}\n`;
   index += `- currentMaxHealth first/last/min/max: ${v.health_playerstate_watch_currentMaxHealth_first || 'not found'} / ${v.health_playerstate_watch_currentMaxHealth_last || 'not found'} / ${v.health_playerstate_watch_currentMaxHealth_min || 'not found'} / ${v.health_playerstate_watch_currentMaxHealth_max || 'not found'}\n`;
   index += `- baseMaxHealth first/last/min/max: ${v.health_playerstate_watch_baseMaxHealth_first || 'not found'} / ${v.health_playerstate_watch_baseMaxHealth_last || 'not found'} / ${v.health_playerstate_watch_baseMaxHealth_min || 'not found'} / ${v.health_playerstate_watch_baseMaxHealth_max || 'not found'}\n`;
   index += `- maxHealthMultiplier first/last/min/max: ${v.health_playerstate_watch_maxHealthMultiplier_first || 'not found'} / ${v.health_playerstate_watch_maxHealthMultiplier_last || 'not found'} / ${v.health_playerstate_watch_maxHealthMultiplier_min || 'not found'} / ${v.health_playerstate_watch_maxHealthMultiplier_max || 'not found'}\n`;
+  index += `- Possible base health model: ${v.possible_base_health_model || 'not found'}\n`;
 }
 index += '\n## Confirmed SAFE Access Rows\n\n';
 const safeRows = rows.filter((row) => bestStatus(row.statuses) === 'SAFE');
