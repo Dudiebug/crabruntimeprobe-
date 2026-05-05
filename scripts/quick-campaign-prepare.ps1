@@ -91,6 +91,9 @@ function Assert-CampaignPhaseSafety {
   if (($required.ContainsKey("allowCrystalsReadProbes") -and $required["allowCrystalsReadProbes"]) -and $Phase.phaseId -ne "crystals-read") {
     throw "Campaign phase $($Phase.phaseId) may not enable allowCrystalsReadProbes."
   }
+  if (($required.ContainsKey("allowSlotsReadProbes") -and $required["allowSlotsReadProbes"]) -and $Phase.phaseId -ne "slots-read") {
+    throw "Campaign phase $($Phase.phaseId) may not enable allowSlotsReadProbes."
+  }
   if (($required.ContainsKey("allowInventoryArrayShallowProbes") -and $required["allowInventoryArrayShallowProbes"]) -and $Phase.phaseId -ne "local-inventory-array-shallow-read") {
     throw "Campaign phase $($Phase.phaseId) may not enable allowInventoryArrayShallowProbes."
   }
@@ -139,6 +142,7 @@ function Set-CampaignPhaseConfig {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowCrystalsReadProbes",
+    "allowSlotsReadProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -179,6 +183,7 @@ function Assert-CampaignInstalledSafety {
     [switch]$AllowIdentityProbes,
     [switch]$AllowResourceVisibilityProbes,
     [switch]$AllowCrystalsReadProbes,
+    [switch]$AllowSlotsReadProbes,
     [switch]$AllowInventoryArrayShallowProbes,
     [switch]$AllowInventoryArrayShapeConfirmProbes,
     [switch]$AllowInventoryUserdataIntrospectionProbes,
@@ -198,6 +203,7 @@ function Assert-CampaignInstalledSafety {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowCrystalsReadProbes",
+    "allowSlotsReadProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -210,6 +216,7 @@ function Assert-CampaignInstalledSafety {
       ($AllowIdentityProbes -and $key -eq "allowIdentityProbes") -or
       ($AllowResourceVisibilityProbes -and $key -eq "allowResourceVisibilityProbes") -or
       ($AllowCrystalsReadProbes -and $key -eq "allowCrystalsReadProbes") -or
+      ($AllowSlotsReadProbes -and $key -eq "allowSlotsReadProbes") -or
       ($AllowInventoryArrayShallowProbes -and $key -eq "allowInventoryArrayShallowProbes") -or
       ($AllowInventoryArrayShapeConfirmProbes -and $key -eq "allowInventoryArrayShapeConfirmProbes") -or
       ($AllowInventoryUserdataIntrospectionProbes -and $key -eq "allowInventoryUserdataIntrospectionProbes") -or
@@ -288,6 +295,7 @@ Assert-CampaignInstalledSafety `
   -AllowIdentityProbes:($phase.phaseId -eq "multiplayer-roster-read" -or $phase.phaseId -eq "multiplayer-resource-visibility-read") `
   -AllowResourceVisibilityProbes:($phase.phaseId -eq "multiplayer-resource-visibility-read") `
   -AllowCrystalsReadProbes:($phase.phaseId -eq "crystals-read") `
+  -AllowSlotsReadProbes:($phase.phaseId -eq "slots-read") `
   -AllowInventoryArrayShallowProbes:($phase.phaseId -eq "local-inventory-array-shallow-read") `
   -AllowInventoryArrayShapeConfirmProbes:($phase.phaseId -eq "local-inventory-array-shape-confirm") `
   -AllowInventoryUserdataIntrospectionProbes:($phase.phaseId -eq "local-inventory-userdata-introspection") `

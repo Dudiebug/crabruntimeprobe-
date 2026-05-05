@@ -17,6 +17,7 @@ const ALL_GATES = [
   'allowRawIdentityEvidence',
   'allowResourceVisibilityProbes',
   'allowCrystalsReadProbes',
+  'allowSlotsReadProbes',
   'allowInventoryArrayShallowProbes',
   'allowInventoryArrayShapeConfirmProbes',
   'allowInventoryUserdataIntrospectionProbes',
@@ -271,6 +272,7 @@ function classifyCrystalsReadEvidence(rows, options = {}) {
     'allowIdentityProbes',
     'allowRawIdentityEvidence',
     'allowResourceVisibilityProbes',
+    'allowSlotsReadProbes',
     'allowInventoryArrayShallowProbes',
     'allowInventoryArrayShapeConfirmProbes',
     'allowInventoryUserdataIntrospectionProbes',
@@ -312,6 +314,105 @@ function classifyCrystalsReadEvidence(rows, options = {}) {
     noRpcs: crystalRows.length > 0 && crystalRows.every((row) => row.noRpcs === true),
     noHud: crystalRows.length > 0 && crystalRows.every((row) => row.noHud === true),
     noDeepArrays: crystalRows.length > 0 && crystalRows.every((row) => row.noDeepArrays === true),
+    safetyViolation,
+    crashSuspect: options.crashSuspect === true,
+    classification,
+    status
+  };
+}
+
+function isSlotsReadRow(row) {
+  return (row.probeName || row.probeId || row.event || '') === 'Resource.Slots.Read';
+}
+
+function objectValues(obj) {
+  if (!obj || typeof obj !== 'object') return [];
+  return Object.values(obj);
+}
+
+function valueInByteRange(value) {
+  if (!isFiniteIntegerLike(value)) return false;
+  const numberValue = typeof value === 'number' ? value : Number(value);
+  return numberValue >= 0 && numberValue <= 255;
+}
+
+function classifySlotsReadEvidence(rows, options = {}) {
+  const slotRows = rows.filter(isSlotsReadRow);
+  const localPlayerStatePresent = slotRows.some((row) => row.localPlayerStatePresent === true);
+  const slotsReadAttempted = slotRows.some((row) => row.slotsReadAttempted === true);
+  const slotScalarValues = {};
+  for (const row of slotRows) {
+    if (row.slotScalarValues && typeof row.slotScalarValues === 'object') {
+      for (const [name, value] of Object.entries(row.slotScalarValues)) {
+        slotScalarValues[name] = value;
+      }
+    }
+  }
+  const presentValues = Object.values(slotScalarValues);
+  const valuesIntegerLike = presentValues.every(isFiniteIntegerLike);
+  const valuesInByteRange = presentValues.every(valueInByteRange);
+  const forbiddenGateNames = [
+    'allowHudTickHook',
+    'allowUnknownRoleProbes',
+    'allowJoinedClientDeepProbes',
+    'allowDeepArrayProbes',
+    'allowInventoryInfoProbes',
+    'allowHealthProbes',
+    'allowIdentityProbes',
+    'allowRawIdentityEvidence',
+    'allowResourceVisibilityProbes',
+    'allowCrystalsReadProbes',
+    'allowInventoryArrayShallowProbes',
+    'allowInventoryArrayShapeConfirmProbes',
+    'allowInventoryUserdataIntrospectionProbes',
+    'allowWriteProbes',
+    'allowRpcProbes'
+  ];
+  const safetyViolation = slotRows.some((row) => {
+    const gates = row && row.safetyGates ? row.safetyGates : {};
+    return forbiddenGateNames.some((gate) => gates[gate] === true) ||
+      row.noElementDereference !== true ||
+      row.noArrayCount !== true ||
+      row.noArrayTraversal !== true ||
+      row.noInventoryInfo !== true ||
+      row.noEnhancements !== true ||
+      row.noWrites !== true ||
+      row.noRpcs !== true ||
+      row.noHud !== true ||
+      row.noDeepArrays !== true;
+  });
+  const explicitIntegerViolation = slotRows.some((row) =>
+    objectValues(row.slotIntegerLike).some((value) => value !== true)
+  );
+  const explicitRangeViolation = slotRows.some((row) =>
+    objectValues(row.slotValuesInByteRange).some((value) => value !== true)
+  );
+  let status = 'no_evidence';
+  let classification = 'unresolved';
+  if (safetyViolation || !valuesIntegerLike || !valuesInByteRange || explicitIntegerViolation || explicitRangeViolation) {
+    status = 'failed';
+  } else if (slotRows.length > 0 && localPlayerStatePresent && slotsReadAttempted) {
+    status = options.crashSuspect ? 'crash_suspect_slots_read' : 'slots_read_confirmed';
+    classification = options.crashSuspect ? 'slots_read_crash_suspect' : 'slots_read_confirmed';
+  }
+  return {
+    slotsReadEvidenceFound: slotRows.length > 0,
+    localPlayerStatePresent,
+    slotsReadAttempted,
+    slotScalarValues,
+    presentSlotFieldCount: presentValues.length,
+    valuesIntegerLike,
+    valuesInByteRange,
+    lockedSlotModel: 'unresolved',
+    noElementDereference: slotRows.length > 0 && slotRows.every((row) => row.noElementDereference === true),
+    noArrayCount: slotRows.length > 0 && slotRows.every((row) => row.noArrayCount === true),
+    noArrayTraversal: slotRows.length > 0 && slotRows.every((row) => row.noArrayTraversal === true),
+    noInventoryInfo: slotRows.length > 0 && slotRows.every((row) => row.noInventoryInfo === true),
+    noEnhancements: slotRows.length > 0 && slotRows.every((row) => row.noEnhancements === true),
+    noWrites: slotRows.length > 0 && slotRows.every((row) => row.noWrites === true),
+    noRpcs: slotRows.length > 0 && slotRows.every((row) => row.noRpcs === true),
+    noHud: slotRows.length > 0 && slotRows.every((row) => row.noHud === true),
+    noDeepArrays: slotRows.length > 0 && slotRows.every((row) => row.noDeepArrays === true),
     safetyViolation,
     crashSuspect: options.crashSuspect === true,
     classification,
@@ -374,6 +475,7 @@ function classifyLocalInventoryArrayEvidence(rows, options = {}) {
     return gates.allowDeepArrayProbes === true ||
       gates.allowInventoryInfoProbes === true ||
       gates.allowCrystalsReadProbes === true ||
+      gates.allowSlotsReadProbes === true ||
       gates.allowWriteProbes === true ||
       gates.allowRpcProbes === true ||
       gates.allowHudTickHook === true ||
@@ -448,6 +550,7 @@ function classifyLocalInventoryArrayShapeConfirmEvidence(rows, options = {}) {
     'allowIdentityProbes',
     'allowResourceVisibilityProbes',
     'allowCrystalsReadProbes',
+    'allowSlotsReadProbes',
     'allowUnknownRoleProbes',
     'allowJoinedClientDeepProbes',
     'allowInventoryUserdataIntrospectionProbes'
@@ -545,6 +648,7 @@ function classifyLocalInventoryUserdataIntrospectionEvidence(rows, options = {})
     'allowIdentityProbes',
     'allowResourceVisibilityProbes',
     'allowCrystalsReadProbes',
+    'allowSlotsReadProbes',
     'allowUnknownRoleProbes',
     'allowJoinedClientDeepProbes'
   ];
@@ -673,6 +777,9 @@ function validatePhaseSafety(phase, gates = gateConfigForPhaseUnchecked(phase)) 
   }
   if (gates.allowCrystalsReadProbes && phase.phaseId !== 'crystals-read') {
     throw new Error(`${phase.phaseId} may not enable allowCrystalsReadProbes.`);
+  }
+  if (gates.allowSlotsReadProbes && phase.phaseId !== 'slots-read') {
+    throw new Error(`${phase.phaseId} may not enable allowSlotsReadProbes.`);
   }
   if (gates.allowInventoryArrayShallowProbes && phase.phaseId !== 'local-inventory-array-shallow-read') {
     throw new Error(`${phase.phaseId} may not enable allowInventoryArrayShallowProbes.`);
@@ -928,6 +1035,26 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
       latestSummaryPath: facts.latestSummaryPath || ''
     });
   }
+  const slotsReadSessionId = latestSessionIdForRows(facts.rows, isSlotsReadRow);
+  const slotsRead = classifySlotsReadEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, slotsReadSessionId)
+  });
+  if (slotsRead.status === 'slots_read_confirmed') {
+    add('slots-read', 'Imported evidence contains local PlayerState candidate slot scalar reads with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays.');
+  } else if (slotsRead.slotsReadEvidenceFound && slotsRead.status !== 'failed') {
+    partial.push({
+      phaseId: 'slots-read',
+      status: slotsRead.status,
+      updatedAt: nowIso(),
+      source: 'imported-evidence',
+      reason: slotsRead.status === 'crash_suspect_slots_read'
+        ? 'Local PlayerState slot scalars were read safely, but a crash dump exists after this run.'
+        : 'Slots read did not produce usable evidence.',
+      latestSessionId: slotsReadSessionId || facts.latestSessionId || '',
+      latestCommit: facts.latestCommit || '',
+      latestSummaryPath: facts.latestSummaryPath || ''
+    });
+  }
 
   return { completed, partial, facts };
 }
@@ -959,6 +1086,17 @@ function findNextRunnablePhase(plan, state) {
     if (completed.has(phase.phaseId) || failed.has(phase.phaseId) || blocked.has(phase.phaseId) || advanceablePartial.has(phase.phaseId)) continue;
     if (phase.implemented !== true) continue;
     gateConfigForPhase(phase);
+    return phase;
+  }
+  return null;
+}
+
+function findNextRecommendedPhase(plan, state) {
+  const completed = completedPhaseIds(state);
+  const failed = failedPhaseIds(state);
+  const advanceablePartial = advanceablePartialPhaseIds(state);
+  for (const phase of plan.phases) {
+    if (completed.has(phase.phaseId) || failed.has(phase.phaseId) || advanceablePartial.has(phase.phaseId)) continue;
     return phase;
   }
   return null;
@@ -1046,7 +1184,7 @@ function reconcileState(plan, state = null, repoRoot = process.cwd()) {
     out.phaseStatuses[out.currentPhase].status = 'current';
   }
 
-  const next = findNextRunnablePhase(plan, out);
+  const next = findNextRecommendedPhase(plan, out) || findNextRunnablePhase(plan, out);
   out.nextRecommendedPhase = next ? next.phaseId : null;
   return out;
 }
@@ -1113,6 +1251,17 @@ function markCollected(plan, state, phaseId, result) {
       completedAt: nowIso(),
       source: 'campaign-collect',
       reason: result.reason || 'Local PlayerState Crystals scalar was read with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays.',
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
+  } else if (phaseId === 'slots-read' && result.status === 'slots_read_confirmed') {
+    out.completedPhases.push({
+      phaseId,
+      status: 'complete',
+      completedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || 'Local PlayerState candidate slot scalars were read with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays.',
       latestSessionId: out.latestSessionId,
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
@@ -1204,6 +1353,22 @@ function markCollected(plan, state, phaseId, result) {
       reason: result.reason || (result.status === 'crash_suspect_crystals_read'
         ? 'Local PlayerState Crystals scalar was read, but crash evidence exists after this run.'
         : 'No local PlayerState Crystals read evidence was found.'),
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
+  } else if (phaseId === 'slots-read' && (
+    result.status === 'crash_suspect_slots_read' ||
+    result.status === 'no_evidence'
+  )) {
+    out.partialPhases.push({
+      phaseId,
+      status: result.status,
+      updatedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || (result.status === 'crash_suspect_slots_read'
+        ? 'Local PlayerState slot scalars were read, but crash evidence exists after this run.'
+        : 'No local PlayerState slots read evidence was found.'),
       latestSessionId: out.latestSessionId,
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
@@ -1311,6 +1476,11 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     crashSuspect: hasCrashSuspectEvidenceForSession(facts, crystalsReadSessionId || state.latestSessionId || facts.latestSessionId)
   });
   if (crystalsRead.status === 'crystals_read_confirmed') safeSignals.push('local PlayerState Crystals scalar read through CrabPC -> PlayerState -> CrabPS');
+  const slotsReadSessionId = latestSessionIdForRows(facts.rows, isSlotsReadRow);
+  const slotsRead = classifySlotsReadEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, slotsReadSessionId || state.latestSessionId || facts.latestSessionId)
+  });
+  if (slotsRead.status === 'slots_read_confirmed') safeSignals.push('local PlayerState candidate slot scalar reads through CrabPC -> PlayerState -> CrabPS');
   if (!safeSignals.length) out += '- None imported yet.\n';
   else out += safeSignals.map((item) => `- ${item}\n`).join('');
 
@@ -1476,6 +1646,29 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     out += '- UInt32 range is documentation only for this read-only phase; RuntimeProbe does not write or clamp the value.\n';
   }
 
+  out += '\n## Local Slots Read\n\n';
+  if (!slotsRead.slotsReadEvidenceFound) {
+    out += '- Summary: unresolved; no `slots-read` evidence has been imported yet.\n';
+    out += '- Purpose: read only local PlayerState candidate slot counters through `CrabPC -> PlayerState -> CrabPS`.\n';
+    out += '- Fields: `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, `NumPerkSlots`; documented as ByteProperty-backed scalar counters in the expected range 0..255.\n';
+    out += '- Locked slots remain unresolved; no separate locked/max/total slot field was found in the tracked objectdump-derived notes, and RuntimeProbe does not call `ServerIncrementNumInventorySlots`.\n';
+  } else {
+    out += `- Summary: ${slotsRead.classification}\n`;
+    out += `- Slots read status: ${slotsRead.status}\n`;
+    out += `- Local PlayerState present: ${slotsRead.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
+    out += `- Slot read attempted: ${slotsRead.slotsReadAttempted ? 'yes' : 'no'}\n`;
+    out += `- Present slot values: ${Object.keys(slotsRead.slotScalarValues).length ? Object.entries(slotsRead.slotScalarValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Present slot values integer-like: ${slotsRead.valuesIntegerLike ? 'yes' : 'no'}\n`;
+    out += `- Present slot values within 0..255: ${slotsRead.valuesInByteRange ? 'yes' : 'no'}\n`;
+    out += `- Writes/RPCs: ${slotsRead.noWrites && slotsRead.noRpcs ? 'no' : 'yes'}\n`;
+    out += `- HUD/deep arrays: ${slotsRead.noHud && slotsRead.noDeepArrays ? 'no' : 'yes'}\n`;
+    out += `- Inventory arrays/InventoryInfo/Enhancements: ${slotsRead.noArrayCount && slotsRead.noArrayTraversal && slotsRead.noElementDereference && slotsRead.noInventoryInfo && slotsRead.noEnhancements ? 'no' : 'yes'}\n`;
+    out += slotsRead.crashSuspect
+      ? '- A crash dump exists after this run, so this scalar path remains crash-suspect pending a repeat.\n'
+      : '- No crash dump is associated with the imported slots-read evidence.\n';
+    out += '- These are observed scalar slot counters / candidate unlocked slot counters only; they are not proven total capacity or locked-slot state.\n';
+  }
+
   out += '\n## Confirmed Unsafe Paths\n\n';
   out += '- HUD ReceiveDrawHUD tick hook remains blocked by default.\n';
   out += '- `FindFirstOf.CrabHC` is not confirmed as a player-health source; imported evidence has seen an unscoped destructible/barrel candidate.\n';
@@ -1486,8 +1679,8 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.\n';
   out += '- Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.\n';
   out += '- Local crystals are covered only by `crystals-read`; remote crystals remain covered separately by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.\n';
-  out += '- Slots remain unresolved; `slots-read` must later search for separate locked/max slot fields before CrabSync assumes anything.\n';
-  out += '- `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, and `NumPerkSlots` are only candidate observed/unlocked slot counters. Locked slots may be UI-derived or stored elsewhere and are not proven by RuntimeProbe.\n';
+  out += '- Locked slots remain unresolved; no separate locked/max/total slot-capacity field is present in the tracked objectdump-derived notes, so locked slots may be UI-derived or stored elsewhere.\n';
+  out += '- `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, and `NumPerkSlots` are only observed scalar slot counters / candidate unlocked slot counters. They are not proven total capacity or locked-slot state.\n';
   out += '- Local inventory array shallow/count visibility is covered by `local-inventory-array-shallow-read`; property-shape confirmation is covered by `local-inventory-array-shape-confirm`; userdata wrapper metadata is covered by `local-inventory-userdata-introspection`.\n';
   out += '- Item contents are still not proven; userdata metadata does not read item data asset fields or element contents.\n';
   out += '- `InventoryInfo` and enhancements remain placeholders until explicit probe sets are implemented.\n';
@@ -1500,6 +1693,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- `allowIdentityProbes` is enabled only for the explicit multiplayer roster and resource visibility phases; `allowRawIdentityEvidence` remains false by default.\n';
   out += '- `allowResourceVisibilityProbes` is enabled only for `multiplayer-resource-visibility-read`.\n';
   out += '- `allowCrystalsReadProbes` is enabled only for `crystals-read`.\n';
+  out += '- `allowSlotsReadProbes` is enabled only for `slots-read`.\n';
   out += '- `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.\n';
   out += '- `allowInventoryArrayShapeConfirmProbes` is enabled only for `local-inventory-array-shape-confirm`.\n';
   out += '- `allowInventoryUserdataIntrospectionProbes` is enabled only for `local-inventory-userdata-introspection`.\n';
@@ -1514,6 +1708,7 @@ module.exports = {
   PLAN_PATH,
   STATE_PATH,
   classifyCrystalsReadEvidence,
+  classifySlotsReadEvidence,
   classifyLocalInventoryArrayEvidence,
   classifyLocalInventoryArrayShapeConfirmEvidence,
   classifyLocalInventoryUserdataIntrospectionEvidence,

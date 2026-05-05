@@ -128,6 +128,13 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 - Crystals-read will read only local `CrabPC -> PlayerState -> CrabPS -> Crystals`.
 - UInt32 range is documentation only; RuntimeProbe does not write or clamp values.
 
+## Local Slots Read Summary
+
+- Summary: unresolved; no `slots-read` evidence has been imported yet.
+- Slots-read will read only local `CrabPC -> PlayerState -> CrabPS` scalar fields: `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, `NumPerkSlots`.
+- ByteProperty range 0..255 is documentation only; RuntimeProbe does not write or clamp values.
+- Locked slots remain unresolved; no separate locked/max/total slot-capacity field was found in the tracked objectdump-derived notes.
+
 ## Confirmed SAFE Access Rows
 
 | Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |

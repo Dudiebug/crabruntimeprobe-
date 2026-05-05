@@ -63,7 +63,7 @@ if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "tickDri
 if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "probeSet") -ne "shallow-core") {
   throw "default config probeSet must remain shallow-core."
 }
-foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
   if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key $key) -ne "false") {
     throw "default config expected $key = false."
   }
@@ -108,6 +108,7 @@ assert(state.nextRecommendedPhase === 'multiplayer-resource-visibility-read', `e
 const defaultState = helpers.reconcileState(plan, null, repoRoot);
 assert(Array.isArray(defaultState.completedPhases), 'state initializes completedPhases');
 assert(!defaultState.blockedPhases.some((entry) => entry.phaseId === 'crystals-read'), 'implemented crystals phase must not be blocked');
+assert(!defaultState.blockedPhases.some((entry) => entry.phaseId === 'slots-read'), 'implemented slots phase must not be blocked');
 
 for (const phase of plan.phases) {
   if (phase.implemented !== true) continue;
@@ -138,6 +139,9 @@ for (const phase of plan.phases) {
   }
   if (phase.phaseId !== 'crystals-read') {
     assert(gates.allowCrystalsReadProbes === false, `${phase.phaseId} enabled crystals read outside crystals phase`);
+  }
+  if (phase.phaseId !== 'slots-read') {
+    assert(gates.allowSlotsReadProbes === false, `${phase.phaseId} enabled slots read outside slots phase`);
   }
 }
 
@@ -296,6 +300,42 @@ const shapeConfirmCompleteState = helpers.markCollected(plan, localInventoryCras
   latestSummaryPath: 'evidence/runtime/20260505T080100Z/diagnostic_summary.txt'
 });
 assert(shapeConfirmCompleteState.nextRecommendedPhase === 'local-inventory-userdata-introspection', `shape-confirm completion should advance to userdata introspection, got ${shapeConfirmCompleteState.nextRecommendedPhase}`);
+
+const userdataCompleteState = helpers.markCollected(plan, shapeConfirmCompleteState, 'local-inventory-userdata-introspection', {
+  status: 'local_inventory_userdata_introspection_confirmed',
+  reason: 'Local inventory userdata wrapper metadata was collected.',
+  latestSessionId: '20260505T204615Z',
+  latestCommit: '591389d5f71e99e2c19f7c287290cbf853a8e496',
+  latestSummaryPath: 'evidence/runtime/20260505T204615Z/diagnostic_summary.txt'
+});
+assert(userdataCompleteState.nextRecommendedPhase === 'crystals-read', `userdata completion should advance to crystals-read, got ${userdataCompleteState.nextRecommendedPhase}`);
+
+const crystalsCompleteState = helpers.markCollected(plan, userdataCompleteState, 'crystals-read', {
+  status: 'crystals_read_confirmed',
+  reason: 'Local PlayerState Crystals scalar was read safely.',
+  latestSessionId: '20260505T210000Z',
+  latestCommit: '591389d5f71e99e2c19f7c287290cbf853a8e496',
+  latestSummaryPath: 'evidence/runtime/20260505T210000Z/diagnostic_summary.txt'
+});
+assert(crystalsCompleteState.nextRecommendedPhase === 'slots-read', `crystals completion should advance to slots-read, got ${crystalsCompleteState.nextRecommendedPhase}`);
+
+let slotsRead = helpers.classifySlotsReadEvidence([
+  { probeName: 'Resource.Slots.Read', localPlayerStatePresent: true, slotsReadAttempted: true, slotScalarValues: { NumWeaponModSlots: 24, NumAbilityModSlots: 12, NumMeleeModSlots: 12, NumPerkSlots: 24 }, slotIntegerLike: { NumWeaponModSlots: true, NumAbilityModSlots: true, NumMeleeModSlots: true, NumPerkSlots: true }, slotValuesInByteRange: { NumWeaponModSlots: true, NumAbilityModSlots: true, NumMeleeModSlots: true, NumPerkSlots: true }, noElementDereference: true, noArrayCount: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, safetyGates: { allowSlotsReadProbes: true, allowCrystalsReadProbes: false, allowInventoryArrayShallowProbes: false, allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false, allowRawIdentityEvidence: false, allowHealthProbes: false, allowIdentityProbes: false, allowResourceVisibilityProbes: false } }
+]);
+assert(slotsRead.status === 'slots_read_confirmed', `slots-read should confirm valid scalar values, got ${slotsRead.status}`);
+slotsRead = helpers.classifySlotsReadEvidence([
+  { probeName: 'Resource.Slots.Read', localPlayerStatePresent: true, slotsReadAttempted: true, slotScalarValues: { NumWeaponModSlots: 256 }, slotIntegerLike: { NumWeaponModSlots: true }, slotValuesInByteRange: { NumWeaponModSlots: false }, noElementDereference: true, noArrayCount: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, safetyGates: { allowSlotsReadProbes: true } }
+]);
+assert(slotsRead.status === 'failed', 'slots-read must fail if a present scalar is outside 0..255');
+
+const slotsCompleteState = helpers.markCollected(plan, crystalsCompleteState, 'slots-read', {
+  status: 'slots_read_confirmed',
+  reason: 'Local PlayerState slot scalars were read safely.',
+  latestSessionId: '20260505T211000Z',
+  latestCommit: '591389d5f71e99e2c19f7c287290cbf853a8e496',
+  latestSummaryPath: 'evidence/runtime/20260505T211000Z/diagnostic_summary.txt'
+});
+assert(slotsCompleteState.nextRecommendedPhase === null || slotsCompleteState.nextRecommendedPhase === 'inventory-array-shallow-read', `slots completion should not loop back to scalar reads, got ${slotsCompleteState.nextRecommendedPhase}`);
 '@
 node $NodeTestPath (Join-Path $RepoRoot "tools\campaign_helpers.js") $RepoRoot
 if ($LASTEXITCODE -ne 0) { throw "campaign helper tests failed." }
@@ -376,6 +416,24 @@ if ($prepareRan) {
     foreach ($key in @("allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
       if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
         throw "local inventory userdata introspection campaign phase expected $key = false."
+      }
+    }
+  } elseif ($preparedPhase -eq "crystals-read") {
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowCrystalsReadProbes") -ne "true") {
+      throw "crystals campaign phase expected allowCrystalsReadProbes = true."
+    }
+    foreach ($key in @("allowSlotsReadProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
+      if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+        throw "crystals campaign phase expected $key = false."
+      }
+    }
+  } elseif ($preparedPhase -eq "slots-read") {
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowSlotsReadProbes") -ne "true") {
+      throw "slots campaign phase expected allowSlotsReadProbes = true."
+    }
+    foreach ($key in @("allowCrystalsReadProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
+      if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+        throw "slots campaign phase expected $key = false."
       }
     }
   }

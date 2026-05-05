@@ -219,6 +219,10 @@ function Invoke-CampaignCollect {
     & $cycle -GameBin $GameBinFull -CollectCrystalsRead
     return $LASTEXITCODE
   }
+  if ($PhaseId -eq "slots-read") {
+    & $cycle -GameBin $GameBinFull -CollectSlotsRead
+    return $LASTEXITCODE
+  }
   if ($PhaseId -eq "local-inventory-array-shallow-read") {
     & $cycle -GameBin $GameBinFull -CollectLocalInventoryArrayShallow
     return $LASTEXITCODE
@@ -503,7 +507,7 @@ if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "lo
       }
     }
     if (($row.PSObject.Properties.Name -contains "safetyGates") -and $null -ne $row.safetyGates) {
-      foreach ($gate in @("allowInventoryArrayShallowProbes", "allowInventoryUserdataIntrospectionProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowRawIdentityEvidence", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes")) {
+      foreach ($gate in @("allowInventoryArrayShallowProbes", "allowInventoryUserdataIntrospectionProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowRawIdentityEvidence", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes")) {
         if (($row.safetyGates.PSObject.Properties.Name -contains $gate) -and $row.safetyGates.$gate -eq $true) {
           $safetyViolation = $true
         }
@@ -569,7 +573,7 @@ if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "lo
       }
     }
     if (($row.PSObject.Properties.Name -contains "safetyGates") -and $null -ne $row.safetyGates) {
-      foreach ($gate in @("allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowRawIdentityEvidence", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes")) {
+      foreach ($gate in @("allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowRawIdentityEvidence", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes")) {
         if (($row.safetyGates.PSObject.Properties.Name -contains $gate) -and $row.safetyGates.$gate -eq $true) {
           $safetyViolation = $true
         }
@@ -642,7 +646,7 @@ if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "cr
       }
     }
     if (($row.PSObject.Properties.Name -contains "safetyGates") -and $null -ne $row.safetyGates) {
-      foreach ($gate in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+      foreach ($gate in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowSlotsReadProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
         if (($row.safetyGates.PSObject.Properties.Name -contains $gate) -and $row.safetyGates.$gate -eq $true) {
           $safetyViolation = $true
         }
@@ -670,6 +674,84 @@ if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "cr
     $reason = "Local PlayerState Crystals scalar was read without forbidden probes, but a crash dump/folder was updated after campaign prepare/run."
   } else {
     $status = "crystals_read_confirmed"
+  }
+}
+
+if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "slots-read") {
+  $rows = Read-JsonLines -Paths @(
+    $(if ($null -ne $latestProbeFile) { $latestProbeFile.FullName } else { "" }),
+    $(if ($null -ne $latestAccessFile) { $latestAccessFile.FullName } else { "" })
+  )
+  $slotRows = @($rows | Where-Object {
+    $name = ""
+    foreach ($field in @("probeName", "probeId", "event")) {
+      if ($_.PSObject.Properties.Name -contains $field) {
+        $name = [string]$_.$field
+        if (-not [string]::IsNullOrWhiteSpace($name)) { break }
+      }
+    }
+    $name -eq "Resource.Slots.Read"
+  })
+
+  $localPlayerStatePresent = $false
+  $slotsReadAttempted = $false
+  $valuesIntegerLike = $true
+  $valuesInByteRange = $true
+  $safetyViolation = $false
+  foreach ($row in $slotRows) {
+    if (($row.PSObject.Properties.Name -contains "localPlayerStatePresent") -and $row.localPlayerStatePresent -eq $true) {
+      $localPlayerStatePresent = $true
+    }
+    if (($row.PSObject.Properties.Name -contains "slotsReadAttempted") -and $row.slotsReadAttempted -eq $true) {
+      $slotsReadAttempted = $true
+    }
+    if (($row.PSObject.Properties.Name -contains "slotIntegerLike") -and $null -ne $row.slotIntegerLike) {
+      foreach ($property in $row.slotIntegerLike.PSObject.Properties) {
+        if ($property.Value -ne $true) { $valuesIntegerLike = $false }
+      }
+    }
+    if (($row.PSObject.Properties.Name -contains "slotValuesInByteRange") -and $null -ne $row.slotValuesInByteRange) {
+      foreach ($property in $row.slotValuesInByteRange.PSObject.Properties) {
+        if ($property.Value -ne $true) { $valuesInByteRange = $false }
+      }
+    }
+    foreach ($flag in @("noElementDereference", "noArrayCount", "noArrayTraversal", "noInventoryInfo", "noEnhancements", "noWrites", "noRpcs", "noHud", "noDeepArrays")) {
+      if (-not ($row.PSObject.Properties.Name -contains $flag) -or $row.$flag -ne $true) {
+        $safetyViolation = $true
+      }
+    }
+    if (($row.PSObject.Properties.Name -contains "safetyGates") -and $null -ne $row.safetyGates) {
+      foreach ($gate in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+        if (($row.safetyGates.PSObject.Properties.Name -contains $gate) -and $row.safetyGates.$gate -eq $true) {
+          $safetyViolation = $true
+        }
+      }
+    }
+  }
+
+  if ($slotRows.Count -eq 0) {
+    $status = "no_evidence"
+    $reason = "No local PlayerState slots read probe evidence was found."
+  } elseif ($safetyViolation) {
+    $status = "failed"
+    $reason = "Slots read evidence violated safety gates or touched HUD, writes, RPCs, deep arrays, inventory arrays, InventoryInfo, or Enhancements."
+  } elseif (-not $localPlayerStatePresent) {
+    $status = "no_evidence"
+    $reason = "Slots read ran but did not confirm local PlayerState present."
+  } elseif (-not $slotsReadAttempted) {
+    $status = "no_evidence"
+    $reason = "Slots read ran but did not attempt the slot scalar reads."
+  } elseif (-not $valuesIntegerLike) {
+    $status = "failed"
+    $reason = "A present slot scalar was not finite/integer-like."
+  } elseif (-not $valuesInByteRange) {
+    $status = "failed"
+    $reason = "A present slot scalar was outside the documented ByteProperty range 0..255."
+  } elseif ($crashAfterPrepare) {
+    $status = "crash_suspect_slots_read"
+    $reason = "Local PlayerState slot scalars were read without forbidden probes, but a crash dump/folder was updated after campaign prepare/run."
+  } else {
+    $status = "slots_read_confirmed"
   }
 }
 
@@ -704,6 +786,6 @@ Write-Host "phaseResult = $status"
 Write-Host "phaseId = $($phase.phaseId)"
 Write-Host "nextRecommendedPhase = $($updatedState.nextRecommendedPhase)"
 
-if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved" -and $status -ne "crash_suspect_local_inventory_shape_visible" -and $status -ne "local_inventory_shape_confirmed" -and $status -ne "crash_suspect_local_inventory_shape_confirmed" -and $status -ne "local_inventory_userdata_introspection_confirmed" -and $status -ne "crash_suspect_local_inventory_userdata_introspection" -and $status -ne "crystals_read_confirmed" -and $status -ne "crash_suspect_crystals_read" -and -not ($phase.phaseId -eq "local-inventory-array-shape-confirm" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "local-inventory-userdata-introspection" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "crystals-read" -and $status -eq "no_evidence")) {
+if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved" -and $status -ne "crash_suspect_local_inventory_shape_visible" -and $status -ne "local_inventory_shape_confirmed" -and $status -ne "crash_suspect_local_inventory_shape_confirmed" -and $status -ne "local_inventory_userdata_introspection_confirmed" -and $status -ne "crash_suspect_local_inventory_userdata_introspection" -and $status -ne "crystals_read_confirmed" -and $status -ne "crash_suspect_crystals_read" -and $status -ne "slots_read_confirmed" -and $status -ne "crash_suspect_slots_read" -and -not ($phase.phaseId -eq "local-inventory-array-shape-confirm" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "local-inventory-userdata-introspection" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "crystals-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "slots-read" -and $status -eq "no_evidence")) {
   exit 1
 }

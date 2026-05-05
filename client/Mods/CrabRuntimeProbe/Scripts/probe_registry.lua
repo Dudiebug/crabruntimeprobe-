@@ -990,6 +990,14 @@ function registry.build(safe)
     return integerLike, inRange
   end
 
+  local function integerLikeByte(value)
+    if type(value) ~= 'number' then return false, false end
+    if value ~= value or value == math.huge or value == -math.huge then return false, false end
+    local integerLike = math.floor(value) == value
+    local inRange = integerLike and value >= 0 and value <= 255
+    return integerLike, inRange
+  end
+
   local function buildCrystalsReadCache(ctx)
     if ctx.cache.CrystalsRead then return ctx.cache.CrystalsRead end
 
@@ -1082,6 +1090,120 @@ function registry.build(safe)
       .. ' crystalsInUInt32Range=' .. tostring(stats.crystalsInUInt32Range == true)
       .. ' noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true'
       .. ' noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=crystals-read'
+  end
+
+  local function buildSlotsReadCache(ctx)
+    if ctx.cache.SlotsRead then return ctx.cache.SlotsRead end
+
+    local playerState, playerStateErr = getCrabPlayerState(ctx)
+    if playerStateErr then
+      ctx.cache.SlotsRead = { error = playerStateErr }
+      return ctx.cache.SlotsRead
+    end
+
+    local stats = {
+      sourceScope = 'local_player_state_slots',
+      sourcePath = 'CrabPC.PlayerState',
+      sourceClass = 'CrabPS',
+      localPlayerStatePresent = safe.isValidObject(playerState),
+      slotsReadAttempted = false,
+      slotFieldNames = LOCAL_INVENTORY_SLOT_FIELDS,
+      slotScalarValues = {},
+      slotValueKinds = {},
+      slotIntegerLike = {},
+      slotValuesInByteRange = {},
+      fieldResults = {},
+      fieldsReadable = {},
+      fieldsNilOrUnsupported = {},
+      lockedSlotModel = 'unresolved; no separate locked/max/total slot field found in tracked objectdump-derived notes',
+      noElementDereference = true,
+      noArrayCount = true,
+      noArrayTraversal = true,
+      noInventoryInfo = true,
+      noEnhancements = true,
+      noWrites = true,
+      noRpcs = true,
+      noHud = true,
+      noDeepArrays = true,
+      crashAttributionMarker = 'slots-read'
+    }
+
+    if not stats.localPlayerStatePresent then
+      for _, fieldName in ipairs(LOCAL_INVENTORY_SLOT_FIELDS) do
+        stats.slotValueKinds[fieldName] = 'nil'
+        stats.fieldResults[fieldName] = 'no_local_player_state'
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      end
+      ctx.cache.SlotsRead = stats
+      return stats
+    end
+
+    stats.slotsReadAttempted = true
+    for _, fieldName in ipairs(LOCAL_INVENTORY_SLOT_FIELDS) do
+      local value, err = safe.getProperty(playerState, fieldName)
+      if err then
+        stats.slotValueKinds[fieldName] = 'error'
+        stats.fieldResults[fieldName] = 'error: ' .. tostring(err)
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      elseif value == nil then
+        stats.slotValueKinds[fieldName] = 'nil'
+        stats.fieldResults[fieldName] = 'nil'
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      else
+        local integerLike, inRange = integerLikeByte(value)
+        stats.slotScalarValues[fieldName] = value
+        stats.slotValueKinds[fieldName] = type(value)
+        stats.slotIntegerLike[fieldName] = integerLike
+        stats.slotValuesInByteRange[fieldName] = inRange
+        stats.fieldResults[fieldName] = inRange and 'byte' or 'out_of_byte_range'
+        stats.fieldsReadable[#stats.fieldsReadable + 1] = fieldName
+      end
+    end
+
+    ctx.cache.SlotsRead = stats
+    return stats
+  end
+
+  local function slotsReadMeta(stats, note)
+    return {
+      sourceScope = stats.sourceScope,
+      sourcePath = stats.sourcePath,
+      sourceClass = stats.sourceClass,
+      candidateClasses = { 'CrabPC', 'CrabPS' },
+      localPlayerStatePresent = stats.localPlayerStatePresent == true,
+      slotsReadAttempted = stats.slotsReadAttempted == true,
+      slotFieldNames = stats.slotFieldNames or LOCAL_INVENTORY_SLOT_FIELDS,
+      slotScalarValues = stats.slotScalarValues or {},
+      slotValueKinds = stats.slotValueKinds or {},
+      slotIntegerLike = stats.slotIntegerLike or {},
+      slotValuesInByteRange = stats.slotValuesInByteRange or {},
+      fieldResults = stats.fieldResults or {},
+      fieldsReadable = stats.fieldsReadable or {},
+      fieldsNilOrUnsupported = stats.fieldsNilOrUnsupported or {},
+      lockedSlotModel = stats.lockedSlotModel,
+      noElementDereference = true,
+      noArrayCount = true,
+      noArrayTraversal = true,
+      noInventoryInfo = true,
+      noEnhancements = true,
+      noWrites = true,
+      noRpcs = true,
+      noHud = true,
+      noDeepArrays = true,
+      crashAttributionMarker = 'slots-read',
+      localNotes = note
+    }
+  end
+
+  local function slotsReadSummary(stats)
+    return 'category=slots-read'
+      .. ' localPlayerStatePresent=' .. tostring(stats.localPlayerStatePresent == true)
+      .. ' slotsReadAttempted=' .. tostring(stats.slotsReadAttempted == true)
+      .. ' fieldsReadable=' .. tostring(#(stats.fieldsReadable or {}))
+      .. ' fieldsNilOrUnsupported=' .. tostring(#(stats.fieldsNilOrUnsupported or {}))
+      .. ' lockedSlotModel=unresolved'
+      .. ' noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true'
+      .. ' noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=slots-read'
   end
 
   local function classifyCrabHCSource(fullName)
@@ -2053,6 +2175,21 @@ function registry.build(safe)
     accessMethod = 'GetPropertyValue',
     accessKind = 'localCrystalsRead',
     sourceScope = 'local_player_state_crystals'
+  })
+
+  probes[#probes + 1] = mk('Resource.Slots.Read', 'resource-slots', 'slots-read', 'localSlotsRead', function(ctx)
+    local stats = buildSlotsReadCache(ctx)
+    if stats.error then return 'lua_error', nil, nil, stats.error, slotsReadMeta(stats, 'Read-only local CrabPC -> PlayerState -> CrabPS candidate slot scalar reads; ByteProperty range 0..255 documented only, locked/max slot model unresolved, with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays') end
+    return (#(stats.fieldsReadable or {}) > 0) and 'ok' or 'nil', 'slots_read',
+      slotsReadSummary(stats), nil,
+      slotsReadMeta(stats, 'Read-only local CrabPC -> PlayerState -> CrabPS candidate slot scalar reads; ByteProperty range 0..255 documented only, locked/max slot model unresolved, with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays')
+  end, {
+    symbol = 'CrabPS.NumWeaponModSlots',
+    owner = 'CrabPS',
+    member = 'NumWeaponModSlots NumAbilityModSlots NumMeleeModSlots NumPerkSlots',
+    accessMethod = 'GetPropertyValue',
+    accessKind = 'localSlotsRead',
+    sourceScope = 'local_player_state_slots'
   })
 
   probes[#probes + 1] = mk('FindAllOf.CrabHC.Availability', 'health', 'health-hc-discovery-read', 'findAllAvailability', function()

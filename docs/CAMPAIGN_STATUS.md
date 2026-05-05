@@ -1,11 +1,11 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T23:17:47.961Z
-- Current phase: none
+- Updated: 2026-05-05T23:47:49.340Z
+- Current phase: `crystals-read`
 - Next recommended phase: `crystals-read`
 - Latest session: 20260505T225501Z
-- Latest commit: 5f57f8909fa069cfb00a0351303258dbc3ae294a
+- Latest commit: 338b08a338ce08cfdd6297c858c3c7aeaadd12f5
 - Latest summary: evidence/runtime/20260505T225501Z/diagnostic_summary.txt
 
 ## Completed Phases
@@ -32,7 +32,6 @@
 
 ## Blocked Phases
 
-- `slots-read` - Slots read placeholder: Probe set is not implemented yet.
 - `inventory-array-shallow-read` - Inventory array shallow read placeholder: Probe set is not implemented yet.
 - `inventory-array-count-read` - Inventory array count read placeholder: Probe set is not implemented yet.
 - `inventory-element-da-read` - Inventory element data asset read placeholder: Probe set is not implemented yet and would require explicit deep-read review.
@@ -41,7 +40,7 @@
 
 ## Pending Phases
 
-- None.
+- `slots-read` - Local PlayerState slots read
 
 ## Confirmed Safe Paths
 
@@ -146,6 +145,13 @@
 - Purpose: read only local PlayerState `Crystals` through `CrabPC -> PlayerState -> CrabPS`.
 - `Crystals` is documented as UInt32-range for interpretation only; RuntimeProbe does not write, clamp, or mutate it.
 
+## Local Slots Read
+
+- Summary: unresolved; no `slots-read` evidence has been imported yet.
+- Purpose: read only local PlayerState candidate slot counters through `CrabPC -> PlayerState -> CrabPS`.
+- Fields: `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, `NumPerkSlots`; documented as ByteProperty-backed scalar counters in the expected range 0..255.
+- Locked slots remain unresolved; no separate locked/max/total slot field was found in the tracked objectdump-derived notes, and RuntimeProbe does not call `ServerIncrementNumInventorySlots`.
+
 ## Confirmed Unsafe Paths
 
 - HUD ReceiveDrawHUD tick hook remains blocked by default.
@@ -158,8 +164,8 @@
 - Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.
 - Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.
 - Local crystals are covered only by `crystals-read`; remote crystals remain covered separately by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.
-- Slots remain unresolved; `slots-read` must later search for separate locked/max slot fields before CrabSync assumes anything.
-- `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, and `NumPerkSlots` are only candidate observed/unlocked slot counters. Locked slots may be UI-derived or stored elsewhere and are not proven by RuntimeProbe.
+- Locked slots remain unresolved; no separate locked/max/total slot-capacity field is present in the tracked objectdump-derived notes, so locked slots may be UI-derived or stored elsewhere.
+- `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, and `NumPerkSlots` are only observed scalar slot counters / candidate unlocked slot counters. They are not proven total capacity or locked-slot state.
 - Local inventory array shallow/count visibility is covered by `local-inventory-array-shallow-read`; property-shape confirmation is covered by `local-inventory-array-shape-confirm`; userdata wrapper metadata is covered by `local-inventory-userdata-introspection`.
 - Item contents are still not proven; userdata metadata does not read item data asset fields or element contents.
 - `InventoryInfo` and enhancements remain placeholders until explicit probe sets are implemented.
@@ -173,6 +179,7 @@
 - `allowIdentityProbes` is enabled only for the explicit multiplayer roster and resource visibility phases; `allowRawIdentityEvidence` remains false by default.
 - `allowResourceVisibilityProbes` is enabled only for `multiplayer-resource-visibility-read`.
 - `allowCrystalsReadProbes` is enabled only for `crystals-read`.
+- `allowSlotsReadProbes` is enabled only for `slots-read`.
 - `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.
 - `allowInventoryArrayShapeConfirmProbes` is enabled only for `local-inventory-array-shape-confirm`.
 - `allowInventoryUserdataIntrospectionProbes` is enabled only for `local-inventory-userdata-introspection`.

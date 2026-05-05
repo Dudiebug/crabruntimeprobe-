@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { parseIdentityFromFullName, extractFullNameFromSummary } = require('./identity_helpers');
-const { classifyCrystalsReadEvidence, classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
+const { classifyCrystalsReadEvidence, classifySlotsReadEvidence, classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
 
 function walk(dir, name) {
   if (!fs.existsSync(dir)) return [];
@@ -331,6 +331,15 @@ const latestCrystalsReadSessionId = evidenceRows
 const crystalsRead = classifyCrystalsReadEvidence(evidenceRows, {
   crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestCrystalsReadSessionId)
 });
+const latestSlotsReadSessionId = evidenceRows
+  .filter((row) => (row.probeId || row.probeName || row.event || '') === 'Resource.Slots.Read')
+  .map((row) => row.sessionId)
+  .filter(Boolean)
+  .sort()
+  .pop();
+const slotsRead = classifySlotsReadEvidence(evidenceRows, {
+  crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestSlotsReadSessionId)
+});
 index += '\n## Local Inventory Array Shallow/Count Visibility Summary\n\n';
 if (!localInventory.localInventoryArrayEvidenceFound) {
   index += '- Summary: unresolved; no `local-inventory-array-shallow-read` evidence has been imported yet.\n';
@@ -417,6 +426,25 @@ if (!crystalsRead.crystalsReadEvidenceFound) {
   index += `- Inventory arrays/InventoryInfo/Enhancements: ${crystalsRead.noArrayTraversal && crystalsRead.noElementDereference && crystalsRead.noInventoryInfo && crystalsRead.noEnhancements ? 'no' : 'yes'}\n`;
   index += '- UInt32 range is documentation only for this read-only phase; RuntimeProbe does not write or clamp the value.\n';
 }
+index += '\n## Local Slots Read Summary\n\n';
+if (!slotsRead.slotsReadEvidenceFound) {
+  index += '- Summary: unresolved; no `slots-read` evidence has been imported yet.\n';
+  index += '- Slots-read will read only local `CrabPC -> PlayerState -> CrabPS` scalar fields: `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, `NumPerkSlots`.\n';
+  index += '- ByteProperty range 0..255 is documentation only; RuntimeProbe does not write or clamp values.\n';
+  index += '- Locked slots remain unresolved; no separate locked/max/total slot-capacity field was found in the tracked objectdump-derived notes.\n';
+} else {
+  index += `- Summary: ${slotsRead.classification}\n`;
+  index += `- Slots read status: ${slotsRead.status}\n`;
+  index += `- Local PlayerState present: ${slotsRead.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
+  index += `- Slot read attempted: ${slotsRead.slotsReadAttempted ? 'yes' : 'no'}\n`;
+  index += `- Present slot values: ${Object.keys(slotsRead.slotScalarValues).length ? Object.entries(slotsRead.slotScalarValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Present slot values integer-like: ${slotsRead.valuesIntegerLike ? 'yes' : 'no'}\n`;
+  index += `- Present slot values within 0..255: ${slotsRead.valuesInByteRange ? 'yes' : 'no'}\n`;
+  index += `- Writes/RPCs: ${slotsRead.noWrites && slotsRead.noRpcs ? 'no' : 'yes'}\n`;
+  index += `- HUD/deep arrays: ${slotsRead.noHud && slotsRead.noDeepArrays ? 'no' : 'yes'}\n`;
+  index += `- Inventory arrays/InventoryInfo/Enhancements: ${slotsRead.noArrayCount && slotsRead.noArrayTraversal && slotsRead.noElementDereference && slotsRead.noInventoryInfo && slotsRead.noEnhancements ? 'no' : 'yes'}\n`;
+  index += '- These are observed scalar slot counters / candidate unlocked slot counters only; they are not proven total capacity or locked-slot state.\n';
+}
 index += '\n## Confirmed SAFE Access Rows\n\n';
 const safeRows = rows.filter((row) => bestStatus(row.statuses) === 'SAFE');
 if (safeRows.length === 0) {
@@ -474,6 +502,7 @@ const defaultUntested = [
   ['FindAllOf(PlayerController,CrabPC).PlayerState', 'identity controller candidates', 'UNTESTED', 'Capped controller discovery reads only PlayerState from valid controllers.'],
   ['FindAllOf(PlayerState,CrabPS)', 'resource visibility candidates', 'UNTESTED', 'Capped resource visibility discovery is gated by allowResourceVisibilityProbes and reads only explicitly named PlayerState fields.'],
   ['CrabPS.Crystals', 'GetPropertyValue', 'UNTESTED', 'Local crystals-read evidence has not been imported yet; remote resource visibility remains separate.'],
+  ['CrabPS.NumWeaponModSlots', 'GetPropertyValue', 'UNTESTED', 'Local slots-read evidence has not been imported yet; these scalars are candidate unlocked slot counters only.'],
   ['CrabPS.WeaponMods', 'RemotePlayerStateCountOnly', 'UNTESTED', 'Remote inventory arrays are count-only in resource visibility and remain unresolved until evidence proves visibility.'],
   ['CrabPS.WeaponMods', 'GetPropertyValueCountOnly', 'UNTESTED', 'Local inventory arrays require local-inventory-array-shallow-read; no element dereference.'],
   ['CrabPS.WeaponMods', 'GetPropertyValueShapeConfirm', 'UNTESTED', 'Local inventory shape confirm reads property presence/value kind only; no count, traversal, element dereference, InventoryInfo, or Enhancements.'],

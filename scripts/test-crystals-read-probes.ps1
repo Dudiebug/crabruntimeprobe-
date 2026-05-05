@@ -35,7 +35,7 @@ if ($null -eq $phase) { throw "campaign plan missing crystals-read." }
 if ($phase.implemented -ne $true) { throw "crystals-read must be implemented." }
 if ($phase.probeSet -ne "crystals-read") { throw "crystals-read phase has wrong probeSet." }
 if ($phase.requiredGates.allowCrystalsReadProbes -ne $true) { throw "crystals-read phase must enable allowCrystalsReadProbes." }
-foreach ($gate in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+foreach ($gate in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowSlotsReadProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
   if (@($phase.forbiddenGates) -notcontains $gate) {
     throw "crystals-read phase must forbid $gate."
   }
@@ -112,7 +112,7 @@ if (Test-Path -LiteralPath $WorkRoot) {
 New-Item -ItemType Directory -Force -Path (Join-Path $WorkRoot "evidence\runtime\crystals") | Out-Null
 Copy-Item -LiteralPath (Join-Path $RepoRoot "campaign") -Destination (Join-Path $WorkRoot "campaign") -Recurse
 
-$safeGates = '"allowHudTickHook":false,"allowUnknownRoleProbes":false,"allowJoinedClientDeepProbes":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":false,"allowIdentityProbes":false,"allowRawIdentityEvidence":false,"allowResourceVisibilityProbes":false,"allowCrystalsReadProbes":true,"allowInventoryArrayShallowProbes":false,"allowInventoryArrayShapeConfirmProbes":false,"allowInventoryUserdataIntrospectionProbes":false,"allowWriteProbes":false,"allowRpcProbes":false'
+$safeGates = '"allowHudTickHook":false,"allowUnknownRoleProbes":false,"allowJoinedClientDeepProbes":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":false,"allowIdentityProbes":false,"allowRawIdentityEvidence":false,"allowResourceVisibilityProbes":false,"allowCrystalsReadProbes":true,"allowSlotsReadProbes":false,"allowInventoryArrayShallowProbes":false,"allowInventoryArrayShapeConfirmProbes":false,"allowInventoryUserdataIntrospectionProbes":false,"allowWriteProbes":false,"allowRpcProbes":false'
 $SessionDir = Join-Path $WorkRoot "evidence\runtime\crystals"
 $crystalsRow = ('{"timestamp":"2026-05-05T10:00:01Z","sessionId":"crystals","probeId":"Resource.Crystals.Read","probeName":"Resource.Crystals.Read","probeSet":"crystals-read","category":"resource-crystals","symbol":"CrabPS.Crystals","owner":"CrabPS","member":"Crystals","accessMethod":"GetPropertyValue","accessKind":"localCrystalsRead","mode":"active","tickDriver":"executeDelay","tick":100,"context":"solo","role":"solo-or-host","lifecycleState":"stable","result":"ok","runtimeStatus":"SAFE","valueKind":"crystals_read","valueSummary":"category=crystals-read localPlayerStatePresent=true crystalsReadAttempted=true crystalsPresent=true crystalsValueKind=number crystalsIntegerLike=true crystalsInUInt32Range=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=crystals-read","sourceScope":"local_player_state_crystals","sourcePath":"CrabPC.PlayerState","sourceClass":"CrabPS","localPlayerStatePresent":true,"crystalsReadAttempted":true,"crystalsPresent":true,"crystalsValue":1234,"crystalsValueKind":"number","crystalsIntegerLike":true,"crystalsInUInt32Range":true,"noElementDereference":true,"noArrayCount":true,"noArrayTraversal":true,"noInventoryInfo":true,"noEnhancements":true,"noWrites":true,"noRpcs":true,"noHud":true,"noDeepArrays":true,"crashAttributionMarker":"crystals-read","safetyGates":{' + $safeGates + '}}')
 Set-Content -LiteralPath (Join-Path $SessionDir "access_evidence.jsonl") -Encoding ASCII -Value @($crystalsRow)
@@ -148,6 +148,7 @@ const safeGates = {
   allowIdentityProbes: false,
   allowRawIdentityEvidence: false,
   allowResourceVisibilityProbes: false,
+  allowSlotsReadProbes: false,
   allowInventoryArrayShallowProbes: false,
   allowInventoryArrayShapeConfirmProbes: false,
   allowInventoryUserdataIntrospectionProbes: false,
