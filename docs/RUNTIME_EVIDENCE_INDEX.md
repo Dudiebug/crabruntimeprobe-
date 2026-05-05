@@ -2,10 +2,10 @@
 
 Generated from imported runtime evidence under `evidence/runtime/`.
 
-- Access evidence files: 10
-- Probe result files: 10
-- Diagnostic summaries: 9
-- Evidence rows: 298
+- Access evidence files: 11
+- Probe result files: 11
+- Diagnostic summaries: 10
+- Evidence rows: 301
 - Health playerstate watch samples: 200
 - Identity/roster samples: 15
 - Resource visibility samples: 6
@@ -70,10 +70,19 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 
 ## Local Inventory Array Visibility Summary
 
-- Summary: unresolved; no `local-inventory-array-shallow-read` evidence has been imported yet.
-- Local PlayerState present: not proven
+- Summary: local_inventory_shape_visible_crash_suspect
+- Local inventory array status: crash_suspect_local_inventory_shape_visible
+- Local PlayerState present: yes
+- Fields readable by shallow shape/count: AbilityMods, MeleeMods, Perks, Relics, WeaponMods
+- Fields nil or unsupported: none
+- Array value kinds: AbilityMods=userdata, MeleeMods=userdata, Perks=userdata, Relics=userdata, WeaponMods=userdata
+- Array counts available: no; current helper only counts Lua tables and these values were userdata shapes
+- Slot scalar values: NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
+- Array elements dereferenced: no
+- A crash dump exists after this run, so this path remains crash-suspect pending another safer confirmation pass.
 - Local inventory array visibility is separate from remote PlayerState inventory array visibility.
-- Inventory item metadata is still untested; `InventoryInfo` and Enhancements remain disabled.
+- InventoryInfo and Enhancements were not read; writes/RPCs/HUD hooks/deep arrays were disabled.
+- Remote inventory array visibility remains unresolved separately.
 
 ## Confirmed SAFE Access Rows
 
@@ -94,8 +103,10 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 | `CrabPS.HealthInfo` | RemotePlayerStateHealthSample | solo | solo-or-host | SAFE | ok | 20260505T063937Z | Read-only HealthInfo.CurrentHealth/CurrentMaxHealth plus BaseMaxHealth/MaxHealthMultiplier checks from visible PlayerStates; no CrabHC touched |
 | `CrabPS.MaxHealthMultiplier` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.MeleeDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z | sourceScope=player_state_scoped; shortName=DA_Melee_Hammer nameSource=fullNameFallback objectClass=CrabMeleeDA |
-| `CrabPS.NumWeaponModSlots` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T063937Z | Read-only NumWeaponModSlots/NumAbilityModSlots/NumMeleeModSlots/NumPerkSlots visibility checks |
+| `CrabPS.NumWeaponModSlots` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T063937Z, 20260505T072250Z | Read-only NumWeaponModSlots/NumAbilityModSlots/NumMeleeModSlots/NumPerkSlots visibility checks; Read-only local CrabPC -> PlayerState slot scalar sample for inventory array correlation |
 | `CrabPS.WeaponDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z, 20260505T063937Z | Read-only WeaponDA/AbilityDA/MeleeDA property visibility checks; object identities are not dereferenced or summarized in this phase |
+| `CrabPS.WeaponMods` | GetPropertyValueCountOnly | solo | solo-or-host | SAFE | ok | 20260505T063937Z, 20260505T072250Z | Count-only local inventory array check; table counts are capped and elements are never dereferenced; Read-only count-only checks for WeaponMods/AbilityMods/MeleeMods/Perks/Relics; no element dereference, InventoryInfo, or Enhancements |
+| `CrabPS.WeaponMods` | GetPropertyValueShapeOnly | solo | solo-or-host | SAFE | ok | 20260505T072250Z | Read-only local CrabPC -> PlayerState -> CrabPS array shape check; no element dereference, InventoryInfo, Enhancements, writes, or RPCs |
 | `CrabPS.HealthInfo.CurrentHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.HealthInfo.CurrentMaxHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `PlayerState.Identity` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T034622Z, 20260505T035239Z, 20260505T052110Z, 20260505T063937Z | Capped read-only visible PlayerState/CrabPS candidate identity fingerprints; no raw names or UniqueIds emitted; candidate PlayerState display/stable-id fields via GetPropertyValue only; no raw IDs by default |

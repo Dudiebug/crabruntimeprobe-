@@ -231,6 +231,17 @@ const remotePartialState = helpers.markCollected(plan, state, 'multiplayer-resou
 });
 assert(remotePartialState.phaseStatuses['multiplayer-resource-visibility-read'].status === 'remote_resources_partial', 'remote resource visibility should remain partial');
 assert(remotePartialState.nextRecommendedPhase === 'local-inventory-array-shallow-read', `remote resource partial should advance to local inventory phase, got ${remotePartialState.nextRecommendedPhase}`);
+
+const localInventoryCrashSuspectState = helpers.markCollected(plan, remotePartialState, 'local-inventory-array-shallow-read', {
+  status: 'crash_suspect_local_inventory_shape_visible',
+  reason: 'Local inventory array fields were visible as shallow userdata shapes, but a crash dump exists after this run.',
+  latestSessionId: '20260505T072250Z',
+  latestCommit: '591389d5f71e99e2c19f7c287290cbf853a8e496',
+  latestSummaryPath: 'evidence/runtime/20260505T072250Z/diagnostic_summary.txt'
+});
+assert(localInventoryCrashSuspectState.phaseStatuses['local-inventory-array-shallow-read'].status === 'crash_suspect_local_inventory_shape_visible', 'local inventory crash-suspect evidence should be partial, not failed or complete');
+assert(localInventoryCrashSuspectState.failedPhases.every((entry) => entry.phaseId !== 'local-inventory-array-shallow-read'), 'local inventory crash-suspect evidence must not be stored as hard failed');
+assert(localInventoryCrashSuspectState.nextRecommendedPhase === 'local-inventory-array-shallow-read', `local inventory crash-suspect should keep next phase at local inventory, got ${localInventoryCrashSuspectState.nextRecommendedPhase}`);
 '@
 node $NodeTestPath (Join-Path $RepoRoot "tools\campaign_helpers.js") $RepoRoot
 if ($LASTEXITCODE -ne 0) { throw "campaign helper tests failed." }

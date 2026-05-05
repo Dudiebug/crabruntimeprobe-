@@ -215,6 +215,10 @@ function Invoke-CampaignCollect {
     & $cycle -GameBin $GameBinFull -CollectResourceVisibility
     return $LASTEXITCODE
   }
+  if ($PhaseId -eq "local-inventory-array-shallow-read") {
+    & $cycle -GameBin $GameBinFull -CollectLocalInventoryArrayShallow
+    return $LASTEXITCODE
+  }
   throw "Campaign phase '$PhaseId' is not implemented and cannot be collected."
 }
 
@@ -302,7 +306,7 @@ if ($null -ne $prepareTime -and $null -ne $latestCrashFolder -and $latestCrashFo
   $crashAfterPrepare = $true
 }
 
-if ($collectExit -eq 0 -and $validatorExit -eq 0 -and $null -ne $latestManifestFile -and $null -ne $latestProbeFile) {
+if ($collectExit -eq 0 -and $validatorExit -eq 0 -and $null -ne $latestManifestFile -and $null -ne $latestProbeFile -and -not $crashAfterPrepare) {
   $status = "passed"
 } elseif ($crashAfterPrepare) {
   $status = "crashed"
@@ -398,7 +402,7 @@ if ($status -eq "passed" -and $phase.phaseId -eq "multiplayer-resource-visibilit
   }
 }
 
-if ($status -eq "passed" -and $phase.phaseId -eq "local-inventory-array-shallow-read") {
+if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "local-inventory-array-shallow-read") {
   $rows = Read-JsonLines -Paths @(
     $(if ($null -ne $latestProbeFile) { $latestProbeFile.FullName } else { "" }),
     $(if ($null -ne $latestAccessFile) { $latestAccessFile.FullName } else { "" })
@@ -450,7 +454,12 @@ if ($status -eq "passed" -and $phase.phaseId -eq "local-inventory-array-shallow-
     $status = "failed"
     $reason = "Local inventory array shallow evidence violated safety gates or dereferenced an array element."
   } elseif ($hasCountOrShape) {
-    $status = "passed"
+    if ($crashAfterPrepare) {
+      $status = "crash_suspect_local_inventory_shape_visible"
+      $reason = "Local inventory array fields were visible as shallow userdata shapes, but a crash dump/folder was updated after campaign prepare/run."
+    } else {
+      $status = "passed"
+    }
   } else {
     $status = "local_inventory_unresolved"
     $reason = "Local inventory array fields were nil or unsupported in shallow reads."
@@ -488,6 +497,6 @@ Write-Host "phaseResult = $status"
 Write-Host "phaseId = $($phase.phaseId)"
 Write-Host "nextRecommendedPhase = $($updatedState.nextRecommendedPhase)"
 
-if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved") {
+if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved" -and $status -ne "crash_suspect_local_inventory_shape_visible") {
   exit 1
 }

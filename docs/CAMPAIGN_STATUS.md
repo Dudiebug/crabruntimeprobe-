@@ -1,12 +1,12 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T07:19:40.800Z
-- Current phase: `local-inventory-array-shallow-read`
+- Updated: 2026-05-05T20:16:13.036Z
+- Current phase: none
 - Next recommended phase: `local-inventory-array-shallow-read`
-- Latest session: 20260505T063937Z
-- Latest commit: e0702326d778d31d3b5b84430e99640ee44d603e
-- Latest summary: evidence/runtime/20260505T063937Z/diagnostic_summary.txt
+- Latest session: 20260505T072250Z
+- Latest commit: 591389d5f71e99e2c19f7c287290cbf853a8e496
+- Latest summary: evidence/runtime/20260505T072250Z/diagnostic_summary.txt
 
 ## Completed Phases
 
@@ -22,6 +22,7 @@
 ## Partial Phases
 
 - `multiplayer-resource-visibility-read` - Multiplayer resource visibility read: remote_resources_partial; Multiple PlayerState candidates were sampled and some resource fields were visible remotely, but visibility was partial.
+- `local-inventory-array-shallow-read` - Local inventory array shallow read: crash_suspect_local_inventory_shape_visible; Local inventory array fields were visible as shallow userdata shapes, but crash_2026_05_05_07_24_18.dmp exists after prepare/run; keep the phase crash-suspect pending safer confirmation.
 
 ## Failed Phases
 
@@ -81,9 +82,18 @@
 
 ## Local Inventory Array Visibility
 
-- Summary: unresolved; no `local-inventory-array-shallow-read` evidence has been imported yet.
-- Local PlayerState present: not proven
-- Inventory item metadata remains untested; `InventoryInfo` and Enhancements remain disabled.
+- Summary: local_inventory_shape_visible_crash_suspect
+- Local inventory array status: crash_suspect_local_inventory_shape_visible
+- Local PlayerState present: yes
+- Fields readable by shallow shape/count: AbilityMods, MeleeMods, Perks, Relics, WeaponMods
+- Fields nil or unsupported: none
+- Array value kinds: AbilityMods=userdata, MeleeMods=userdata, Perks=userdata, Relics=userdata, WeaponMods=userdata
+- Array counts available: no; current helper only counts Lua tables and these values were userdata shapes
+- Slot scalar values: NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
+- Array elements dereferenced: no
+- InventoryInfo and Enhancements were not read; writes/RPCs/HUD hooks/deep arrays were disabled.
+- A crash dump exists after this run, so this path remains crash-suspect pending another safer confirmation pass.
+- Remote inventory array visibility remains unresolved separately.
 
 ## Confirmed Unsafe Paths
 

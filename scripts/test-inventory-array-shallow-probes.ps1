@@ -22,6 +22,8 @@ $SourceConfigPath = Join-Path $RepoRoot "client\Mods\CrabRuntimeProbe\Scripts\co
 $ProbeRegistryPath = Join-Path $RepoRoot "client\Mods\CrabRuntimeProbe\Scripts\probe_registry.lua"
 $ProbeRunnerPath = Join-Path $RepoRoot "client\Mods\CrabRuntimeProbe\Scripts\probe_runner.lua"
 $PlanPath = Join-Path $RepoRoot "campaign\campaign_plan.crabruntimeprobe-read-map.json"
+$QuickCampaignCollectPath = Join-Path $RepoRoot "scripts\quick-campaign-collect.ps1"
+$RunLocalDiagnosticCyclePath = Join-Path $RepoRoot "scripts\run-local-diagnostic-cycle.ps1"
 
 if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "allowInventoryArrayShallowProbes") -ne "false") {
   throw "default config expected allowInventoryArrayShallowProbes = false."
@@ -41,6 +43,22 @@ foreach ($gate in @("allowDeepArrayProbes", "allowInventoryInfoProbes", "allowWr
 $runner = Get-Content -Raw -LiteralPath $ProbeRunnerPath
 if ($runner -notmatch [regex]::Escape("probe.set == 'local-inventory-array-shallow-read' and not config.allowInventoryArrayShallowProbes")) {
   throw "local inventory probes must be gated by allowInventoryArrayShallowProbes."
+}
+
+$quickCollect = Get-Content -Raw -LiteralPath $QuickCampaignCollectPath
+if ($quickCollect -notmatch [regex]::Escape('$PhaseId -eq "local-inventory-array-shallow-read"')) {
+  throw "quick-campaign-collect.ps1 must route local-inventory-array-shallow-read."
+}
+if ($quickCollect -notmatch [regex]::Escape("-CollectLocalInventoryArrayShallow")) {
+  throw "quick-campaign-collect.ps1 must invoke CollectLocalInventoryArrayShallow."
+}
+
+$cycle = Get-Content -Raw -LiteralPath $RunLocalDiagnosticCyclePath
+if ($cycle -notmatch [regex]::Escape('[switch]$CollectLocalInventoryArrayShallow')) {
+  throw "run-local-diagnostic-cycle.ps1 must expose CollectLocalInventoryArrayShallow."
+}
+if ($cycle -notmatch [regex]::Escape('-AllowInventoryArrayShallowProbes:($Mode -eq "CollectLocalInventoryArrayShallow")')) {
+  throw "CollectLocalInventoryArrayShallow must allow only allowInventoryArrayShallowProbes."
 }
 
 $registry = Get-Content -Raw -LiteralPath $ProbeRegistryPath
@@ -96,6 +114,15 @@ let result = helpers.classifyLocalInventoryArrayEvidence([
 ]);
 assert(result.status === 'passed', `local array shape/count got ${result.status}`);
 result = helpers.classifyLocalInventoryArrayEvidence([
+  { probeName: 'Inventory.LocalArrays.Shape', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods', 'AbilityMods'], arrayValueKinds: { WeaponMods: 'userdata', AbilityMods: 'userdata' }, arrayCounts: {}, noElementDereference: true, safetyGates: { allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false, allowRawIdentityEvidence: false, allowHealthProbes: false, allowIdentityProbes: false, allowResourceVisibilityProbes: false, allowInventoryArrayShallowProbes: true } }
+]);
+assert(result.status === 'passed', `userdata shape-visible evidence should not be hard failed, got ${result.status}`);
+assert(result.hasCount === false, 'userdata shapes should not be reported as countable Lua tables');
+result = helpers.classifyLocalInventoryArrayEvidence([
+  { probeName: 'Inventory.LocalArrays.Shape', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], arrayValueKinds: { WeaponMods: 'userdata' }, arrayCounts: {}, noElementDereference: true, safetyGates: { allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false, allowRawIdentityEvidence: false, allowHealthProbes: false, allowIdentityProbes: false, allowResourceVisibilityProbes: false, allowInventoryArrayShallowProbes: true } }
+], { crashSuspect: true });
+assert(result.status === 'crash_suspect_local_inventory_shape_visible', `crash dump after prepare/run should classify as crash-suspect, got ${result.status}`);
+result = helpers.classifyLocalInventoryArrayEvidence([
   { probeName: 'Inventory.LocalArrays.Shape', localPlayerStatePresent: true, fieldsReadable: [], arrayValueKinds: { WeaponMods: 'nil' }, noElementDereference: true, safetyGates: { allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false, allowRawIdentityEvidence: false } }
 ]);
 assert(result.status === 'local_inventory_unresolved', `nil arrays got ${result.status}`);
@@ -116,9 +143,12 @@ try {
 }
 
 Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected "Local inventory array status: passed"
+Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected "Array value kinds: AbilityMods=nil, MeleeMods=nil, Perks=nil, Relics=nil, WeaponMods=table"
+Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected "Array counts available: yes, Lua table counts for WeaponMods"
 Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected "Local inventory array visibility is separate from remote PlayerState inventory array visibility."
-Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'Inventory item metadata is still untested; `InventoryInfo` and Enhancements remain disabled.'
+Assert-Contains -Path (Join-Path $WorkRoot "docs\RUNTIME_EVIDENCE_INDEX.md") -Expected 'InventoryInfo and Enhancements were not read; writes/RPCs/HUD hooks/deep arrays were disabled.'
 Assert-Contains -Path (Join-Path $WorkRoot "docs\CAMPAIGN_STATUS.md") -Expected "Local inventory array status: passed"
 Assert-Contains -Path (Join-Path $WorkRoot "docs\CAMPAIGN_STATUS.md") -Expected "Array elements dereferenced: no"
+Assert-Contains -Path (Join-Path $WorkRoot "docs\CAMPAIGN_STATUS.md") -Expected "Array counts available: yes, Lua table counts for WeaponMods"
 
 Write-Host "CrabRuntimeProbe local inventory array shallow probe checks passed."

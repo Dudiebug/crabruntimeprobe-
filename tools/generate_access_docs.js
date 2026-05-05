@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { parseIdentityFromFullName, extractFullNameFromSummary } = require('./identity_helpers');
-const { classifyLocalInventoryArrayEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasRawIdentityLeak } = require('./campaign_helpers');
+const { classifyLocalInventoryArrayEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
 
 function walk(dir, name) {
   if (!fs.existsSync(dir)) return [];
@@ -284,7 +284,21 @@ if (!resourceVisibility.resourceVisibilityEvidenceFound) {
 }
 index += '- Raw identity values are not emitted by this summary; PlayerName and UniqueId evidence remains fingerprint-only.\n';
 index += '- No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.\n';
-const localInventory = classifyLocalInventoryArrayEvidence(evidenceRows);
+const localInventoryFacts = {
+  text: [
+    ...evidenceRows.map((row) => JSON.stringify(row)),
+    ...diagnosticRows.map((row) => Object.entries(row.values).map(([key, value]) => `${key}=${value}`).join('\n'))
+  ].join('\n')
+};
+const latestLocalInventorySessionId = evidenceRows
+  .filter((row) => /^Inventory\.Local(Arrays|Slots)\./.test(row.probeId || row.probeName || ''))
+  .map((row) => row.sessionId)
+  .filter(Boolean)
+  .sort()
+  .pop();
+const localInventory = classifyLocalInventoryArrayEvidence(evidenceRows, {
+  crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestLocalInventorySessionId)
+});
 index += '\n## Local Inventory Array Visibility Summary\n\n';
 if (!localInventory.localInventoryArrayEvidenceFound) {
   index += '- Summary: unresolved; no `local-inventory-array-shallow-read` evidence has been imported yet.\n';
@@ -295,10 +309,17 @@ if (!localInventory.localInventoryArrayEvidenceFound) {
   index += `- Local PlayerState present: ${localInventory.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
   index += `- Fields readable by shallow shape/count: ${localInventory.fieldsReadable.length ? localInventory.fieldsReadable.join(', ') : 'none'}\n`;
   index += `- Fields nil or unsupported: ${localInventory.fieldsNilOrUnsupported.length ? localInventory.fieldsNilOrUnsupported.join(', ') : 'none'}\n`;
+  index += `- Array value kinds: ${Object.keys(localInventory.arrayValueKinds).length ? Object.entries(localInventory.arrayValueKinds).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Array counts available: ${localInventory.countableLuaTableFields.length ? `yes, Lua table counts for ${localInventory.countableLuaTableFields.join(', ')}` : 'no; current helper only counts Lua tables and these values were userdata shapes'}\n`;
+  index += `- Slot scalar values: ${Object.keys(localInventory.slotScalarValues).length ? Object.entries(localInventory.slotScalarValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
   index += `- Array elements dereferenced: ${localInventory.noElementDereference ? 'no' : 'yes'}\n`;
+  index += localInventory.crashSuspect
+    ? '- A crash dump exists after this run, so this path remains crash-suspect pending another safer confirmation pass.\n'
+    : '- No crash dump is associated with the imported local inventory evidence.\n';
 }
 index += '- Local inventory array visibility is separate from remote PlayerState inventory array visibility.\n';
-index += '- Inventory item metadata is still untested; `InventoryInfo` and Enhancements remain disabled.\n';
+index += '- InventoryInfo and Enhancements were not read; writes/RPCs/HUD hooks/deep arrays were disabled.\n';
+index += '- Remote inventory array visibility remains unresolved separately.\n';
 index += '\n## Confirmed SAFE Access Rows\n\n';
 const safeRows = rows.filter((row) => bestStatus(row.statuses) === 'SAFE');
 if (safeRows.length === 0) {

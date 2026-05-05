@@ -1,0 +1,41 @@
+CrabRuntimeProbe diagnostic summary
+timestamp = 2026-05-05T07:24:31.696Z
+collection_mode = CollectLocalInventoryArrayShallow
+latest_manifest_sessionId = 20260505T072250Z
+latest_manifest_git_commit = 591389d5f71e99e2c19f7c287290cbf853a8e496
+latest_manifest_probeSet = local-inventory-array-shallow-read
+latest_manifest_tickDriver = executeDelay
+mode = active
+probeSet = local-inventory-array-shallow-read
+tickDriver = executeDelay
+prepare_marker_preparedAt = 2026-05-05T07:22:06.4047756Z
+expected_git_commit = 591389d5f71e99e2c19f7c287290cbf853a8e496
+expected_probeSet = local-inventory-array-shallow-read
+expected_tickDriver = executeDelay
+expected_mode = active
+local_inventory_array_shallow_probe_ran = True
+local_inventory_array_shallow_sample_count = 3
+local_inventory_array_value_kinds = WeaponMods=userdata, AbilityMods=userdata, MeleeMods=userdata, Perks=userdata, Relics=userdata
+local_inventory_array_counts_available = False
+local_inventory_array_counts_note = current helper only counts Lua tables; these local inventory array values were userdata shapes
+local_inventory_array_element_dereference = False
+local_inventory_fields_readable = WeaponMods, AbilityMods, MeleeMods, Perks, Relics
+local_inventory_fields_nil_or_unsupported = none
+local_inventory_slot_scalars = NumWeaponModSlots=24, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24
+local_player_state_present = True
+inventory_info_read = False
+enhancements_read = False
+allowHudTickHook = false
+allowDeepArrayProbes = false
+allowInventoryInfoProbes = false
+allowHealthProbes = false
+allowIdentityProbes = false
+allowRawIdentityEvidence = false
+allowResourceVisibilityProbes = false
+allowInventoryArrayShallowProbes = true
+allowWriteProbes = false
+allowRpcProbes = false
+crash_after_prepare = True
+crash_dump_uploaded = crash_2026_05_05_07_24_18.dmp
+phase_classification = crash_suspect_local_inventory_shape_visible
+classification_note = local inventory array fields are visible as userdata shapes, but the crash dump after prepare/run prevents calling this a clean pass

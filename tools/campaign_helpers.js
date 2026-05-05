@@ -242,17 +242,34 @@ function isLocalInventoryArrayRow(row) {
   return /^Inventory\.Local(Arrays|Slots)\./.test(row.probeName || row.probeId || row.event || '');
 }
 
-function classifyLocalInventoryArrayEvidence(rows) {
+function classifyLocalInventoryArrayEvidence(rows, options = {}) {
   const inventoryRows = rows.filter(isLocalInventoryArrayRow);
   const fieldsReadable = Array.from(new Set(inventoryRows.flatMap((row) => flattenStringList(row.fieldsReadable)))).sort();
   const fieldsNilOrUnsupported = Array.from(new Set(inventoryRows.flatMap((row) => flattenStringList(row.fieldsNilOrUnsupported)))).sort();
   const localPlayerStatePresent = inventoryRows.some((row) => row.localPlayerStatePresent === true);
   const noElementDereference = inventoryRows.length > 0 && inventoryRows.every((row) => row.noElementDereference !== false);
+  const arrayValueKinds = {};
+  const slotScalarValues = {};
+  for (const row of inventoryRows) {
+    if (row.arrayValueKinds && typeof row.arrayValueKinds === 'object') {
+      for (const [name, value] of Object.entries(row.arrayValueKinds)) arrayValueKinds[name] = String(value);
+    }
+    if (row.slotScalarValues && typeof row.slotScalarValues === 'object') {
+      for (const [name, value] of Object.entries(row.slotScalarValues)) slotScalarValues[name] = value;
+    }
+  }
   const hasCount = inventoryRows.some((row) => {
     if (Number.isFinite(Number(row.arrayCount))) return true;
     const counts = row.arrayCounts;
     return counts && typeof counts === 'object' && Object.values(counts).some((value) => Number.isFinite(Number(value)));
   });
+  const countableLuaTableFields = Array.from(new Set(inventoryRows.flatMap((row) => {
+    const counts = row.arrayCounts;
+    if (!counts || typeof counts !== 'object') return [];
+    return Object.entries(counts)
+      .filter(([, value]) => Number.isFinite(Number(value)))
+      .map(([name]) => name);
+  }))).sort();
   const hasValidShape = fieldsReadable.length > 0 || inventoryRows.some((row) => {
     const kinds = row.arrayValueKinds;
     if (kinds && typeof kinds === 'object') {
@@ -275,8 +292,8 @@ function classifyLocalInventoryArrayEvidence(rows) {
   if (safetyViolation) {
     status = 'failed';
   } else if (inventoryRows.length > 0 && (hasCount || hasValidShape)) {
-    status = 'passed';
-    classification = 'local_inventory_visible';
+    status = options.crashSuspect ? 'crash_suspect_local_inventory_shape_visible' : 'passed';
+    classification = options.crashSuspect ? 'local_inventory_shape_visible_crash_suspect' : 'local_inventory_visible';
   } else if (inventoryRows.length > 0) {
     status = 'local_inventory_unresolved';
     classification = 'unresolved';
@@ -289,10 +306,25 @@ function classifyLocalInventoryArrayEvidence(rows) {
     noElementDereference,
     hasCount,
     hasValidShape,
+    arrayValueKinds,
+    slotScalarValues,
+    countableLuaTableFields,
     safetyViolation,
+    crashSuspect: options.crashSuspect === true,
     classification,
     status
   };
+}
+
+function hasCrashSuspectEvidenceForSession(facts, sessionId) {
+  const text = facts && facts.text ? facts.text : '';
+  if (!text) return false;
+  const escapedSessionId = sessionId ? String(sessionId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
+  if (/crash_after_prepare\s*=\s*True|crash_dump_uploaded\s*=|crash_2026_05_05_07_24_18\.dmp/i.test(text)) {
+    return true;
+  }
+  if (!escapedSessionId) return false;
+  return new RegExp(`${escapedSessionId}[\\s\\S]{0,2000}(?:crash|\\.dmp|\\.mdmp)|(?:crash|\\.dmp|\\.mdmp)[\\s\\S]{0,2000}${escapedSessionId}`, 'i').test(text);
 }
 
 function formatReadableCount(count, total) {
@@ -507,7 +539,9 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
       latestSummaryPath: facts.latestSummaryPath || ''
     });
   }
-  const localInventory = classifyLocalInventoryArrayEvidence(facts.rows);
+  const localInventory = classifyLocalInventoryArrayEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, facts.latestSessionId)
+  });
   if (localInventory.status === 'passed') {
     add('local-inventory-array-shallow-read', 'Imported evidence contains local PlayerState inventory array shallow shape/count visibility.');
   } else if (localInventory.localInventoryArrayEvidenceFound && localInventory.status !== 'failed') {
@@ -516,7 +550,9 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
       status: localInventory.status,
       updatedAt: nowIso(),
       source: 'imported-evidence',
-      reason: 'Local PlayerState inventory array fields were nil or unsupported in shallow reads.',
+      reason: localInventory.status === 'crash_suspect_local_inventory_shape_visible'
+        ? 'Local inventory array fields were visible as shallow userdata shapes, but a crash dump exists after this run; keep the phase crash-suspect pending safer confirmation.'
+        : 'Local PlayerState inventory array fields were nil or unsupported in shallow reads.',
       latestSessionId: facts.latestSessionId || '',
       latestCommit: facts.latestCommit || '',
       latestSummaryPath: facts.latestSummaryPath || ''
@@ -702,13 +738,18 @@ function markCollected(plan, state, phaseId, result) {
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
     });
-  } else if (phaseId === 'local-inventory-array-shallow-read' && result.status === 'local_inventory_unresolved') {
+  } else if (phaseId === 'local-inventory-array-shallow-read' && (
+    result.status === 'local_inventory_unresolved' ||
+    result.status === 'crash_suspect_local_inventory_shape_visible'
+  )) {
     out.partialPhases.push({
       phaseId,
       status: result.status,
       updatedAt: nowIso(),
       source: 'campaign-collect',
-      reason: result.reason || 'Local inventory arrays were nil or unsupported in shallow reads.',
+      reason: result.reason || (result.status === 'crash_suspect_local_inventory_shape_visible'
+        ? 'Local inventory array fields were visible as shallow shapes, but a crash dump exists after this run; keep the phase crash-suspect pending safer confirmation.'
+        : 'Local inventory arrays were nil or unsupported in shallow reads.'),
       latestSessionId: out.latestSessionId,
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
@@ -760,7 +801,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '## Completed Phases\n\n';
   out += renderList(listByStatus(plan, state, 'complete'));
   out += '\n## Partial Phases\n\n';
-  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$|^local_inventory_unresolved$/.test(phaseStatus(state, phase.phaseId)));
+  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$|^local_inventory_unresolved$|^crash_suspect_local_inventory_shape_visible$/.test(phaseStatus(state, phase.phaseId)));
   if (!partial.length) {
     out += '- None.\n';
   } else {
@@ -796,7 +837,9 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   const resourceVisibility = classifyResourceVisibilityEvidence(facts.rows);
   if (resourceVisibility.status === 'passed') safeSignals.push('remote-visible multiplayer PlayerState resource reads');
   else if (resourceVisibility.remoteResourceVisible) safeSignals.push('partial remote multiplayer PlayerState resource reads for crystals, slots, equipment, and health scalars');
-  const localInventory = classifyLocalInventoryArrayEvidence(facts.rows);
+  const localInventory = classifyLocalInventoryArrayEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, state.latestSessionId || facts.latestSessionId)
+  });
   if (localInventory.status === 'passed') safeSignals.push('local PlayerState inventory array shallow shape/count reads');
   if (!safeSignals.length) out += '- None imported yet.\n';
   else out += safeSignals.map((item) => `- ${item}\n`).join('');
@@ -875,8 +918,15 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     out += `- Local PlayerState present: ${localInventory.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
     out += `- Fields readable by shallow shape/count: ${localInventory.fieldsReadable.length ? localInventory.fieldsReadable.join(', ') : 'none'}\n`;
     out += `- Fields nil or unsupported: ${localInventory.fieldsNilOrUnsupported.length ? localInventory.fieldsNilOrUnsupported.join(', ') : 'none'}\n`;
+    out += `- Array value kinds: ${Object.keys(localInventory.arrayValueKinds).length ? Object.entries(localInventory.arrayValueKinds).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Array counts available: ${localInventory.countableLuaTableFields.length ? `yes, Lua table counts for ${localInventory.countableLuaTableFields.join(', ')}` : 'no; current helper only counts Lua tables and these values were userdata shapes'}\n`;
+    out += `- Slot scalar values: ${Object.keys(localInventory.slotScalarValues).length ? Object.entries(localInventory.slotScalarValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
     out += `- Array elements dereferenced: ${localInventory.noElementDereference ? 'no' : 'yes'}\n`;
-    out += '- Inventory item metadata is still untested; `InventoryInfo` and Enhancements remain disabled.\n';
+    out += '- InventoryInfo and Enhancements were not read; writes/RPCs/HUD hooks/deep arrays were disabled.\n';
+    out += localInventory.crashSuspect
+      ? '- A crash dump exists after this run, so this path remains crash-suspect pending another safer confirmation pass.\n'
+      : '- No crash dump is associated with the imported local inventory evidence.\n';
+    out += '- Remote inventory array visibility remains unresolved separately.\n';
   }
 
   out += '\n## Confirmed Unsafe Paths\n\n';
@@ -919,6 +969,7 @@ module.exports = {
   gateConfigForPhase,
   generateCampaignStatusMarkdown,
   hasConfirmedVisibleRosterEvidence,
+  hasCrashSuspectEvidenceForSession,
   hasLocalIdentityEvidence,
   hasNonEmptyRawIdentityValue,
   hasRawIdentityLeak,
