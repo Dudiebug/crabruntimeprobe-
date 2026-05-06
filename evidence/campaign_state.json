@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-06T04:03:58.733Z",
+  "updatedAt": "2026-05-06T05:00:26.636Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -132,6 +132,16 @@
       "latestSessionId": "20260506T032658Z",
       "latestCommit": "2681213933be20a2e95d432bbd3531ef045077d4",
       "latestSummaryPath": "evidence/runtime/20260506T032658Z/diagnostic_summary.txt"
+    },
+    {
+      "phaseId": "inventory-array-count-read",
+      "status": "complete",
+      "completedAt": "2026-05-06T05:00:26.459Z",
+      "source": "campaign-collect",
+      "reason": "--latest-session",
+      "latestSessionId": "20260506T045856Z",
+      "latestCommit": "7e1d67af8a2d48ad38b085bbf839a4e214bf5853",
+      "latestSummaryPath": "evidence/runtime/20260506T045856Z/diagnostic_summary.txt"
     }
   ],
   "partialPhases": [
@@ -294,11 +304,11 @@
       "reason": "Future CrabModFramework-only work; never a RuntimeProbe write phase."
     }
   ],
-  "currentPhase": "inventory-array-count-read",
-  "nextRecommendedPhase": "inventory-array-count-read",
-  "latestSessionId": "20260506T032658Z",
-  "latestCommit": "5e7a2bc0d2dae5db8a93f51f5c14604720c8e2ec",
-  "latestSummaryPath": "evidence/runtime/20260506T032658Z/diagnostic_summary.txt",
+  "currentPhase": null,
+  "nextRecommendedPhase": null,
+  "latestSessionId": "20260506T045856Z",
+  "latestCommit": "7e1d67af8a2d48ad38b085bbf839a4e214bf5853",
+  "latestSummaryPath": "evidence/runtime/20260506T045856Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {
       "status": "complete",
@@ -423,7 +433,7 @@
       "reason": "Probe set is not implemented yet."
     },
     "inventory-array-count-read": {
-      "status": "current",
+      "status": "complete",
       "riskTier": "cautious-read",
       "probeSet": "inventory-array-count-read",
       "tickDriver": "executeDelay",
