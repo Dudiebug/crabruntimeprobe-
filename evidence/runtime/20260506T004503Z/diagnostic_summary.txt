@@ -1,0 +1,284 @@
+CrabRuntimeProbe diagnostic summary
+timestamp = 2026-05-05T17:55:38.4649113-07:00
+collection_mode = CollectSafeScalarWatch
+source_repo_path = <REDACTED_LOCAL_PATH>
+game_bin_path = <REDACTED_LOCAL_PATH>
+installed_mod_path = <REDACTED_LOCAL_PATH>
+installed_config_path = <REDACTED_LOCAL_PATH>
+ue4ss_log_path = <REDACTED_LOCAL_PATH>
+jsonl_file_count = 1
+jsonl_event_count = 89
+access_evidence_file_count = 1
+access_evidence_event_count = 87
+session_manifest_file_count = 1
+prepare_marker_found = True
+prepare_marker_path = <REDACTED_LOCAL_PATH>
+prepare_marker_preparedAt = 2026-05-06T00:44:51.4363678Z
+expected_git_commit = 4092b3099af04dfbeaf51d0c812274c40f8b8bd9
+expected_probeSet = safe-scalar-watch
+expected_tickDriver = executeDelay
+expected_mode = active
+installed_git_commit = 4092b3099af04dfbeaf51d0c812274c40f8b8bd9
+latest_session_manifest_file = <REDACTED_LOCAL_PATH>
+latest_manifest_sessionId = 20260506T004503Z
+latest_manifest_git_commit = 4092b3099af04dfbeaf51d0c812274c40f8b8bd9
+latest_manifest_probeSet = safe-scalar-watch
+latest_manifest_tickDriver = executeDelay
+latest_probe_results_file = <REDACTED_LOCAL_PATH>
+latest_access_evidence_file = <REDACTED_LOCAL_PATH>
+artifact_session_matches_prepare = True
+ue4ss_log_contains_session = True
+ue4ss_log_contains_installed_git_commit = True
+evidence_files_match_installed_config_probeSet = True
+latest_evidence_older_than_prepare = False
+stale_artifact_suspected = False
+jsonl_first_timestamp = 2026-05-06T00:45:04Z
+jsonl_last_timestamp = 2026-05-06T00:55:18Z
+observe_context_count = 0
+debug_startup_smoke_count = 1
+debug_writer_self_test_count = 1
+tickDriver = executeDelay
+mode = active
+probeSet = safe-scalar-watch
+direct_field_probe_ran = False
+equipment_property_probe_ran = False
+equipment_property_weapon_count = 0
+equipment_property_ability_count = 0
+equipment_property_melee_count = 0
+latest_WeaponDA_value_summary = not found
+latest_AbilityDA_value_summary = not found
+latest_MeleeDA_value_summary = not found
+health_probe_ran = False
+latest_CrabHC_CurrentHealth = not found
+latest_CrabHC_CurrentMaxHealth = not found
+latest_CrabHC_BaseMaxHealth = not found
+latest_CrabPS_CurrentHealth = not found
+latest_CrabPS_CurrentMaxHealth = not found
+latest_CrabPS_BaseMaxHealth = not found
+latest_CrabPS_MaxHealthMultiplier = not found
+playerstate_health_probe_ran = False
+playerstate_health_watch_probe_ran = False
+ambiguous_crabhc_detected = False
+crab_hc_touched = False
+unscoped_crabhc_fullName = not found
+playerstate_current_health = not found
+playerstate_current_max_health = not found
+playerstate_base_max_health = not found
+playerstate_max_health_multiplier = not found
+health_playerstate_watch_sample_count = 0
+health_playerstate_watch_currentHealth_first = not found
+health_playerstate_watch_currentHealth_last = not found
+health_playerstate_watch_currentHealth_min = not found
+health_playerstate_watch_currentHealth_max = not found
+health_playerstate_watch_currentMaxHealth_first = not found
+health_playerstate_watch_currentMaxHealth_last = not found
+health_playerstate_watch_currentMaxHealth_min = not found
+health_playerstate_watch_currentMaxHealth_max = not found
+health_playerstate_watch_baseMaxHealth_first = not found
+health_playerstate_watch_baseMaxHealth_last = not found
+health_playerstate_watch_baseMaxHealth_min = not found
+health_playerstate_watch_baseMaxHealth_max = not found
+health_playerstate_watch_maxHealthMultiplier_first = not found
+health_playerstate_watch_maxHealthMultiplier_last = not found
+health_playerstate_watch_maxHealthMultiplier_min = not found
+health_playerstate_watch_maxHealthMultiplier_max = not found
+resource_visibility_probe_ran = False
+resource_visibility_visible_player_count = 0
+resource_visibility_sampled_playerstate_count = 0
+resource_visibility_readable_crystals_count = 0
+resource_visibility_readable_slots_count = 0
+resource_visibility_readable_equipment_count = 0
+resource_visibility_readable_inventory_array_count = 0
+crystals_read_probe_ran = False
+crystals_read_local_playerstate_present = False
+crystals_read_attempted = False
+crystals_read_value = not found
+crystals_read_value_kind = not found
+crystals_read_value_integer_like = True
+crystals_read_safety_violation = False
+slots_read_probe_ran = False
+slots_read_local_playerstate_present = False
+slots_read_attempted = False
+slots_read_values = none
+slots_read_values_integer_like = True
+slots_read_values_in_byte_range = True
+slots_read_locked_slot_model = unresolved
+slots_read_safety_violation = False
+safe_scalar_watch_probe_ran = True
+safe_scalar_watch_classification = safe_scalar_watch_observed_change
+safe_scalar_watch_sample_count = 119
+safe_scalar_watch_logged_count = 87
+safe_scalar_watch_first_values = AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=250.0, context=solo, Crystals=0, CurrentHealth=250.0, CurrentMaxHealth=250.0, lifecycleState=stable, MaxHealthMultiplier=1.0, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24, playerStatePresent=True, role=solo-or-host, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=DA_Weapon_Minigun nameSource=fullNameFallback
+safe_scalar_watch_latest_values = AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=288.0, context=solo, Crystals=1481, CurrentHealth=270.08383178711, CurrentMaxHealth=345.60000610352, lifecycleState=stable, MaxHealthMultiplier=1.0, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=8, NumMeleeModSlots=8, NumPerkSlots=8, NumWeaponModSlots=8, playerStatePresent=True, role=solo-or-host, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=DA_Weapon_Minigun nameSource=fullNameFallback
+safe_scalar_watch_min_values = BaseMaxHealth=250.0, Crystals=0, CurrentHealth=18.423839569092, CurrentMaxHealth=250.0, MaxHealthMultiplier=1.0, NumAbilityModSlots=8, NumMeleeModSlots=8, NumPerkSlots=8, NumWeaponModSlots=8
+safe_scalar_watch_max_values = BaseMaxHealth=288.0, Crystals=2962, CurrentHealth=344.40002441406, CurrentMaxHealth=345.60000610352, MaxHealthMultiplier=1.0, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
+safe_scalar_watch_changed_fields = AbilityDA, BaseMaxHealth, Crystals, CurrentHealth, CurrentMaxHealth, MeleeDA, NumAbilityModSlots, NumMeleeModSlots, NumPerkSlots, NumWeaponModSlots, WeaponDA
+safe_scalar_watch_change_counts = AbilityDA=2, BaseMaxHealth=5, Crystals=40, CurrentHealth=56, CurrentMaxHealth=6, MeleeDA=2, NumAbilityModSlots=1, NumMeleeModSlots=1, NumPerkSlots=1, NumWeaponModSlots=1, WeaponDA=2
+safe_scalar_watch_first_context = solo
+safe_scalar_watch_last_context = solo
+safe_scalar_watch_first_role = solo-or-host
+safe_scalar_watch_last_role = solo-or-host
+safe_scalar_watch_slot_model_status = observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total slot model unresolved
+safe_scalar_watch_safety_violation = False
+local_inventory_array_shallow_probe_ran = False
+local_inventory_array_shallow_sample_count = 0
+local_inventory_array_element_dereference = False
+local_inventory_shape_confirm_probe_ran = False
+local_inventory_shape_confirm_array_value_kinds = none
+local_inventory_shape_confirm_sample_count = 0
+local_inventory_shape_confirm_no_array_count = True
+local_inventory_shape_confirm_no_array_traversal = True
+local_inventory_shape_confirm_no_element_dereference = True
+local_inventory_userdata_introspection_probe_ran = False
+local_inventory_userdata_introspection_value_kinds = none
+local_inventory_userdata_introspection_metatable_kinds = none
+local_inventory_userdata_introspection_len_operator_attempted = none
+local_inventory_userdata_introspection_sample_count = 0
+local_inventory_userdata_introspection_no_array_traversal = True
+local_inventory_userdata_introspection_no_element_dereference = True
+possible_base_health_model = unknown
+terminal_zero_note = terminal 0/0 not observed
+unique_contexts_seen = solo, startup
+unique_roles_seen = solo-or-host, unknown
+first_context = startup
+last_context = solo
+crabruntimeprobe_started = True
+startup_smoke_appeared = True
+writer_self_test_appeared = True
+observe_context_appeared = False
+tick_source_registered = executeDelay
+hud_receive_draw_hud_used = False
+crabinventorysync_appeared_unexpectedly = False
+last_crabruntimeprobe_log_line = [2026-05-06 00:55:27] [Lua] [CrabRuntimeProbe] tick heartbeat tick=5700 mode=active
+crash_suspicion = none
+crash_after_prepare = False
+crash_suspect = False
+latest_crash_folder = <REDACTED_LOCAL_PATH>
+startup_complete_reached = True
+tick_registration_happened = True
+probe_breadcrumbs_appeared = True
+likely_crash_phase = after current-run probe breadcrumbs appeared
+allowHudTickHook = false
+allowUnknownRoleProbes = false
+allowJoinedClientDeepProbes = false
+allowDeepArrayProbes = false
+allowInventoryInfoProbes = false
+allowHealthProbes = false
+allowIdentityProbes = false
+allowRawIdentityEvidence = false
+allowResourceVisibilityProbes = false
+allowCrystalsReadProbes = false
+allowSlotsReadProbes = false
+allowSafeScalarWatchProbes = true
+allowInventoryArrayShallowProbes = false
+allowInventoryArrayShapeConfirmProbes = false
+allowInventoryUserdataIntrospectionProbes = false
+allowWriteProbes = false
+allowRpcProbes = false
+observe_context_latest_context = not found
+observe_context_latest_role = not found
+observe_context_latest_lifecycle = not found
+observe_context_latest_world = not found
+observe_context_latest_map = not found
+observe_context_latest_player = not found
+
+installed_build_info:
+ - action = install
+ - git_commit = 4092b3099af04dfbeaf51d0c812274c40f8b8bd9
+ - git_branch = docs/import-local-inventory-userdata-introspection-evidence
+ - timestamp = 2026-05-05T17:44:51.1903273-07:00
+ - source_repo_path = <REDACTED_LOCAL_PATH>
+
+installed_config:
+ - enabled = true
+ - mode = active
+ - tickDriver = executeDelay
+ - debugBreadcrumbs = true
+ - debugTickHeartbeat = true
+ - debugWriterSelfTest = true
+ - allowHudTickHook = false
+ - writeJsonlResults = true
+ - writeMarkdownSnapshots = false
+ - observeIntervalTicks = 10
+ - probeIntervalTicks = 10
+ - startupWarmupTicks = 60
+ - contextStableTicksRequired = 10
+ - maxProbesPerSession = 240
+ - repeatProbeSet = true
+ - allowUnknownRoleProbes = false
+ - allowJoinedClientDeepProbes = false
+ - allowDeepArrayProbes = false
+ - allowInventoryInfoProbes = false
+ - allowHealthProbes = false
+ - allowIdentityProbes = false
+ - allowRawIdentityEvidence = false
+ - allowResourceVisibilityProbes = false
+ - allowCrystalsReadProbes = false
+ - allowSlotsReadProbes = false
+ - allowSafeScalarWatchProbes = true
+ - allowInventoryArrayShallowProbes = false
+ - allowInventoryArrayShapeConfirmProbes = false
+ - allowInventoryUserdataIntrospectionProbes = false
+ - allowWriteProbes = false
+ - allowRpcProbes = false
+ - safeScalarWatchIntervalSeconds = 5
+ - safeScalarWatchHeartbeatSeconds = 60
+ - safeScalarWatchMaxSamples = 240
+ - probeSet = safe-scalar-watch
+
+jsonl_event_type_counts:
+ - Debug.StartupSmoke: 1
+ - Debug.WriterSelfTest: 1
+ - SafeWatch.Scalar.Sample: 87
+
+probe_result_counts_by_probe_name:
+ - Debug.StartupSmoke: 1
+ - Debug.WriterSelfTest: 1
+ - SafeWatch.Scalar.Sample: 87
+
+access_evidence_counts_by_symbol_accessMethod:
+ - CrabPS.SafeScalarWatch / SafeScalarWatchSample: 87
+
+jsonl_files:
+ - <REDACTED_LOCAL_PATH>
+
+access_evidence_files:
+ - <REDACTED_LOCAL_PATH>
+
+session_manifest_files:
+ - <REDACTED_LOCAL_PATH>
+
+last_5_crabruntimeprobe_log_lines:
+ - [2026-05-06 00:55:25] [Lua] [CrabRuntimeProbe][breadcrumb] SafeWatch.Scalar.Sample enter
+ - [2026-05-06 00:55:25] [Lua] [CrabRuntimeProbe][breadcrumb] SafeWatch.Scalar.Sample exit
+ - [2026-05-06 00:55:26] [Lua] [CrabRuntimeProbe][breadcrumb] SafeWatch.Scalar.Sample enter
+ - [2026-05-06 00:55:26] [Lua] [CrabRuntimeProbe][breadcrumb] SafeWatch.Scalar.Sample exit
+ - [2026-05-06 00:55:27] [Lua] [CrabRuntimeProbe] tick heartbeat tick=5700 mode=active
+
+last_5_jsonl_events:
+ - ts=2026-05-06T00:54:56Z tick=5410 event=SafeWatch.Scalar.Sample result=ok context=solo role=solo-or-host summary=category=safe-scalar-watch sampleCount=115 loggedCount=83 reason=changed playerStatePresent=true changed=true changedFields=BaseMaxHealth,Crystals,CurrentMaxHealth slotModel=observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total unresolved noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=safe-scalar-watch
+ - ts=2026-05-06T00:55:01Z tick=5460 event=SafeWatch.Scalar.Sample result=ok context=solo role=solo-or-host summary=category=safe-scalar-watch sampleCount=116 loggedCount=84 reason=changed playerStatePresent=true changed=true changedFields=Crystals,CurrentHealth slotModel=observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total unresolved noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=safe-scalar-watch
+ - ts=2026-05-06T00:55:07Z tick=5510 event=SafeWatch.Scalar.Sample result=ok context=solo role=solo-or-host summary=category=safe-scalar-watch sampleCount=117 loggedCount=85 reason=changed playerStatePresent=true changed=true changedFields=CurrentHealth slotModel=observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total unresolved noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=safe-scalar-watch
+ - ts=2026-05-06T00:55:12Z tick=5560 event=SafeWatch.Scalar.Sample result=ok context=solo role=solo-or-host summary=category=safe-scalar-watch sampleCount=118 loggedCount=86 reason=changed playerStatePresent=true changed=true changedFields=Crystals slotModel=observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total unresolved noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=safe-scalar-watch
+ - ts=2026-05-06T00:55:18Z tick=5610 event=SafeWatch.Scalar.Sample result=ok context=solo role=solo-or-host summary=category=safe-scalar-watch sampleCount=119 loggedCount=87 reason=heartbeat playerStatePresent=true changed=false changedFields=none slotModel=observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total unresolved noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=safe-scalar-watch
+
+latest_5_access_evidence_rows:
+ - ts=2026-05-06T00:54:56Z symbol=CrabPS.SafeScalarWatch accessMethod=SafeScalarWatchSample status=SAFE context=solo role=solo-or-host summary=category=safe-scalar-watch sampleCount=115 loggedCount=83 reason=changed playerStatePresent=true changed=true changedFields=BaseMaxHealth,Crystals,CurrentMaxHealth slotModel=observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total unresolved noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=safe-scalar-watch
+ - ts=2026-05-06T00:55:01Z symbol=CrabPS.SafeScalarWatch accessMethod=SafeScalarWatchSample status=SAFE context=solo role=solo-or-host summary=category=safe-scalar-watch sampleCount=116 loggedCount=84 reason=changed playerStatePresent=true changed=true changedFields=Crystals,CurrentHealth slotModel=observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total unresolved noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=safe-scalar-watch
+ - ts=2026-05-06T00:55:07Z symbol=CrabPS.SafeScalarWatch accessMethod=SafeScalarWatchSample status=SAFE context=solo role=solo-or-host summary=category=safe-scalar-watch sampleCount=117 loggedCount=85 reason=changed playerStatePresent=true changed=true changedFields=CurrentHealth slotModel=observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total unresolved noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=safe-scalar-watch
+ - ts=2026-05-06T00:55:12Z symbol=CrabPS.SafeScalarWatch accessMethod=SafeScalarWatchSample status=SAFE context=solo role=solo-or-host summary=category=safe-scalar-watch sampleCount=118 loggedCount=86 reason=changed playerStatePresent=true changed=true changedFields=Crystals slotModel=observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total unresolved noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=safe-scalar-watch
+ - ts=2026-05-06T00:55:18Z symbol=CrabPS.SafeScalarWatch accessMethod=SafeScalarWatchSample status=SAFE context=solo role=solo-or-host summary=category=safe-scalar-watch sampleCount=119 loggedCount=87 reason=heartbeat playerStatePresent=true changed=false changedFields=none slotModel=observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total unresolved noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=safe-scalar-watch
+
+crabruntimeprobe_error_lines:
+ - none
+
+files_to_upload:
+ - <REDACTED_LOCAL_PATH>
+ - <REDACTED_LOCAL_PATH>
+ - <REDACTED_LOCAL_PATH>
+ - <REDACTED_LOCAL_PATH>
+ - <REDACTED_LOCAL_PATH>
+ - crash files only if a crash happened
+
+failures:
+ - none
