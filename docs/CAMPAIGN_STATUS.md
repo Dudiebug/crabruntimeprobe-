@@ -1,11 +1,11 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-06T05:28:12.092Z
-- Current phase: none
-- Next recommended phase: none
+- Updated: 2026-05-06T05:42:53.453Z
+- Current phase: `inventory-element-da-read`
+- Next recommended phase: `inventory-element-da-read`
 - Latest session: 20260506T052733Z
-- Latest commit: abd957926dbdec437153dcba2e573bc9c4756d95
+- Latest commit: 6bfb46b99d2dc166aa23549b7e022e049892320a
 - Latest summary: evidence/runtime/20260506T052733Z/diagnostic_summary.txt
 
 ## Completed Phases
@@ -37,7 +37,6 @@
 ## Blocked Phases
 
 - `inventory-array-shallow-read` - Inventory array shallow read placeholder: Probe set is not implemented yet.
-- `inventory-element-da-read` - Inventory element data asset read placeholder: Probe set is not implemented yet and would require explicit deep-read review.
 - `inventoryinfo-scalar-read` - InventoryInfo scalar read placeholder: Probe set is not implemented yet and InventoryInfo remains disabled until this explicit phase.
 - `enhancements-read` - Enhancements read placeholder: Probe set is not implemented yet.
 - `weaponmod-da-catalog-read` - Weapon mod DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
