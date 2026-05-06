@@ -4,6 +4,8 @@ This is a future template/status document for the CrabSyncV2 P2P carrier researc
 
 No candidate is currently proven.
 
+Future row updates should follow [P2P Carrier Evidence Mapping](P2P_CARRIER_EVIDENCE_MAPPING.md).
+
 ## Candidate Status Values
 
 - `unreviewed`: named for later review, with no evidence classification yet.

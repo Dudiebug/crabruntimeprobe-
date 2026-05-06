@@ -41,6 +41,7 @@
 
 ## P2P Carrier Research Templates
 
+- [P2P Carrier Evidence Mapping](P2P_CARRIER_EVIDENCE_MAPPING.md)
 - [P2P Carrier Candidates](P2P_CARRIER_CANDIDATES.md)
 - [P2P Carrier Visibility Matrix](P2P_CARRIER_VISIBILITY_MATRIX.md)
 - [P2P Carrier Unsafe Paths](P2P_CARRIER_UNSAFE_PATHS.md)

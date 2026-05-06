@@ -4,6 +4,8 @@ This is a future-only manual CrabSyncV2 sandbox plan template. It is not authori
 
 Any future write-smoke test requires explicit user approval before it exists as code.
 
+Future checklist proposals should follow [P2P Carrier Evidence Mapping](P2P_CARRIER_EVIDENCE_MAPPING.md). Mapping evidence into this template does not approve write-smoke.
+
 ## Minimum Prerequisites
 
 Before a write-smoke can even be considered:

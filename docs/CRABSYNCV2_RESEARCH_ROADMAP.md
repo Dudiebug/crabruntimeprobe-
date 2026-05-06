@@ -16,6 +16,8 @@ These are RuntimeProbe research phases in recommended planning order. Each Runti
 
 Carrier template/status docs exist for future evidence outputs: [P2P Carrier Candidates](P2P_CARRIER_CANDIDATES.md), [P2P Carrier Visibility Matrix](P2P_CARRIER_VISIBILITY_MATRIX.md), [P2P Carrier Unsafe Paths](P2P_CARRIER_UNSAFE_PATHS.md), and [P2P Carrier Write-Smoke Plan](P2P_CARRIER_WRITE_SMOKE_PLAN.md). They do not prove a carrier exists and do not authorize write-smoke work.
 
+[P2P Carrier Evidence Mapping](P2P_CARRIER_EVIDENCE_MAPPING.md) is a prerequisite for any future generated/status updates to those carrier docs; it defines classification rules only and does not implement collectors or import tooling.
+
 ## Inventory Proof Track
 
 | Phase | Goal | Required config gates | Allowed | Forbidden | Expected evidence file | Success criteria | Crash stop condition | CrabSyncV2 decision unlocked |

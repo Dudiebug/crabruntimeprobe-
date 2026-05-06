@@ -4,6 +4,8 @@ This is a future status document for rejected or forbidden P2P carrier paths. It
 
 These entries do not mean normal read access is unsafe. They mean custom payload hijacking is unsafe or forbidden for CrabSyncV2 carrier planning unless future evidence and explicit approval reclassify a path.
 
+Future row updates should follow [P2P Carrier Evidence Mapping](P2P_CARRIER_EVIDENCE_MAPPING.md).
+
 ## Unsafe Reason Taxonomy
 
 - `gameplay-authoritative`.

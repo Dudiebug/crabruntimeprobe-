@@ -4,6 +4,8 @@ This is a future template/status document for read-only P2P carrier visibility e
 
 Visibility is read-only proof. It is not write proof.
 
+Future row updates should follow [P2P Carrier Evidence Mapping](P2P_CARRIER_EVIDENCE_MAPPING.md).
+
 ## Visibility Directions
 
 - `local-only`: visible only on the local client.
