@@ -28,7 +28,12 @@ Generated evidence docs remain the source for current runtime proof:
 [Runtime Evidence Index](docs/RUNTIME_EVIDENCE_INDEX.md),
 [Safe Access Matrix](docs/SAFE_ACCESS_MATRIX.md),
 [Perk DataAsset Catalog](docs/PERK_DATAASSET_CATALOG.md),
+[Weapon Mod DataAsset Catalog](docs/WEAPONMOD_DATAASSET_CATALOG.md),
+[Ability Mod DataAsset Catalog](docs/ABILITYMOD_DATAASSET_CATALOG.md),
+[Melee Mod DataAsset Catalog](docs/MELEEMOD_DATAASSET_CATALOG.md),
+[Relic DataAsset Catalog](docs/RELIC_DATAASSET_CATALOG.md),
 [Perk Catalog JSON](docs/data/perk_dataasset_catalog.latest.json),
+[Weapon Mod Catalog JSON Status](docs/data/weaponmod_dataasset_catalog.latest.json),
 [Probe Candidates](docs/PROBE_CANDIDATES.md),
 [Probe Results](docs/PROBE_RESULTS.md), and
 [Crash Phase Summary](docs/CRASH_PHASE_SUMMARY.md).

@@ -19,12 +19,24 @@
 - [Symbol Access Reference](SYMBOL_ACCESS_REFERENCE.md)
 - [Untested Access Paths](UNTESTED_ACCESS_PATHS.md)
 
-## Perk DataAsset Catalog
+## DataAsset Catalogs
 
 - [Perk DataAsset Catalog](PERK_DATAASSET_CATALOG.md)
+- [Weapon Mod DataAsset Catalog](WEAPONMOD_DATAASSET_CATALOG.md)
+- [Ability Mod DataAsset Catalog](ABILITYMOD_DATAASSET_CATALOG.md)
+- [Melee Mod DataAsset Catalog](MELEEMOD_DATAASSET_CATALOG.md)
+- [Relic DataAsset Catalog](RELIC_DATAASSET_CATALOG.md)
 - [CrabModFramework DataAsset Catalog](CRABMODFRAMEWORK_DATAASSET_CATALOG.md)
 - [Perk catalog JSON export](data/perk_dataasset_catalog.latest.json)
 - [Perk catalog CSV export](data/perk_dataasset_catalog.latest.csv)
+- [Weapon mod catalog JSON status export](data/weaponmod_dataasset_catalog.latest.json)
+- [Weapon mod catalog CSV status export](data/weaponmod_dataasset_catalog.latest.csv)
+- [Ability mod catalog JSON status export](data/abilitymod_dataasset_catalog.latest.json)
+- [Ability mod catalog CSV status export](data/abilitymod_dataasset_catalog.latest.csv)
+- [Melee mod catalog JSON status export](data/meleemod_dataasset_catalog.latest.json)
+- [Melee mod catalog CSV status export](data/meleemod_dataasset_catalog.latest.csv)
+- [Relic catalog JSON status export](data/relic_dataasset_catalog.latest.json)
+- [Relic catalog CSV status export](data/relic_dataasset_catalog.latest.csv)
 
 ## CrabSyncV2 Planning Docs
 

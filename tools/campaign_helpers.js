@@ -530,7 +530,7 @@ function classifySafeScalarWatchEvidence(rows, options = {}) {
 
 function isPerkDataAssetCatalogRow(row) {
   const id = row.probeName || row.probeId || row.event || '';
-  return id === 'DataAsset.Perks.CatalogRead';
+  return id === 'DataAsset.Perks.CatalogRead' || id === 'MaxSafePlay.PerkDataAsset.CatalogSnapshot';
 }
 
 function classifyPerkDataAssetCatalogEvidence(rows, options = {}) {
@@ -554,7 +554,6 @@ function classifyPerkDataAssetCatalogEvidence(rows, options = {}) {
     'allowCrystalsReadProbes',
     'allowSlotsReadProbes',
     'allowSafeScalarWatchProbes',
-    'allowMaxSafePlayRecorderProbes',
     'allowInventoryArrayShallowProbes',
     'allowInventoryArrayShapeConfirmProbes',
     'allowInventoryUserdataIntrospectionProbes',
@@ -566,7 +565,7 @@ function classifyPerkDataAssetCatalogEvidence(rows, options = {}) {
     const gates = hasGates ? row.safetyGates : {};
     return (hasGates && (
       forbiddenGateNames.some((gate) => gates[gate] === true) ||
-      gates.allowPerkDataAssetCatalogProbes !== true
+      (gates.allowPerkDataAssetCatalogProbes !== true && gates.allowMaxSafePlayRecorderProbes !== true)
     )) ||
       row.noWrites !== true ||
       row.noRpcs !== true ||

@@ -166,11 +166,14 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 
 ## Perk DataAsset Catalog Summary
 
-- Summary: unresolved; no `perk-da-catalog-read` evidence has been imported yet.
-- Perk catalog evidence will be read-only and is not permission to mutate DataAssets.
-- RuntimeProbe will prove read paths only; future CrabModFramework / CrabTastyMod write/edit APIs must be designed separately.
-- TastyOrange is not special-cased by RuntimeProbe. It will be cataloged as a normal perk if found.
-- Collector is not special-cased by RuntimeProbe. It will be cataloged as a normal perk if found.
+- Summary: perk_da_catalog_confirmed
+- Perk DataAsset catalog status: perk_da_catalog_confirmed
+- Catalog entries: 64
+- Candidate count/cap: 64/64
+- No writes/RPCs/HUD/deep arrays/live inventory arrays/counts/InventoryInfo/Enhancements/DataAsset mutation/function calls: yes
+- RuntimeProbe proves read paths only. Future CrabModFramework / CrabTastyMod work must build controlled write/edit APIs separately.
+- TastyOrange is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.
+- Collector is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.
 
 ## Confirmed SAFE Access Rows
 

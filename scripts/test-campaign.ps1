@@ -109,6 +109,7 @@ const defaultState = helpers.reconcileState(plan, null, repoRoot);
 assert(Array.isArray(defaultState.completedPhases), 'state initializes completedPhases');
 assert(!defaultState.blockedPhases.some((entry) => entry.phaseId === 'crystals-read'), 'implemented crystals phase must not be blocked');
 assert(!defaultState.blockedPhases.some((entry) => entry.phaseId === 'slots-read'), 'implemented slots phase must not be blocked');
+assert(plan.phases.some((phase) => phase.phaseId === 'relic-da-catalog-read' && phase.implemented === false), 'relic DataAsset catalog placeholder phase must exist');
 
 for (const phase of plan.phases) {
   if (phase.implemented !== true) continue;

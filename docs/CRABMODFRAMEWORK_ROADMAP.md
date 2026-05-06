@@ -14,6 +14,7 @@ DataAsset catalog track:
 - `weaponmod-da-catalog-read`: placeholder.
 - `abilitymod-da-catalog-read`: placeholder.
 - `meleemod-da-catalog-read`: placeholder.
+- `relic-da-catalog-read`: placeholder.
 - `weapon-da-catalog-read`: placeholder.
 - `ability-da-catalog-read`: placeholder.
 - `melee-da-catalog-read`: placeholder.
@@ -50,6 +51,7 @@ Future layers that may graduate into `max-safe-play-recorder` only after dedicat
 - `weaponmod-da-catalog-read`.
 - `abilitymod-da-catalog-read`.
 - `meleemod-da-catalog-read`.
+- `relic-da-catalog-read`.
 - `weapon-da-catalog-read`.
 - `ability-da-catalog-read`.
 - `melee-da-catalog-read`.
@@ -73,6 +75,8 @@ Future layers that may graduate into `max-safe-play-recorder` only after dedicat
 `Num*Slots` changed from startup/run defaults to effective in-run values. The locked/max/total slot model remains conservatively unresolved.
 
 Imported max-safe-play session `20260506T032658Z` also produced a 64-entry perk DataAsset catalog snapshot with `candidateCount = 64`, `entryCount = 64`, `rejectedCount = 0`, `knownEntryCount = 64`, `tastyOrangeFound = true`, and `collectorFound = false`. Canonical exports now live in `docs/data/perk_dataasset_catalog.latest.json`, `docs/data/perk_dataasset_catalog.latest.csv`, and `docs/PERK_DATAASSET_CATALOG.md`.
+
+Weapon mod, ability mod, melee mod, and relic catalog status artifacts also now exist, but they intentionally remain zero-entry placeholders until dedicated read-only catalog evidence is imported. Those files document the current object model and evidence gap without adding new runtime probes.
 
 No writes, RPCs, HUD hook, deep arrays, inventory traversal, InventoryInfo, or Enhancements were used. Crash suspicion was none.
 

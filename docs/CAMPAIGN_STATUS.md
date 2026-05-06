@@ -1,11 +1,11 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-06T02:25:25.474Z
+- Updated: 2026-05-06T04:10:07.074Z
 - Current phase: `perk-da-catalog-read`
 - Next recommended phase: `perk-da-catalog-read`
 - Latest session: 20260506T014608Z
-- Latest commit: d6f85bef9733ca1a777c4a81154141172931019c
+- Latest commit: cf81fba3d3774f0c1106f8c35b45e4e536676ae2
 - Latest summary: evidence/runtime/20260506T014608Z/diagnostic_summary.txt
 
 ## Completed Phases
@@ -42,6 +42,7 @@
 - `weaponmod-da-catalog-read` - Weapon mod DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
 - `abilitymod-da-catalog-read` - Ability mod DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
 - `meleemod-da-catalog-read` - Melee mod DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
+- `relic-da-catalog-read` - Relic DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
 - `weapon-da-catalog-read` - Weapon DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
 - `ability-da-catalog-read` - Ability DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
 - `melee-da-catalog-read` - Melee DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
@@ -79,6 +80,8 @@
 - local PlayerState Crystals scalar read through CrabPC -> PlayerState -> CrabPS
 - local PlayerState candidate slot scalar reads through CrabPC -> PlayerState -> CrabPS
 - safe scalar watch over proven local scalar/property paths
+- read-only perk DataAsset catalog discovery and curated field reads
+- direct max-safe play recorder over proven scalars plus capped perk DataAsset snapshots
 
 ## Identity And Roster Notes
 
@@ -215,31 +218,42 @@
 
 ## Perk DataAsset Catalog
 
-- Summary: unresolved; no `perk-da-catalog-read` evidence has been imported yet.
-- Purpose: read-only catalog of safely discoverable perk DataAssets through curated class/name discovery and curated field allowlists.
-- TastyOrange and Collector are not special-cased; if they are safely discoverable, they should appear as normal catalog entries.
+- Summary: perk_da_catalog_confirmed
+- Perk DataAsset catalog status: perk_da_catalog_confirmed
+- Discovery attempted: yes
+- Catalog entries: 64
+- Candidate count/cap: 64/64
+- Rejected candidate count/cap: 0/16
+- Top rejection reasons: none
+- Perk-like class/name patterns: identity:PerkDataAsset, name:path-or-da-perk
+- Field cap: 32
+- Writes/RPCs/HUD/deep arrays: no
+- Inventory arrays/count/traversal/elements, InventoryInfo, Enhancements: no
+- DataAsset mutation/function calls/passive-only violation: no
+- No crash dump is associated with the imported perk catalog evidence.
+- Catalog evidence is read-path evidence only. It is not permission to mutate DataAssets.
 - RuntimeProbe proves read paths only; future CrabModFramework / CrabTastyMod write or edit APIs must be designed and gated separately.
 - TastyOrange is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.
 - Collector is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.
 
 ## Max Safe Play Recorder
 
-- Summary: partial-no-catalog
-- Max-safe play status: max_safe_play_no_catalog_entries
+- Summary: max_safe_play_observed_change
+- Max-safe play status: max_safe_play_observed_change
 - Scalar samples/logged rows: 2/2
-- First values: AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=DA_Weapon_Minigun nameSource=fullNameFallback, context=solo, lifecycleState=stable, playerStatePresent=true, role=solo-or-host
+- First values: AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/LightningScepter/DA_Weapon_LightningScepter.DA_Weapon_LightningScepter name=DA_Weapon_LightningScepter nameSource=fullNameFallback, context=solo, lifecycleState=stable, playerStatePresent=true, role=solo-or-host
 - Latest values: AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=DA_Weapon_Minigun nameSource=fullNameFallback, context=solo, lifecycleState=stable, playerStatePresent=true, role=solo-or-host
 - Min numeric values: BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
 - Max numeric values: BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
-- Changed fields: none
-- Change counts: none
+- Changed fields: WeaponDA
+- Change counts: WeaponDA=1
 - Perk catalog snapshots: 1
 - Perk DA candidate count: 64
-- Perk DA entry count: 0
+- Perk DA entry count: 64
 - Perk DA rejected candidate count: 0
 - Perk DA top rejection reasons: none
-- Perk-like class/name patterns: none
-- TastyOrange found as normal entry: no
+- Perk-like class/name patterns: identity:PerkDataAsset, name:path-or-da-perk
+- TastyOrange found as normal entry: yes
 - Collector found as normal entry: no
 - Nil/error counts: 0/0
 - Writes/RPCs/HUD/deep arrays: no

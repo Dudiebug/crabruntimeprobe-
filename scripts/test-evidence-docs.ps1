@@ -201,6 +201,12 @@ Assert-Contains -Path (Join-Path $WorkRoot "evidence\runtime\testsession\session
 Assert-Contains -Path (Join-Path $WorkRoot "evidence\runtime\testsession\session_manifest.json") -Expected '"activeResearchGates":["allowHealthProbes"]'
 Assert-Contains -Path (Join-Path $WorkRoot "dist\wiki\Home.md") -Expected "Generated from repo docs"
 Assert-Contains -Path (Join-Path $WorkRoot "dist\wiki\Safe-Access-Matrix.md") -Expected "CrabPS.WeaponDA"
+Assert-Contains -Path (Join-Path $WorkRoot "docs\WEAPONMOD_DATAASSET_CATALOG.md") -Expected "Imported read-only catalog snapshot selected: no"
+Assert-Contains -Path (Join-Path $WorkRoot "docs\ABILITYMOD_DATAASSET_CATALOG.md") -Expected "RuntimeProbe catalog evidence is read-only and is not permission to mutate DataAssets."
+Assert-Contains -Path (Join-Path $WorkRoot "docs\MELEEMOD_DATAASSET_CATALOG.md") -Expected "No imported catalog snapshot has enumerated live entries for this family yet."
+Assert-Contains -Path (Join-Path $WorkRoot "docs\RELIC_DATAASSET_CATALOG.md") -Expected "RuntimeProbe catalog evidence is not permission to mutate DataAssets."
+Assert-Contains -Path (Join-Path $WorkRoot "docs\data\weaponmod_dataasset_catalog.latest.json") -Expected '"status": "no-imported-catalog-snapshot"'
+Assert-Contains -Path (Join-Path $WorkRoot "docs\data\relic_dataasset_catalog.latest.csv") -Expected 'catalogIndex,shortName,fullName,sourceClass,wrapperClass,dataAssetProperty,readStatus,notes'
 
 $BadPathRoot = Join-Path $WorkRoot "bad-path"
 New-Item -ItemType Directory -Force -Path $BadPathRoot | Out-Null

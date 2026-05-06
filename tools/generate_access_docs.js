@@ -4,6 +4,7 @@ const path = require('path');
 const { parseIdentityFromFullName, extractFullNameFromSummary } = require('./identity_helpers');
 const { classifyCrystalsReadEvidence, classifySafeScalarWatchEvidence, classifyPerkDataAssetCatalogEvidence, classifySlotsReadEvidence, classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
 const { generatePerkDataAssetCatalogOutputs } = require('./extract_perk_dataasset_catalog');
+const { generateRelatedDataAssetCatalogStatusOutputs } = require('./extract_related_dataasset_catalog_status');
 
 function walk(dir, name) {
   if (!fs.existsSync(dir)) return [];
@@ -351,7 +352,7 @@ const safeScalarWatch = classifySafeScalarWatchEvidence(evidenceRows, {
   crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestSafeScalarWatchSessionId)
 });
 const latestPerkCatalogSessionId = evidenceRows
-  .filter((row) => (row.probeId || row.probeName || row.event || '') === 'DataAsset.Perks.CatalogRead')
+  .filter((row) => ['DataAsset.Perks.CatalogRead', 'MaxSafePlay.PerkDataAsset.CatalogSnapshot'].includes(row.probeId || row.probeName || row.event || ''))
   .map((row) => row.sessionId)
   .filter(Boolean)
   .sort()
@@ -578,5 +579,6 @@ fs.writeFileSync(path.join(docsDir, 'SYMBOL_ACCESS_REFERENCE.md'), reference);
 fs.writeFileSync(path.join(docsDir, 'KNOWN_UNSAFE_PATHS.md'), unsafe);
 fs.writeFileSync(path.join(docsDir, 'UNTESTED_ACCESS_PATHS.md'), untested);
 generatePerkDataAssetCatalogOutputs({ repoRoot: process.cwd(), quiet: true });
+generateRelatedDataAssetCatalogStatusOutputs({ repoRoot: process.cwd(), quiet: true });
 
-console.log('generated access docs = docs/RUNTIME_EVIDENCE_INDEX.md, docs/SAFE_ACCESS_MATRIX.md, docs/SYMBOL_ACCESS_REFERENCE.md, docs/KNOWN_UNSAFE_PATHS.md, docs/UNTESTED_ACCESS_PATHS.md, docs/PERK_DATAASSET_CATALOG.md, docs/data/perk_dataasset_catalog.latest.json, docs/data/perk_dataasset_catalog.latest.csv');
+console.log('generated access docs = docs/RUNTIME_EVIDENCE_INDEX.md, docs/SAFE_ACCESS_MATRIX.md, docs/SYMBOL_ACCESS_REFERENCE.md, docs/KNOWN_UNSAFE_PATHS.md, docs/UNTESTED_ACCESS_PATHS.md, docs/PERK_DATAASSET_CATALOG.md, docs/WEAPONMOD_DATAASSET_CATALOG.md, docs/ABILITYMOD_DATAASSET_CATALOG.md, docs/MELEEMOD_DATAASSET_CATALOG.md, docs/RELIC_DATAASSET_CATALOG.md, docs/data/perk_dataasset_catalog.latest.json, docs/data/perk_dataasset_catalog.latest.csv, docs/data/weaponmod_dataasset_catalog.latest.json, docs/data/weaponmod_dataasset_catalog.latest.csv, docs/data/abilitymod_dataasset_catalog.latest.json, docs/data/abilitymod_dataasset_catalog.latest.csv, docs/data/meleemod_dataasset_catalog.latest.json, docs/data/meleemod_dataasset_catalog.latest.csv, docs/data/relic_dataasset_catalog.latest.json, docs/data/relic_dataasset_catalog.latest.csv');

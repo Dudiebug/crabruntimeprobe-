@@ -23,6 +23,24 @@ That selected snapshot contains:
 
 TastyOrange is present as an ordinary catalog row. RuntimeProbe does not special-case it, and CrabModFramework should not special-case it when ingesting catalog evidence.
 
+## Pending Related Catalogs
+
+The repo now also publishes status artifacts for the next four catalog families:
+
+- Weapon mods: [`docs/WEAPONMOD_DATAASSET_CATALOG.md`](WEAPONMOD_DATAASSET_CATALOG.md), [`docs/data/weaponmod_dataasset_catalog.latest.json`](data/weaponmod_dataasset_catalog.latest.json), [`docs/data/weaponmod_dataasset_catalog.latest.csv`](data/weaponmod_dataasset_catalog.latest.csv)
+- Ability mods: [`docs/ABILITYMOD_DATAASSET_CATALOG.md`](ABILITYMOD_DATAASSET_CATALOG.md), [`docs/data/abilitymod_dataasset_catalog.latest.json`](data/abilitymod_dataasset_catalog.latest.json), [`docs/data/abilitymod_dataasset_catalog.latest.csv`](data/abilitymod_dataasset_catalog.latest.csv)
+- Melee mods: [`docs/MELEEMOD_DATAASSET_CATALOG.md`](MELEEMOD_DATAASSET_CATALOG.md), [`docs/data/meleemod_dataasset_catalog.latest.json`](data/meleemod_dataasset_catalog.latest.json), [`docs/data/meleemod_dataasset_catalog.latest.csv`](data/meleemod_dataasset_catalog.latest.csv)
+- Relics: [`docs/RELIC_DATAASSET_CATALOG.md`](RELIC_DATAASSET_CATALOG.md), [`docs/data/relic_dataasset_catalog.latest.json`](data/relic_dataasset_catalog.latest.json), [`docs/data/relic_dataasset_catalog.latest.csv`](data/relic_dataasset_catalog.latest.csv)
+
+Those four families do not yet have imported read-only catalog snapshots. Their generated outputs are intentionally status documents with zero entries. They preserve what is currently known from imported shallow runtime evidence and objectdump structure:
+
+- `CrabPS.WeaponMods` -> `CrabWeaponMod.WeaponModDA`
+- `CrabPS.AbilityMods` -> `CrabAbilityMod.AbilityModDA`
+- `CrabPS.MeleeMods` -> `CrabMeleeMod.MeleeModDA`
+- `CrabPS.Relics` -> `CrabRelic.RelicDA`
+
+These status exports are useful for CrabModFramework planning because they establish family names, wrapper classes, PlayerState array paths, and the current evidence gap without inventing fake catalog rows.
+
 ## Implemented Phase
 
 `perk-da-catalog-read` discovers perk DataAsset-like objects through curated class/name patterns and capped `FindAllOf` usage. It reads only curated fields, class/name identity, validity, and object reference summaries without recursion. Candidate count is not the same thing as accepted catalog entries: every candidate must pass capped class/name/identity checks before it becomes a catalog entry.
@@ -98,6 +116,7 @@ CrabModFramework write/edit APIs remain future work. Any eventual DataAsset edit
 - `weaponmod-da-catalog-read`.
 - `abilitymod-da-catalog-read`.
 - `meleemod-da-catalog-read`.
+- `relic-da-catalog-read`.
 - `weapon-da-catalog-read`.
 - `ability-da-catalog-read`.
 - `melee-da-catalog-read`.
