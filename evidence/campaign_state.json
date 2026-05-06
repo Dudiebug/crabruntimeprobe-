@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-05T23:47:49.340Z",
+  "updatedAt": "2026-05-05T23:53:54.090Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -102,6 +102,26 @@
       "latestSessionId": "20260505T225501Z",
       "latestCommit": "763e5e9cee9ddf039770315c40837ceb133e8e2f",
       "latestSummaryPath": "evidence/runtime/20260505T225501Z/diagnostic_summary.txt"
+    },
+    {
+      "phaseId": "crystals-read",
+      "status": "complete",
+      "completedAt": "2026-05-05T23:50:59.510Z",
+      "source": "campaign-collect",
+      "reason": "--latest-session",
+      "latestSessionId": "20260505T235005Z",
+      "latestCommit": "83361ef851e990891e63856148bd99177ad4058b",
+      "latestSummaryPath": "evidence/runtime/20260505T235005Z/diagnostic_summary.txt"
+    },
+    {
+      "phaseId": "slots-read",
+      "status": "complete",
+      "completedAt": "2026-05-05T23:53:53.995Z",
+      "source": "campaign-collect",
+      "reason": "--latest-session",
+      "latestSessionId": "20260505T235245Z",
+      "latestCommit": "83361ef851e990891e63856148bd99177ad4058b",
+      "latestSummaryPath": "evidence/runtime/20260505T235245Z/diagnostic_summary.txt"
     }
   ],
   "partialPhases": [
@@ -154,11 +174,11 @@
       "reason": "Probe set is not implemented yet."
     }
   ],
-  "currentPhase": "crystals-read",
-  "nextRecommendedPhase": "crystals-read",
-  "latestSessionId": "20260505T225501Z",
-  "latestCommit": "338b08a338ce08cfdd6297c858c3c7aeaadd12f5",
-  "latestSummaryPath": "evidence/runtime/20260505T225501Z/diagnostic_summary.txt",
+  "currentPhase": null,
+  "nextRecommendedPhase": "inventory-array-shallow-read",
+  "latestSessionId": "20260505T235245Z",
+  "latestCommit": "83361ef851e990891e63856148bd99177ad4058b",
+  "latestSummaryPath": "evidence/runtime/20260505T235245Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {
       "status": "complete",
@@ -247,14 +267,14 @@
       "mode": "active"
     },
     "crystals-read": {
-      "status": "current",
+      "status": "complete",
       "riskTier": "cautious-read",
       "probeSet": "crystals-read",
       "tickDriver": "executeDelay",
       "mode": "active"
     },
     "slots-read": {
-      "status": "pending",
+      "status": "complete",
       "riskTier": "cautious-read",
       "probeSet": "slots-read",
       "tickDriver": "executeDelay",

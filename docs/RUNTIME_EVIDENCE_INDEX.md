@@ -2,10 +2,10 @@
 
 Generated from imported runtime evidence under `evidence/runtime/`.
 
-- Access evidence files: 13
-- Probe result files: 13
-- Diagnostic summaries: 12
-- Evidence rows: 303
+- Access evidence files: 15
+- Probe result files: 15
+- Diagnostic summaries: 14
+- Evidence rows: 305
 - Health playerstate watch samples: 200
 - Identity/roster samples: 15
 - Resource visibility samples: 6
@@ -124,16 +124,30 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 
 ## Local Crystals Read Summary
 
-- Summary: unresolved; no `crystals-read` evidence has been imported yet.
-- Crystals-read will read only local `CrabPC -> PlayerState -> CrabPS -> Crystals`.
-- UInt32 range is documentation only; RuntimeProbe does not write or clamp values.
+- Summary: crystals_read_confirmed
+- Crystals read status: crystals_read_confirmed
+- Local PlayerState present: yes
+- Crystals read attempted: yes
+- Crystals value present: yes
+- Crystals value integer-like when present: yes
+- Writes/RPCs: no
+- HUD/deep arrays: no
+- Inventory arrays/InventoryInfo/Enhancements: no
+- UInt32 range is documentation only for this read-only phase; RuntimeProbe does not write or clamp the value.
 
 ## Local Slots Read Summary
 
-- Summary: unresolved; no `slots-read` evidence has been imported yet.
-- Slots-read will read only local `CrabPC -> PlayerState -> CrabPS` scalar fields: `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, `NumPerkSlots`.
-- ByteProperty range 0..255 is documentation only; RuntimeProbe does not write or clamp values.
-- Locked slots remain unresolved; no separate locked/max/total slot-capacity field was found in the tracked objectdump-derived notes.
+- Summary: slots_read_confirmed
+- Slots read status: slots_read_confirmed
+- Local PlayerState present: yes
+- Slot read attempted: yes
+- Present slot values: NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
+- Present slot values integer-like: yes
+- Present slot values within 0..255: yes
+- Writes/RPCs: no
+- HUD/deep arrays: no
+- Inventory arrays/InventoryInfo/Enhancements: no
+- These are observed scalar slot counters / candidate unlocked slot counters only; they are not proven total capacity or locked-slot state.
 
 ## Confirmed SAFE Access Rows
 
@@ -148,13 +162,13 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 | `CrabPC.PlayerState` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T034622Z, 20260505T035239Z, 20260505T052110Z | read-only local CrabPC -> PlayerState identity sample; raw values redacted unless allowRawIdentityEvidence=true |
 | `CrabPS.AbilityDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z | sourceScope=player_state_scoped; shortName=DA_Ability_BlackHole nameSource=fullNameFallback objectClass=CrabAbilityDA |
 | `CrabPS.BaseMaxHealth` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
-| `CrabPS.Crystals` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T063937Z | Read-only Crystals and optional Keys scalar visibility checks |
+| `CrabPS.Crystals` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T063937Z, 20260505T235005Z | Read-only Crystals and optional Keys scalar visibility checks; Read-only local CrabPC -> PlayerState -> CrabPS Crystals scalar read; UInt32 range documented only, with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays |
 | `CrabPS.HealthInfo` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.HealthInfo` | PlayerStateHealthSample | solo | solo-or-host | SAFE | ok | 20260505T025430Z, 20260505T055346Z | CrabPC -> PlayerState -> CrabPS -> HealthInfo read-only sample |
 | `CrabPS.HealthInfo` | RemotePlayerStateHealthSample | solo | solo-or-host | SAFE | ok | 20260505T063937Z | Read-only HealthInfo.CurrentHealth/CurrentMaxHealth plus BaseMaxHealth/MaxHealthMultiplier checks from visible PlayerStates; no CrabHC touched |
 | `CrabPS.MaxHealthMultiplier` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.MeleeDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z | sourceScope=player_state_scoped; shortName=DA_Melee_Hammer nameSource=fullNameFallback objectClass=CrabMeleeDA |
-| `CrabPS.NumWeaponModSlots` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T063937Z, 20260505T072250Z | Read-only NumWeaponModSlots/NumAbilityModSlots/NumMeleeModSlots/NumPerkSlots visibility checks; Read-only local CrabPC -> PlayerState slot scalar sample for inventory array correlation |
+| `CrabPS.NumWeaponModSlots` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T063937Z, 20260505T072250Z, 20260505T235245Z | Read-only NumWeaponModSlots/NumAbilityModSlots/NumMeleeModSlots/NumPerkSlots visibility checks; Read-only local CrabPC -> PlayerState -> CrabPS candidate slot scalar reads; ByteProperty range 0..255 documented only, locked/max slot model unresolved, with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays; Read-only local CrabPC -> PlayerState slot scalar sample for inventory array correlation |
 | `CrabPS.WeaponDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z, 20260505T063937Z | Read-only WeaponDA/AbilityDA/MeleeDA property visibility checks; object identities are not dereferenced or summarized in this phase |
 | `CrabPS.WeaponMods` | GetPropertyValueCountOnly | solo | solo-or-host | SAFE | ok | 20260505T063937Z, 20260505T072250Z | Count-only local inventory array check; table counts are capped and elements are never dereferenced; Read-only count-only checks for WeaponMods/AbilityMods/MeleeMods/Perks/Relics; no element dereference, InventoryInfo, or Enhancements |
 | `CrabPS.WeaponMods` | GetPropertyValueShapeConfirm | solo | solo-or-host | SAFE | ok | 20260505T204615Z | Read-only local CrabPC -> PlayerState -> CrabPS property shape confirm; no count, traversal, element dereference, InventoryInfo, Enhancements, writes, or RPCs |

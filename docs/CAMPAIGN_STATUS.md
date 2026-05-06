@@ -1,12 +1,12 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T23:47:49.340Z
-- Current phase: `crystals-read`
-- Next recommended phase: `crystals-read`
-- Latest session: 20260505T225501Z
-- Latest commit: 338b08a338ce08cfdd6297c858c3c7aeaadd12f5
-- Latest summary: evidence/runtime/20260505T225501Z/diagnostic_summary.txt
+- Updated: 2026-05-05T23:53:54.090Z
+- Current phase: none
+- Next recommended phase: `inventory-array-shallow-read`
+- Latest session: 20260505T235245Z
+- Latest commit: 83361ef851e990891e63856148bd99177ad4058b
+- Latest summary: evidence/runtime/20260505T235245Z/diagnostic_summary.txt
 
 ## Completed Phases
 
@@ -20,6 +20,8 @@
 - `multiplayer-health-playerstate-watch` - Multiplayer PlayerState health watch
 - `local-inventory-array-shape-confirm` - Local inventory array shape confirm
 - `local-inventory-userdata-introspection` - Local inventory userdata introspection
+- `crystals-read` - Local PlayerState crystals read
+- `slots-read` - Local PlayerState slots read
 
 ## Partial Phases
 
@@ -40,7 +42,7 @@
 
 ## Pending Phases
 
-- `slots-read` - Local PlayerState slots read
+- None.
 
 ## Confirmed Safe Paths
 
@@ -53,6 +55,8 @@
 - partial remote multiplayer PlayerState resource reads for crystals, slots, equipment, and health scalars
 - local PlayerState inventory array property shape confirmation without count, traversal, or element dereference
 - local PlayerState inventory userdata wrapper metadata without traversal or element dereference
+- local PlayerState Crystals scalar read through CrabPC -> PlayerState -> CrabPS
+- local PlayerState candidate slot scalar reads through CrabPC -> PlayerState -> CrabPS
 
 ## Identity And Roster Notes
 
@@ -141,16 +145,32 @@
 
 ## Local Crystals Read
 
-- Summary: unresolved; no `crystals-read` evidence has been imported yet.
-- Purpose: read only local PlayerState `Crystals` through `CrabPC -> PlayerState -> CrabPS`.
-- `Crystals` is documented as UInt32-range for interpretation only; RuntimeProbe does not write, clamp, or mutate it.
+- Summary: crystals_read_confirmed
+- Crystals read status: crystals_read_confirmed
+- Local PlayerState present: yes
+- Crystals read attempted: yes
+- Crystals value present: yes
+- Crystals value integer-like when present: yes
+- Writes/RPCs: no
+- HUD/deep arrays: no
+- Inventory arrays/InventoryInfo/Enhancements: no
+- No crash dump is associated with the imported crystals-read evidence.
+- UInt32 range is documentation only for this read-only phase; RuntimeProbe does not write or clamp the value.
 
 ## Local Slots Read
 
-- Summary: unresolved; no `slots-read` evidence has been imported yet.
-- Purpose: read only local PlayerState candidate slot counters through `CrabPC -> PlayerState -> CrabPS`.
-- Fields: `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, `NumPerkSlots`; documented as ByteProperty-backed scalar counters in the expected range 0..255.
-- Locked slots remain unresolved; no separate locked/max/total slot field was found in the tracked objectdump-derived notes, and RuntimeProbe does not call `ServerIncrementNumInventorySlots`.
+- Summary: slots_read_confirmed
+- Slots read status: slots_read_confirmed
+- Local PlayerState present: yes
+- Slot read attempted: yes
+- Present slot values: NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
+- Present slot values integer-like: yes
+- Present slot values within 0..255: yes
+- Writes/RPCs: no
+- HUD/deep arrays: no
+- Inventory arrays/InventoryInfo/Enhancements: no
+- No crash dump is associated with the imported slots-read evidence.
+- These are observed scalar slot counters / candidate unlocked slot counters only; they are not proven total capacity or locked-slot state.
 
 ## Confirmed Unsafe Paths
 
