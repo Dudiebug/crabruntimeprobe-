@@ -2,10 +2,10 @@
 
 Generated from imported runtime evidence under `evidence/runtime/`.
 
-- Access evidence files: 15
-- Probe result files: 15
-- Diagnostic summaries: 14
-- Evidence rows: 305
+- Access evidence files: 16
+- Probe result files: 16
+- Diagnostic summaries: 15
+- Evidence rows: 311
 - Health playerstate watch samples: 200
 - Identity/roster samples: 15
 - Resource visibility samples: 6
@@ -151,8 +151,18 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 
 ## Safe Scalar Watch Summary
 
-- Summary: unresolved; no `safe-scalar-watch` evidence has been imported yet.
-- Safe scalar watch will sample only proven-safe local scalar/property paths about every 5 seconds, with first/changed rows and 60-second heartbeats.
+- Summary: safe_scalar_watch_observed_change
+- Safe scalar watch status: safe_scalar_watch_observed_change
+- Sample count: 6
+- First values: AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=DA_Weapon_Minigun nameSource=fullNameFallback, context=solo, lifecycleState=stable, playerStatePresent=true, role=solo-or-host
+- Latest values: AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=250, Crystals=148, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=8, NumMeleeModSlots=8, NumPerkSlots=8, NumWeaponModSlots=8, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=DA_Weapon_Minigun nameSource=fullNameFallback, context=solo, lifecycleState=stable, playerStatePresent=true, role=solo-or-host
+- Min/max numeric values: BaseMaxHealth=250/250, Crystals=0/148, CurrentHealth=250/250, CurrentMaxHealth=250/250, MaxHealthMultiplier=1/1, NumAbilityModSlots=8/12, NumMeleeModSlots=8/12, NumPerkSlots=8/24, NumWeaponModSlots=8/24
+- Changed fields: Crystals, NumAbilityModSlots, NumMeleeModSlots, NumPerkSlots, NumWeaponModSlots
+- Change counts: Crystals=3, NumAbilityModSlots=1, NumMeleeModSlots=1, NumPerkSlots=1, NumWeaponModSlots=1
+- First/last context: solo / solo
+- First/last role: solo-or-host / solo-or-host
+- Slot model status: observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total slot model unresolved
+- No writes/RPCs/HUD/deep arrays/inventory traversal/InventoryInfo/Enhancements: yes
 
 ## Confirmed SAFE Access Rows
 
@@ -174,6 +184,7 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 | `CrabPS.MaxHealthMultiplier` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.MeleeDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z | sourceScope=player_state_scoped; shortName=DA_Melee_Hammer nameSource=fullNameFallback objectClass=CrabMeleeDA |
 | `CrabPS.NumWeaponModSlots` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T063937Z, 20260505T072250Z, 20260505T235245Z | Read-only NumWeaponModSlots/NumAbilityModSlots/NumMeleeModSlots/NumPerkSlots visibility checks; Read-only local CrabPC -> PlayerState -> CrabPS candidate slot scalar reads; ByteProperty range 0..255 documented only, locked/max slot model unresolved, with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays; Read-only local CrabPC -> PlayerState slot scalar sample for inventory array correlation |
+| `CrabPS.SafeScalarWatch` | SafeScalarWatchSample | solo | solo-or-host | SAFE | ok | 20260506T003518Z | Read-only watch of already confirmed local scalar/property paths; no inventory arrays, array count/traversal, InventoryInfo, Enhancements, writes, RPCs, HUD, or deep arrays |
 | `CrabPS.WeaponDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z, 20260505T063937Z | Read-only WeaponDA/AbilityDA/MeleeDA property visibility checks; object identities are not dereferenced or summarized in this phase |
 | `CrabPS.WeaponMods` | GetPropertyValueCountOnly | solo | solo-or-host | SAFE | ok | 20260505T063937Z, 20260505T072250Z | Count-only local inventory array check; table counts are capped and elements are never dereferenced; Read-only count-only checks for WeaponMods/AbilityMods/MeleeMods/Perks/Relics; no element dereference, InventoryInfo, or Enhancements |
 | `CrabPS.WeaponMods` | GetPropertyValueShapeConfirm | solo | solo-or-host | SAFE | ok | 20260505T204615Z | Read-only local CrabPC -> PlayerState -> CrabPS property shape confirm; no count, traversal, element dereference, InventoryInfo, Enhancements, writes, or RPCs |
