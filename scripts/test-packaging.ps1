@@ -33,6 +33,10 @@ function Assert-UnsafeGatesFalse {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowCrystalsReadProbes",
+    "allowSlotsReadProbes",
+    "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
+    "allowMaxSafePlayRecorderProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -57,6 +61,10 @@ function Assert-HealthBaselineGates {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowCrystalsReadProbes",
+    "allowSlotsReadProbes",
+    "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
+    "allowMaxSafePlayRecorderProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -132,6 +140,10 @@ function Write-TestSessionManifest {
       allowRawIdentityEvidence = $false
       allowResourceVisibilityProbes = $false
       allowCrystalsReadProbes = $false
+      allowSlotsReadProbes = $false
+      allowSafeScalarWatchProbes = $false
+      allowPerkDataAssetCatalogProbes = $false
+      allowMaxSafePlayRecorderProbes = $false
       allowInventoryArrayShallowProbes = $false
       allowInventoryArrayShapeConfirmProbes = $false
       allowInventoryUserdataIntrospectionProbes = $false
@@ -225,6 +237,136 @@ foreach ($key in @(
   "allowInventoryArrayShapeConfirmProbes",
   "allowInventoryUserdataIntrospectionProbes",
   "allowCrystalsReadProbes",
+  "allowSlotsReadProbes",
+  "allowSafeScalarWatchProbes",
+  "allowPerkDataAssetCatalogProbes",
+  "allowMaxSafePlayRecorderProbes",
+  "allowWriteProbes",
+  "allowRpcProbes"
+)) {
+  Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key $key -Expected "false"
+}
+
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareSafeScalarWatch
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected "executeDelay"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "active"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "safe-scalar-watch"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "repeatProbeSet" -Expected "true"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxProbesPerSession" -Expected "240"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "allowSafeScalarWatchProbes" -Expected "true"
+foreach ($key in @(
+  "allowHudTickHook",
+  "allowUnknownRoleProbes",
+  "allowJoinedClientDeepProbes",
+  "allowDeepArrayProbes",
+  "allowInventoryInfoProbes",
+  "allowHealthProbes",
+  "allowIdentityProbes",
+  "allowRawIdentityEvidence",
+  "allowResourceVisibilityProbes",
+  "allowCrystalsReadProbes",
+  "allowSlotsReadProbes",
+  "allowPerkDataAssetCatalogProbes",
+  "allowMaxSafePlayRecorderProbes",
+  "allowInventoryArrayShallowProbes",
+  "allowInventoryArrayShapeConfirmProbes",
+  "allowInventoryUserdataIntrospectionProbes",
+  "allowWriteProbes",
+  "allowRpcProbes"
+)) {
+  Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key $key -Expected "false"
+}
+
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PreparePerkDataAssetCatalog
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected "executeDelay"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "active"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "perk-da-catalog-read"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "repeatProbeSet" -Expected "false"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxProbesPerSession" -Expected "1"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "allowPerkDataAssetCatalogProbes" -Expected "true"
+foreach ($key in @(
+  "allowHudTickHook",
+  "allowUnknownRoleProbes",
+  "allowJoinedClientDeepProbes",
+  "allowDeepArrayProbes",
+  "allowInventoryInfoProbes",
+  "allowHealthProbes",
+  "allowIdentityProbes",
+  "allowRawIdentityEvidence",
+  "allowResourceVisibilityProbes",
+  "allowCrystalsReadProbes",
+  "allowSlotsReadProbes",
+  "allowSafeScalarWatchProbes",
+  "allowMaxSafePlayRecorderProbes",
+  "allowInventoryArrayShallowProbes",
+  "allowInventoryArrayShapeConfirmProbes",
+  "allowInventoryUserdataIntrospectionProbes",
+  "allowWriteProbes",
+  "allowRpcProbes"
+)) {
+  Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key $key -Expected "false"
+}
+
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PreparePerkDataAssetCatalog
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected "executeDelay"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "active"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "perk-da-catalog-read"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "repeatProbeSet" -Expected "false"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxProbesPerSession" -Expected "1"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "allowPerkDataAssetCatalogProbes" -Expected "true"
+foreach ($key in @(
+  "allowHudTickHook",
+  "allowUnknownRoleProbes",
+  "allowJoinedClientDeepProbes",
+  "allowDeepArrayProbes",
+  "allowInventoryInfoProbes",
+  "allowHealthProbes",
+  "allowIdentityProbes",
+  "allowRawIdentityEvidence",
+  "allowResourceVisibilityProbes",
+  "allowCrystalsReadProbes",
+  "allowSlotsReadProbes",
+  "allowSafeScalarWatchProbes",
+  "allowInventoryArrayShallowProbes",
+  "allowInventoryArrayShapeConfirmProbes",
+  "allowInventoryUserdataIntrospectionProbes",
+  "allowWriteProbes",
+  "allowRpcProbes"
+)) {
+  Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key $key -Expected "false"
+}
+
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareMaxSafePlayRecorder
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected "executeDelay"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "active"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "max-safe-play-recorder"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "repeatProbeSet" -Expected "true"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxProbesPerSession" -Expected "1600"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxSafePlayIntervalSeconds" -Expected "5"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxSafePlayHeartbeatSeconds" -Expected "60"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxSafePlayMaxSamples" -Expected "720"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxSafePlayPerkCatalogIntervalSeconds" -Expected "60"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxSafePlayMaxPerkCatalogSnapshots" -Expected "60"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxSafePlayLogUnchangedHeartbeat" -Expected "true"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "perkDataAssetCatalogMaxRejectionDiagnostics" -Expected "16"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "allowMaxSafePlayRecorderProbes" -Expected "true"
+foreach ($key in @(
+  "allowHudTickHook",
+  "allowUnknownRoleProbes",
+  "allowJoinedClientDeepProbes",
+  "allowDeepArrayProbes",
+  "allowInventoryInfoProbes",
+  "allowHealthProbes",
+  "allowIdentityProbes",
+  "allowRawIdentityEvidence",
+  "allowResourceVisibilityProbes",
+  "allowCrystalsReadProbes",
+  "allowSlotsReadProbes",
+  "allowSafeScalarWatchProbes",
+  "allowPerkDataAssetCatalogProbes",
+  "allowInventoryArrayShallowProbes",
+  "allowInventoryArrayShapeConfirmProbes",
+  "allowInventoryUserdataIntrospectionProbes",
   "allowWriteProbes",
   "allowRpcProbes"
 )) {
@@ -265,6 +407,22 @@ $healthPlayerStateWatchCollectScript = Get-Content -Raw -LiteralPath (Join-Path 
 if ($healthPlayerStateWatchCollectScript -notmatch 'validate-latest-crash-bundle\.ps1' -or $healthPlayerStateWatchCollectScript -notmatch 'health-playerstate-watch') {
   throw "quick-health-playerstate-watch-collect.ps1 must run the stale bundle validator for health-playerstate-watch."
 }
+$safeWatchPrepareScript = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "quick-safe-watch-prepare.ps1")
+if ($safeWatchPrepareScript -notmatch 'PrepareSafeScalarWatch' -or $safeWatchPrepareScript -notmatch 'proven-safe scalar values') {
+  throw "quick-safe-watch-prepare.ps1 must prepare safe-scalar-watch and print the safe scalar human action."
+}
+$safeWatchCollectScript = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "quick-safe-watch-collect.ps1")
+if ($safeWatchCollectScript -notmatch 'validate-latest-crash-bundle\.ps1' -or $safeWatchCollectScript -notmatch 'safe-scalar-watch' -or $safeWatchCollectScript -notmatch 'import-latest-runtime-evidence\.ps1') {
+  throw "quick-safe-watch-collect.ps1 must validate, collect, and import safe-scalar-watch evidence."
+}
+$maxSafePlayPrepareScript = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "quick-max-safe-play-prepare.ps1")
+if ($maxSafePlayPrepareScript -notmatch 'PrepareMaxSafePlayRecorder' -or $maxSafePlayPrepareScript -notmatch 'proven-safe scalar values and capped perk DataAsset catalog snapshots') {
+  throw "quick-max-safe-play-prepare.ps1 must prepare max-safe-play-recorder and print the max-safe play human action."
+}
+$maxSafePlayCollectScript = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "quick-max-safe-play-collect.ps1")
+if ($maxSafePlayCollectScript -notmatch 'validate-latest-crash-bundle\.ps1' -or $maxSafePlayCollectScript -notmatch 'max-safe-play-recorder' -or $maxSafePlayCollectScript -notmatch 'max_safe_play_no_playerstate_samples') {
+  throw "quick-max-safe-play-collect.ps1 must validate and report max-safe-play-recorder evidence, including no-sample remediation."
+}
 
 $probeRegistry = Get-Content -Raw -LiteralPath (Join-Path $SourceModRoot "Scripts\probe_registry.lua")
 foreach ($required in @(
@@ -282,6 +440,13 @@ foreach ($required in @(
   "Identity.FindAll.PlayerStateCandidates",
   "Identity.PlayerControllerCandidates",
   "Identity.VisiblePlayers.SourceCandidate",
+  "SafeWatch.Scalar.Sample",
+  "safe-scalar-watch",
+  "MaxSafePlay.Scalar.Sample",
+  "MaxSafePlay.PerkDataAsset.CatalogSnapshot",
+  "max-safe-play-recorder",
+  "catalogRejectionDiagnostics",
+  "PERK_DA_SOURCE_REF_FIELDS",
   "health-hc-discovery-read"
 )) {
   if ($probeRegistry -notmatch [regex]::Escape($required)) {
@@ -299,6 +464,12 @@ if ($healthPlayerStatePrepareScript -match "FindFirstOf.CrabHC") {
 }
 if ($healthPlayerStateWatchPrepareScript -match "FindFirstOf.CrabHC|FindAllOf.CrabHC|InventoryInfo|allowWriteProbes\s*=\s*true|allowRpcProbes\s*=\s*true|allowHudTickHook\s*=\s*true") {
   throw "quick-health-playerstate-watch-prepare.ps1 must stay on the safe playerstate-only watch path."
+}
+if ($safeWatchPrepareScript -match "FindFirstOf.CrabHC|FindAllOf.CrabHC|allowWriteProbes\s*=\s*true|allowRpcProbes\s*=\s*true|allowHudTickHook\s*=\s*true|allowInventoryArrayShallowProbes\s*=\s*true|allowDeepArrayProbes\s*=\s*true") {
+  throw "quick-safe-watch-prepare.ps1 must stay on the proven scalar watch path."
+}
+if ($maxSafePlayPrepareScript -match "FindFirstOf.CrabHC|FindAllOf.CrabHC|allowWriteProbes\s*=\s*true|allowRpcProbes\s*=\s*true|allowHudTickHook\s*=\s*true|allowInventoryArrayShallowProbes\s*=\s*true|allowDeepArrayProbes\s*=\s*true|allowInventoryInfoProbes\s*=\s*true|allowSafeScalarWatchProbes\s*=\s*true|allowPerkDataAssetCatalogProbes\s*=\s*true") {
+  throw "quick-max-safe-play-prepare.ps1 must stay on the max-safe recorder gate without enabling underlying or unsafe gates."
 }
 
 $hudFailed = $false

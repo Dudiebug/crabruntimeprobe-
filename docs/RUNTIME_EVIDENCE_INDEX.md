@@ -2,10 +2,10 @@
 
 Generated from imported runtime evidence under `evidence/runtime/`.
 
-- Access evidence files: 13
-- Probe result files: 13
-- Diagnostic summaries: 12
-- Evidence rows: 303
+- Access evidence files: 21
+- Probe result files: 21
+- Diagnostic summaries: 20
+- Evidence rows: 627
 - Health playerstate watch samples: 200
 - Identity/roster samples: 15
 - Resource visibility samples: 6
@@ -124,9 +124,53 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 
 ## Local Crystals Read Summary
 
-- Summary: unresolved; no `crystals-read` evidence has been imported yet.
-- Crystals-read will read only local `CrabPC -> PlayerState -> CrabPS -> Crystals`.
-- UInt32 range is documentation only; RuntimeProbe does not write or clamp values.
+- Summary: crystals_read_confirmed
+- Crystals read status: crystals_read_confirmed
+- Local PlayerState present: yes
+- Crystals read attempted: yes
+- Crystals value present: yes
+- Crystals value integer-like when present: yes
+- Writes/RPCs: no
+- HUD/deep arrays: no
+- Inventory arrays/InventoryInfo/Enhancements: no
+- UInt32 range is documentation only for this read-only phase; RuntimeProbe does not write or clamp the value.
+
+## Local Slots Read Summary
+
+- Summary: slots_read_confirmed
+- Slots read status: slots_read_confirmed
+- Local PlayerState present: yes
+- Slot read attempted: yes
+- Present slot values: NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
+- Present slot values integer-like: yes
+- Present slot values within 0..255: yes
+- Writes/RPCs: no
+- HUD/deep arrays: no
+- Inventory arrays/InventoryInfo/Enhancements: no
+- These are observed scalar slot counters / candidate unlocked slot counters only; they are not proven total capacity or locked-slot state.
+
+## Safe Scalar Watch Summary
+
+- Summary: safe_scalar_watch_observed_change
+- Safe scalar watch status: safe_scalar_watch_observed_change
+- Sample count: 119
+- First values: AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=DA_Weapon_Minigun nameSource=fullNameFallback, context=solo, lifecycleState=stable, playerStatePresent=true, role=solo-or-host
+- Latest values: AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=288, Crystals=1481, CurrentHealth=270.08383178711, CurrentMaxHealth=345.60000610352, MaxHealthMultiplier=1, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=8, NumMeleeModSlots=8, NumPerkSlots=8, NumWeaponModSlots=8, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=DA_Weapon_Minigun nameSource=fullNameFallback, context=solo, lifecycleState=stable, playerStatePresent=true, role=solo-or-host
+- Min/max numeric values: BaseMaxHealth=250/288, Crystals=0/2962, CurrentHealth=18.423839569092/344.40002441406, CurrentMaxHealth=250/345.60000610352, MaxHealthMultiplier=1/1, NumAbilityModSlots=8/12, NumMeleeModSlots=8/12, NumPerkSlots=8/24, NumWeaponModSlots=8/24
+- Changed fields: AbilityDA, BaseMaxHealth, Crystals, CurrentHealth, CurrentMaxHealth, MeleeDA, NumAbilityModSlots, NumMeleeModSlots, NumPerkSlots, NumWeaponModSlots, WeaponDA
+- Change counts: AbilityDA=2, BaseMaxHealth=5, Crystals=40, CurrentHealth=56, CurrentMaxHealth=6, MeleeDA=2, NumAbilityModSlots=1, NumMeleeModSlots=1, NumPerkSlots=1, NumWeaponModSlots=1, WeaponDA=2
+- First/last context: solo / solo
+- First/last role: solo-or-host / solo-or-host
+- Slot model status: observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total slot model unresolved
+- No writes/RPCs/HUD/deep arrays/inventory traversal/InventoryInfo/Enhancements: yes
+
+## Perk DataAsset Catalog Summary
+
+- Summary: unresolved; no `perk-da-catalog-read` evidence has been imported yet.
+- Perk catalog evidence will be read-only and is not permission to mutate DataAssets.
+- RuntimeProbe will prove read paths only; future CrabModFramework / CrabTastyMod write/edit APIs must be designed separately.
+- TastyOrange is not special-cased by RuntimeProbe. It will be cataloged as a normal perk if found.
+- Collector is not special-cased by RuntimeProbe. It will be cataloged as a normal perk if found.
 
 ## Confirmed SAFE Access Rows
 
@@ -141,13 +185,15 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 | `CrabPC.PlayerState` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T034622Z, 20260505T035239Z, 20260505T052110Z | read-only local CrabPC -> PlayerState identity sample; raw values redacted unless allowRawIdentityEvidence=true |
 | `CrabPS.AbilityDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z | sourceScope=player_state_scoped; shortName=DA_Ability_BlackHole nameSource=fullNameFallback objectClass=CrabAbilityDA |
 | `CrabPS.BaseMaxHealth` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
-| `CrabPS.Crystals` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T063937Z | Read-only Crystals and optional Keys scalar visibility checks |
+| `CrabPS.Crystals` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T063937Z, 20260505T235005Z | Read-only Crystals and optional Keys scalar visibility checks; Read-only local CrabPC -> PlayerState -> CrabPS Crystals scalar read; UInt32 range documented only, with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays |
 | `CrabPS.HealthInfo` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.HealthInfo` | PlayerStateHealthSample | solo | solo-or-host | SAFE | ok | 20260505T025430Z, 20260505T055346Z | CrabPC -> PlayerState -> CrabPS -> HealthInfo read-only sample |
 | `CrabPS.HealthInfo` | RemotePlayerStateHealthSample | solo | solo-or-host | SAFE | ok | 20260505T063937Z | Read-only HealthInfo.CurrentHealth/CurrentMaxHealth plus BaseMaxHealth/MaxHealthMultiplier checks from visible PlayerStates; no CrabHC touched |
 | `CrabPS.MaxHealthMultiplier` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
+| `CrabPS.MaxSafePlayScalar` | MaxSafePlayScalarSample | solo | solo-or-host | SAFE | ok | 20260506T021129Z, 20260506T021452Z, 20260506T032658Z | Max-safe play scalar recorder; read-only reuse of proven safe scalar paths only |
 | `CrabPS.MeleeDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z | sourceScope=player_state_scoped; shortName=DA_Melee_Hammer nameSource=fullNameFallback objectClass=CrabMeleeDA |
-| `CrabPS.NumWeaponModSlots` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T063937Z, 20260505T072250Z | Read-only NumWeaponModSlots/NumAbilityModSlots/NumMeleeModSlots/NumPerkSlots visibility checks; Read-only local CrabPC -> PlayerState slot scalar sample for inventory array correlation |
+| `CrabPS.NumWeaponModSlots` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T063937Z, 20260505T072250Z, 20260505T235245Z | Read-only NumWeaponModSlots/NumAbilityModSlots/NumMeleeModSlots/NumPerkSlots visibility checks; Read-only local CrabPC -> PlayerState -> CrabPS candidate slot scalar reads; ByteProperty range 0..255 documented only, locked/max slot model unresolved, with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays; Read-only local CrabPC -> PlayerState slot scalar sample for inventory array correlation |
+| `CrabPS.SafeScalarWatch` | SafeScalarWatchSample | solo | solo-or-host | SAFE | ok | 20260506T003518Z, 20260506T004503Z | Read-only watch of already confirmed local scalar/property paths; no inventory arrays, array count/traversal, InventoryInfo, Enhancements, writes, RPCs, HUD, or deep arrays |
 | `CrabPS.WeaponDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z, 20260505T063937Z | Read-only WeaponDA/AbilityDA/MeleeDA property visibility checks; object identities are not dereferenced or summarized in this phase |
 | `CrabPS.WeaponMods` | GetPropertyValueCountOnly | solo | solo-or-host | SAFE | ok | 20260505T063937Z, 20260505T072250Z | Count-only local inventory array check; table counts are capped and elements are never dereferenced; Read-only count-only checks for WeaponMods/AbilityMods/MeleeMods/Perks/Relics; no element dereference, InventoryInfo, or Enhancements |
 | `CrabPS.WeaponMods` | GetPropertyValueShapeConfirm | solo | solo-or-host | SAFE | ok | 20260505T204615Z | Read-only local CrabPC -> PlayerState -> CrabPS property shape confirm; no count, traversal, element dereference, InventoryInfo, Enhancements, writes, or RPCs |
@@ -155,6 +201,7 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 | `CrabPS.WeaponMods` | GetPropertyValueUserdataMetadata | solo | solo-or-host | SAFE | ok | 20260505T225501Z | Read-only local CrabPC -> PlayerState -> CrabPS userdata wrapper metadata; no traversal, element dereference, InventoryInfo, Enhancements, writes, RPCs, HUD, or deep arrays |
 | `CrabPS.HealthInfo.CurrentHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
 | `CrabPS.HealthInfo.CurrentMaxHealth` | HealthInfoStructField | solo | solo-or-host | SAFE | ok | 20260505T002614Z, 20260505T010858Z | CrabPC -> PlayerState -> CrabPS health path |
+| `CrabPerkDA` | FindAllOfCappedCuratedClasses | solo | solo-or-host | SAFE | ok | 20260506T021129Z, 20260506T021452Z, 20260506T032658Z | Max-safe play capped perk DataAsset catalog snapshot; normal entries only, no special cases, no mutation or function calls |
 | `PlayerState.Identity` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260505T034622Z, 20260505T035239Z, 20260505T052110Z, 20260505T063937Z | Capped read-only visible PlayerState/CrabPS candidate identity fingerprints; no raw names or UniqueIds emitted; candidate PlayerState display/stable-id fields via GetPropertyValue only; no raw IDs by default |
 | `CrabGS` | FindFirstOf | solo | solo-or-host | SAFE | ok | 20260505T052110Z | FindFirstOf(CrabGS); GetFullName/GetName/GetClass only; objectdump shows CrabGS extends GameStateBase but no CrabGS-specific PlayerArray property; optional source name/class read error: function: 000002227AAEBC50function: 000002227AAEBC50 |
 | `CrabHC` | FindFirstOf | solo | solo-or-host | SAFE | ok | 20260505T002614Z | sourceScope=non_player_candidate; value=CrabHC found |
@@ -162,3 +209,5 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 | `PlayerController CrabPC` | FindAllOfCapped | solo | solo-or-host | SAFE | ok | 20260505T052110Z | FindAllOf availability checked before capped PlayerController/CrabPC traversal; only PlayerState property was read from valid controllers, cap=8 |
 | `PlayerState CrabPS` | FindAllOfCapped | solo | solo-or-host | SAFE | ok | 20260505T052110Z | FindAllOf availability checked before capped PlayerState-like candidate traversal; sampled PlayerState and CrabPS only, cap=16, no raw identity by default |
 | `Runtime.Context` | observe | lobby, solo, unknown | solo-or-host, unknown | SAFE | ok | 20260505T032627Z | context observation only; not arbitrary object access |
+| `Runtime.MaxSafePlaySession` | MaxSafePlaySessionHeartbeat | solo | solo-or-host | SAFE | ok | 20260506T021129Z, 20260506T021452Z, 20260506T032658Z | Compact max-safe play recorder session aggregate; no live inventory arrays, writes, RPCs, HUD, deep arrays, InventoryInfo, or Enhancements |
+| `Runtime.MaxSafePlaySession` | MaxSafePlaySessionSummary | solo | solo-or-host | SAFE | ok | 20260506T021129Z, 20260506T021452Z, 20260506T032658Z | Compact max-safe play recorder session aggregate; no live inventory arrays, writes, RPCs, HUD, deep arrays, InventoryInfo, or Enhancements |

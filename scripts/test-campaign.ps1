@@ -63,7 +63,7 @@ if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "tickDri
 if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "probeSet") -ne "shallow-core") {
   throw "default config probeSet must remain shallow-core."
 }
-foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowPerkDataAssetCatalogProbes", "allowMaxSafePlayRecorderProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
   if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key $key) -ne "false") {
     throw "default config expected $key = false."
   }
@@ -108,6 +108,7 @@ assert(state.nextRecommendedPhase === 'multiplayer-resource-visibility-read', `e
 const defaultState = helpers.reconcileState(plan, null, repoRoot);
 assert(Array.isArray(defaultState.completedPhases), 'state initializes completedPhases');
 assert(!defaultState.blockedPhases.some((entry) => entry.phaseId === 'crystals-read'), 'implemented crystals phase must not be blocked');
+assert(!defaultState.blockedPhases.some((entry) => entry.phaseId === 'slots-read'), 'implemented slots phase must not be blocked');
 
 for (const phase of plan.phases) {
   if (phase.implemented !== true) continue;
@@ -138,6 +139,18 @@ for (const phase of plan.phases) {
   }
   if (phase.phaseId !== 'crystals-read') {
     assert(gates.allowCrystalsReadProbes === false, `${phase.phaseId} enabled crystals read outside crystals phase`);
+  }
+  if (phase.phaseId !== 'slots-read') {
+    assert(gates.allowSlotsReadProbes === false, `${phase.phaseId} enabled slots read outside slots phase`);
+  }
+  if (phase.phaseId !== 'safe-scalar-watch') {
+    assert(gates.allowSafeScalarWatchProbes === false, `${phase.phaseId} enabled safe scalar watch outside safe scalar watch phase`);
+  }
+  if (phase.phaseId !== 'perk-da-catalog-read') {
+    assert(gates.allowPerkDataAssetCatalogProbes === false, `${phase.phaseId} enabled perk DataAsset catalog outside catalog phase`);
+  }
+  if (phase.phaseId !== 'max-safe-play-recorder') {
+    assert(gates.allowMaxSafePlayRecorderProbes === false, `${phase.phaseId} enabled max-safe play recorder outside direct recorder phase`);
   }
 }
 
@@ -296,6 +309,86 @@ const shapeConfirmCompleteState = helpers.markCollected(plan, localInventoryCras
   latestSummaryPath: 'evidence/runtime/20260505T080100Z/diagnostic_summary.txt'
 });
 assert(shapeConfirmCompleteState.nextRecommendedPhase === 'local-inventory-userdata-introspection', `shape-confirm completion should advance to userdata introspection, got ${shapeConfirmCompleteState.nextRecommendedPhase}`);
+
+const userdataCompleteState = helpers.markCollected(plan, shapeConfirmCompleteState, 'local-inventory-userdata-introspection', {
+  status: 'local_inventory_userdata_introspection_confirmed',
+  reason: 'Local inventory userdata wrapper metadata was collected.',
+  latestSessionId: '20260505T204615Z',
+  latestCommit: '591389d5f71e99e2c19f7c287290cbf853a8e496',
+  latestSummaryPath: 'evidence/runtime/20260505T204615Z/diagnostic_summary.txt'
+});
+assert(userdataCompleteState.nextRecommendedPhase === 'crystals-read', `userdata completion should advance to crystals-read, got ${userdataCompleteState.nextRecommendedPhase}`);
+
+const crystalsCompleteState = helpers.markCollected(plan, userdataCompleteState, 'crystals-read', {
+  status: 'crystals_read_confirmed',
+  reason: 'Local PlayerState Crystals scalar was read safely.',
+  latestSessionId: '20260505T210000Z',
+  latestCommit: '591389d5f71e99e2c19f7c287290cbf853a8e496',
+  latestSummaryPath: 'evidence/runtime/20260505T210000Z/diagnostic_summary.txt'
+});
+assert(crystalsCompleteState.nextRecommendedPhase === 'slots-read', `crystals completion should advance to slots-read, got ${crystalsCompleteState.nextRecommendedPhase}`);
+
+let slotsRead = helpers.classifySlotsReadEvidence([
+  { probeName: 'Resource.Slots.Read', localPlayerStatePresent: true, slotsReadAttempted: true, slotScalarValues: { NumWeaponModSlots: 24, NumAbilityModSlots: 12, NumMeleeModSlots: 12, NumPerkSlots: 24 }, slotIntegerLike: { NumWeaponModSlots: true, NumAbilityModSlots: true, NumMeleeModSlots: true, NumPerkSlots: true }, slotValuesInByteRange: { NumWeaponModSlots: true, NumAbilityModSlots: true, NumMeleeModSlots: true, NumPerkSlots: true }, noElementDereference: true, noArrayCount: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, safetyGates: { allowSlotsReadProbes: true, allowCrystalsReadProbes: false, allowInventoryArrayShallowProbes: false, allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false, allowRawIdentityEvidence: false, allowHealthProbes: false, allowIdentityProbes: false, allowResourceVisibilityProbes: false } }
+]);
+assert(slotsRead.status === 'slots_read_confirmed', `slots-read should confirm valid scalar values, got ${slotsRead.status}`);
+slotsRead = helpers.classifySlotsReadEvidence([
+  { probeName: 'Resource.Slots.Read', localPlayerStatePresent: true, slotsReadAttempted: true, slotScalarValues: { NumWeaponModSlots: 256 }, slotIntegerLike: { NumWeaponModSlots: true }, slotValuesInByteRange: { NumWeaponModSlots: false }, noElementDereference: true, noArrayCount: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, safetyGates: { allowSlotsReadProbes: true } }
+]);
+assert(slotsRead.status === 'failed', 'slots-read must fail if a present scalar is outside 0..255');
+
+const slotsCompleteState = helpers.markCollected(plan, crystalsCompleteState, 'slots-read', {
+  status: 'slots_read_confirmed',
+  reason: 'Local PlayerState slot scalars were read safely.',
+  latestSessionId: '20260505T211000Z',
+  latestCommit: '591389d5f71e99e2c19f7c287290cbf853a8e496',
+  latestSummaryPath: 'evidence/runtime/20260505T211000Z/diagnostic_summary.txt'
+});
+assert(slotsCompleteState.nextRecommendedPhase === 'safe-scalar-watch', `slots completion should advance to safe-scalar-watch, got ${slotsCompleteState.nextRecommendedPhase}`);
+
+let safeScalarWatch = helpers.classifySafeScalarWatchEvidence([
+  { probeName: 'SafeWatch.Scalar.Sample', result: 'ok', playerStatePresent: true, safeWatchSampleCount: 2, safeWatchChangedFields: [], safeWatchFirstValues: { Crystals: 100 }, safeWatchLatestValues: { Crystals: 100 }, safeWatchMinValues: { Crystals: 100 }, safeWatchMaxValues: { Crystals: 100 }, safeWatchChangeCounts: {}, firstContext: 'solo', lastContext: 'solo', firstRole: 'solo-or-host', lastRole: 'solo-or-host', noElementDereference: true, noArrayCount: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, safetyGates: { allowSafeScalarWatchProbes: true, allowCrystalsReadProbes: false, allowSlotsReadProbes: false, allowInventoryArrayShallowProbes: false, allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false, allowRawIdentityEvidence: false, allowHealthProbes: false, allowIdentityProbes: false, allowResourceVisibilityProbes: false } }
+]);
+assert(safeScalarWatch.status === 'safe_scalar_watch_confirmed_no_change', `safe scalar watch should confirm no-change multi-sample evidence, got ${safeScalarWatch.status}`);
+safeScalarWatch = helpers.classifySafeScalarWatchEvidence([
+  { probeName: 'SafeWatch.Scalar.Sample', result: 'ok', playerStatePresent: true, safeWatchSampleCount: 3, safeWatchChangedFields: ['Crystals'], safeWatchChangeCounts: { Crystals: 1 }, noElementDereference: true, noArrayCount: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, safetyGates: { allowSafeScalarWatchProbes: true } }
+]);
+assert(safeScalarWatch.status === 'safe_scalar_watch_observed_change', `safe scalar watch should classify changed fields, got ${safeScalarWatch.status}`);
+
+const safeScalarWatchCompleteState = helpers.markCollected(plan, slotsCompleteState, 'safe-scalar-watch', {
+  status: 'safe_scalar_watch_confirmed_no_change',
+  reason: 'Safe scalar watch collected stable scalar values safely.',
+  latestSessionId: '20260505T212000Z',
+  latestCommit: '591389d5f71e99e2c19f7c287290cbf853a8e496',
+  latestSummaryPath: 'evidence/runtime/20260505T212000Z/diagnostic_summary.txt'
+});
+assert(safeScalarWatchCompleteState.nextRecommendedPhase === 'perk-da-catalog-read', `safe scalar watch completion should move to perk-da-catalog-read, got ${safeScalarWatchCompleteState.nextRecommendedPhase}`);
+
+let perkCatalog = helpers.classifyPerkDataAssetCatalogEvidence([
+  { probeName: 'DataAsset.Perks.CatalogRead', result: 'ok', discoveryAttempted: true, catalogFound: true, catalogEntryCount: 2, catalogEntries: [{ shortName: 'DA_Perk_TastyOrange' }, { shortName: 'DA_Perk_Collector' }], noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, noInventoryArrays: true, noArrayCount: true, noArrayTraversal: true, noElementDereference: true, noInventoryInfo: true, noEnhancements: true, noDataAssetMutation: true, noFunctionCalls: true, passiveOnly: true, safetyGates: { allowPerkDataAssetCatalogProbes: true, allowSafeScalarWatchProbes: false, allowCrystalsReadProbes: false, allowSlotsReadProbes: false, allowInventoryArrayShallowProbes: false, allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false, allowRawIdentityEvidence: false, allowHealthProbes: false, allowIdentityProbes: false, allowResourceVisibilityProbes: false } }
+]);
+assert(perkCatalog.status === 'perk_da_catalog_confirmed', `perk catalog should confirm found/read evidence, got ${perkCatalog.status}`);
+perkCatalog = helpers.classifyPerkDataAssetCatalogEvidence([
+  { probeName: 'DataAsset.Perks.CatalogRead', result: 'nil', discoveryAttempted: true, catalogFound: false, catalogEntryCount: 0, notFoundClassification: 'perk_da_catalog_not_found', noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, noInventoryArrays: true, noArrayCount: true, noArrayTraversal: true, noElementDereference: true, noInventoryInfo: true, noEnhancements: true, noDataAssetMutation: true, noFunctionCalls: true, passiveOnly: true, safetyGates: { allowPerkDataAssetCatalogProbes: true, allowSafeScalarWatchProbes: false, allowInventoryArrayShallowProbes: false, allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false } }
+]);
+assert(perkCatalog.status === 'perk_da_catalog_not_found', `safe not-found catalog evidence should classify not-found, got ${perkCatalog.status}`);
+perkCatalog = helpers.classifyPerkDataAssetCatalogEvidence([
+  { probeName: 'DataAsset.Perks.CatalogRead', result: 'ok', discoveryAttempted: true, catalogFound: true, catalogEntryCount: 1, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, noInventoryArrays: true, noArrayCount: true, noArrayTraversal: false, noElementDereference: true, noInventoryInfo: true, noEnhancements: true, noDataAssetMutation: true, noFunctionCalls: true, passiveOnly: true, safetyGates: { allowPerkDataAssetCatalogProbes: true } }
+]);
+assert(perkCatalog.status === 'failed', 'perk catalog must fail if safety markers are missing or false');
+perkCatalog = helpers.classifyPerkDataAssetCatalogEvidence([
+  { probeName: 'DataAsset.Perks.CatalogRead', result: 'ok', discoveryAttempted: true, catalogFound: true, catalogEntryCount: 1, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, noInventoryArrays: true, noArrayCount: true, noArrayTraversal: true, noElementDereference: true, noInventoryInfo: true, noEnhancements: true, noDataAssetMutation: true, noFunctionCalls: true, passiveOnly: true, safetyGates: { allowPerkDataAssetCatalogProbes: true, allowWriteProbes: true } }
+]);
+assert(perkCatalog.status === 'failed', 'perk catalog must fail when forbidden gates are enabled');
+
+const perkCatalogCompleteState = helpers.markCollected(plan, safeScalarWatchCompleteState, 'perk-da-catalog-read', {
+  status: 'perk_da_catalog_confirmed',
+  reason: 'Perk DataAsset catalog read safely.',
+  latestSessionId: '20260505T213000Z',
+  latestCommit: '7b9c773f133d5464a1f5d6046bdf4ebdd565c75f',
+  latestSummaryPath: 'evidence/runtime/20260505T213000Z/diagnostic_summary.txt'
+});
+assert(perkCatalogCompleteState.nextRecommendedPhase === 'inventory-array-shallow-read', `perk catalog completion should advance to inventory-array-shallow-read placeholder, got ${perkCatalogCompleteState.nextRecommendedPhase}`);
 '@
 node $NodeTestPath (Join-Path $RepoRoot "tools\campaign_helpers.js") $RepoRoot
 if ($LASTEXITCODE -ne 0) { throw "campaign helper tests failed." }
@@ -376,6 +469,48 @@ if ($prepareRan) {
     foreach ($key in @("allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
       if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
         throw "local inventory userdata introspection campaign phase expected $key = false."
+      }
+    }
+  } elseif ($preparedPhase -eq "crystals-read") {
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowCrystalsReadProbes") -ne "true") {
+      throw "crystals campaign phase expected allowCrystalsReadProbes = true."
+    }
+    foreach ($key in @("allowSlotsReadProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
+      if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+        throw "crystals campaign phase expected $key = false."
+      }
+    }
+  } elseif ($preparedPhase -eq "slots-read") {
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowSlotsReadProbes") -ne "true") {
+      throw "slots campaign phase expected allowSlotsReadProbes = true."
+    }
+    foreach ($key in @("allowCrystalsReadProbes", "allowSafeScalarWatchProbes", "allowPerkDataAssetCatalogProbes", "allowMaxSafePlayRecorderProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
+      if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+        throw "slots campaign phase expected $key = false."
+      }
+    }
+  } elseif ($preparedPhase -eq "safe-scalar-watch") {
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowSafeScalarWatchProbes") -ne "true") {
+      throw "safe scalar watch campaign phase expected allowSafeScalarWatchProbes = true."
+    }
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "repeatProbeSet") -ne "true") {
+      throw "safe scalar watch campaign phase expected repeatProbeSet = true."
+    }
+    foreach ($key in @("allowCrystalsReadProbes", "allowSlotsReadProbes", "allowPerkDataAssetCatalogProbes", "allowMaxSafePlayRecorderProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes", "allowUnknownRoleProbes")) {
+      if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+        throw "safe scalar watch campaign phase expected $key = false."
+      }
+    }
+  } elseif ($preparedPhase -eq "perk-da-catalog-read") {
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowPerkDataAssetCatalogProbes") -ne "true") {
+      throw "perk DataAsset catalog campaign phase expected allowPerkDataAssetCatalogProbes = true."
+    }
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "repeatProbeSet") -ne "false") {
+      throw "perk DataAsset catalog campaign phase expected repeatProbeSet = false."
+    }
+    foreach ($key in @("allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowMaxSafePlayRecorderProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowInventoryUserdataIntrospectionProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes", "allowUnknownRoleProbes")) {
+      if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+        throw "perk DataAsset catalog campaign phase expected $key = false."
       }
     }
   }

@@ -129,6 +129,12 @@ function runner.new(config, safe, writer, evidenceWriter)
       record.crystalsValueKind = meta.crystalsValueKind
       record.crystalsIntegerLike = meta.crystalsIntegerLike
       record.crystalsInUInt32Range = meta.crystalsInUInt32Range
+      record.slotsReadAttempted = meta.slotsReadAttempted
+      record.slotFieldNames = meta.slotFieldNames
+      record.slotValueKinds = meta.slotValueKinds
+      record.slotIntegerLike = meta.slotIntegerLike
+      record.slotValuesInByteRange = meta.slotValuesInByteRange
+      record.lockedSlotModel = meta.lockedSlotModel
       record.localPlayerStatePresent = meta.localPlayerStatePresent
       record.arrayFieldName = meta.arrayFieldName
       record.arrayFieldNames = meta.arrayFieldNames
@@ -161,7 +167,69 @@ function runner.new(config, safe, writer, evidenceWriter)
       record.noRpcs = meta.noRpcs
       record.noHud = meta.noHud
       record.noDeepArrays = meta.noDeepArrays
+      record.noInventoryArrays = meta.noInventoryArrays
+      record.noDataAssetMutation = meta.noDataAssetMutation
+      record.noFunctionCalls = meta.noFunctionCalls
+      record.passiveOnly = meta.passiveOnly
+      record.discoveryAttempted = meta.discoveryAttempted
+      record.discoveryMethod = meta.discoveryMethod
+      record.catalogFound = meta.catalogFound
+      record.catalogEntryCount = meta.catalogEntryCount
+      record.catalogCandidateCount = meta.catalogCandidateCount
+      record.catalogRejectedCandidateCount = meta.catalogRejectedCandidateCount
+      record.catalogCandidateCap = meta.catalogCandidateCap
+      record.catalogFieldCap = meta.catalogFieldCap
+      record.catalogRejectionDiagnosticCap = meta.catalogRejectionDiagnosticCap
+      record.catalogRejectionDiagnostics = meta.catalogRejectionDiagnostics
+      record.catalogRejectionReasons = meta.catalogRejectionReasons
+      record.catalogTopRejectionReasons = meta.catalogTopRejectionReasons
+      record.catalogFoundPatterns = meta.catalogFoundPatterns
+      record.catalogEntries = meta.catalogEntries
+      record.catalogFieldNames = meta.catalogFieldNames
+      record.catalogReadStatuses = meta.catalogReadStatuses
+      record.catalogValueKinds = meta.catalogValueKinds
+      record.catalogObjectReferenceSummaries = meta.catalogObjectReferenceSummaries
+      record.notFoundClassification = meta.notFoundClassification
       record.crashAttributionMarker = meta.crashAttributionMarker
+      record.playerStatePresent = meta.playerStatePresent
+      record.sampleReason = meta.sampleReason
+      record.sampleChanged = meta.sampleChanged
+      record.safeWatchSampleCount = meta.safeWatchSampleCount
+      record.safeWatchLoggedCount = meta.safeWatchLoggedCount
+      record.safeWatchFirstValues = meta.safeWatchFirstValues
+      record.safeWatchLatestValues = meta.safeWatchLatestValues
+      record.safeWatchMinValues = meta.safeWatchMinValues
+      record.safeWatchMaxValues = meta.safeWatchMaxValues
+      record.safeWatchChangedFields = meta.safeWatchChangedFields
+      record.safeWatchChangeCounts = meta.safeWatchChangeCounts
+      record.safeWatchNoChangeSamples = meta.safeWatchNoChangeSamples
+      record.safeWatchChangedSamples = meta.safeWatchChangedSamples
+      record.maxSafePlayScalarSampleCount = meta.maxSafePlayScalarSampleCount
+      record.maxSafePlayScalarLoggedCount = meta.maxSafePlayScalarLoggedCount
+      record.maxSafePlayFirstValues = meta.maxSafePlayFirstValues
+      record.maxSafePlayLatestValues = meta.maxSafePlayLatestValues
+      record.maxSafePlayMinValues = meta.maxSafePlayMinValues
+      record.maxSafePlayMaxValues = meta.maxSafePlayMaxValues
+      record.maxSafePlayChangedFields = meta.maxSafePlayChangedFields
+      record.maxSafePlayChangeCounts = meta.maxSafePlayChangeCounts
+      record.maxSafePlayNoChangeSamples = meta.maxSafePlayNoChangeSamples
+      record.maxSafePlayChangedSamples = meta.maxSafePlayChangedSamples
+      record.maxSafePlayCatalogSnapshotCount = meta.maxSafePlayCatalogSnapshotCount
+      record.maxSafePlayCatalogLoggedCount = meta.maxSafePlayCatalogLoggedCount
+      record.maxSafePlayCatalogRejectedCount = meta.maxSafePlayCatalogRejectedCount
+      record.maxSafePlayCatalogTopRejectionReasons = meta.maxSafePlayCatalogTopRejectionReasons
+      record.maxSafePlayCatalogFoundPatterns = meta.maxSafePlayCatalogFoundPatterns
+      record.maxSafePlayNewDataAssets = meta.maxSafePlayNewDataAssets
+      record.maxSafePlayChangedCatalogEntries = meta.maxSafePlayChangedCatalogEntries
+      record.maxSafePlayCatalogKnownEntryCount = meta.maxSafePlayCatalogKnownEntryCount
+      record.maxSafePlayNilCount = meta.maxSafePlayNilCount
+      record.maxSafePlayErrorCount = meta.maxSafePlayErrorCount
+      record.tastyOrangeFound = meta.tastyOrangeFound
+      record.collectorFound = meta.collectorFound
+      record.firstContext = meta.firstContext
+      record.lastContext = meta.lastContext
+      record.firstRole = meta.firstRole
+      record.lastRole = meta.lastRole
     end
     evidenceWriter:writeEvidence(record)
   end
@@ -228,6 +296,12 @@ function runner.new(config, safe, writer, evidenceWriter)
       row.crystalsValueKind = meta.crystalsValueKind
       row.crystalsIntegerLike = meta.crystalsIntegerLike
       row.crystalsInUInt32Range = meta.crystalsInUInt32Range
+      row.slotsReadAttempted = meta.slotsReadAttempted
+      row.slotFieldNames = meta.slotFieldNames
+      row.slotValueKinds = meta.slotValueKinds
+      row.slotIntegerLike = meta.slotIntegerLike
+      row.slotValuesInByteRange = meta.slotValuesInByteRange
+      row.lockedSlotModel = meta.lockedSlotModel
       row.localPlayerStatePresent = meta.localPlayerStatePresent
       row.arrayFieldName = meta.arrayFieldName
       row.arrayFieldNames = meta.arrayFieldNames
@@ -260,7 +334,69 @@ function runner.new(config, safe, writer, evidenceWriter)
       row.noRpcs = meta.noRpcs
       row.noHud = meta.noHud
       row.noDeepArrays = meta.noDeepArrays
+      row.noInventoryArrays = meta.noInventoryArrays
+      row.noDataAssetMutation = meta.noDataAssetMutation
+      row.noFunctionCalls = meta.noFunctionCalls
+      row.passiveOnly = meta.passiveOnly
+      row.discoveryAttempted = meta.discoveryAttempted
+      row.discoveryMethod = meta.discoveryMethod
+      row.catalogFound = meta.catalogFound
+      row.catalogEntryCount = meta.catalogEntryCount
+      row.catalogCandidateCount = meta.catalogCandidateCount
+      row.catalogRejectedCandidateCount = meta.catalogRejectedCandidateCount
+      row.catalogCandidateCap = meta.catalogCandidateCap
+      row.catalogFieldCap = meta.catalogFieldCap
+      row.catalogRejectionDiagnosticCap = meta.catalogRejectionDiagnosticCap
+      row.catalogRejectionDiagnostics = meta.catalogRejectionDiagnostics
+      row.catalogRejectionReasons = meta.catalogRejectionReasons
+      row.catalogTopRejectionReasons = meta.catalogTopRejectionReasons
+      row.catalogFoundPatterns = meta.catalogFoundPatterns
+      row.catalogEntries = meta.catalogEntries
+      row.catalogFieldNames = meta.catalogFieldNames
+      row.catalogReadStatuses = meta.catalogReadStatuses
+      row.catalogValueKinds = meta.catalogValueKinds
+      row.catalogObjectReferenceSummaries = meta.catalogObjectReferenceSummaries
+      row.notFoundClassification = meta.notFoundClassification
       row.crashAttributionMarker = meta.crashAttributionMarker
+      row.playerStatePresent = meta.playerStatePresent
+      row.sampleReason = meta.sampleReason
+      row.sampleChanged = meta.sampleChanged
+      row.safeWatchSampleCount = meta.safeWatchSampleCount
+      row.safeWatchLoggedCount = meta.safeWatchLoggedCount
+      row.safeWatchFirstValues = meta.safeWatchFirstValues
+      row.safeWatchLatestValues = meta.safeWatchLatestValues
+      row.safeWatchMinValues = meta.safeWatchMinValues
+      row.safeWatchMaxValues = meta.safeWatchMaxValues
+      row.safeWatchChangedFields = meta.safeWatchChangedFields
+      row.safeWatchChangeCounts = meta.safeWatchChangeCounts
+      row.safeWatchNoChangeSamples = meta.safeWatchNoChangeSamples
+      row.safeWatchChangedSamples = meta.safeWatchChangedSamples
+      row.maxSafePlayScalarSampleCount = meta.maxSafePlayScalarSampleCount
+      row.maxSafePlayScalarLoggedCount = meta.maxSafePlayScalarLoggedCount
+      row.maxSafePlayFirstValues = meta.maxSafePlayFirstValues
+      row.maxSafePlayLatestValues = meta.maxSafePlayLatestValues
+      row.maxSafePlayMinValues = meta.maxSafePlayMinValues
+      row.maxSafePlayMaxValues = meta.maxSafePlayMaxValues
+      row.maxSafePlayChangedFields = meta.maxSafePlayChangedFields
+      row.maxSafePlayChangeCounts = meta.maxSafePlayChangeCounts
+      row.maxSafePlayNoChangeSamples = meta.maxSafePlayNoChangeSamples
+      row.maxSafePlayChangedSamples = meta.maxSafePlayChangedSamples
+      row.maxSafePlayCatalogSnapshotCount = meta.maxSafePlayCatalogSnapshotCount
+      row.maxSafePlayCatalogLoggedCount = meta.maxSafePlayCatalogLoggedCount
+      row.maxSafePlayCatalogRejectedCount = meta.maxSafePlayCatalogRejectedCount
+      row.maxSafePlayCatalogTopRejectionReasons = meta.maxSafePlayCatalogTopRejectionReasons
+      row.maxSafePlayCatalogFoundPatterns = meta.maxSafePlayCatalogFoundPatterns
+      row.maxSafePlayNewDataAssets = meta.maxSafePlayNewDataAssets
+      row.maxSafePlayChangedCatalogEntries = meta.maxSafePlayChangedCatalogEntries
+      row.maxSafePlayCatalogKnownEntryCount = meta.maxSafePlayCatalogKnownEntryCount
+      row.maxSafePlayNilCount = meta.maxSafePlayNilCount
+      row.maxSafePlayErrorCount = meta.maxSafePlayErrorCount
+      row.tastyOrangeFound = meta.tastyOrangeFound
+      row.collectorFound = meta.collectorFound
+      row.firstContext = meta.firstContext
+      row.lastContext = meta.lastContext
+      row.firstRole = meta.firstRole
+      row.lastRole = meta.lastRole
     end
     writer:write(row)
     writeEvidence(probe, result, kind, summary, err, meta)
@@ -273,13 +409,17 @@ function runner.new(config, safe, writer, evidenceWriter)
     if probe.set == 'multiplayer-roster-read' and not config.allowIdentityProbes then return false, 'unsafe_disabled' end
     if probe.set == 'multiplayer-resource-visibility-read' and not (config.allowIdentityProbes and config.allowHealthProbes and config.allowResourceVisibilityProbes) then return false, 'unsafe_disabled' end
     if probe.set == 'crystals-read' and not config.allowCrystalsReadProbes then return false, 'unsafe_disabled' end
+    if probe.set == 'slots-read' and not config.allowSlotsReadProbes then return false, 'unsafe_disabled' end
+    if probe.set == 'safe-scalar-watch' and not config.allowSafeScalarWatchProbes then return false, 'unsafe_disabled' end
+    if probe.set == 'perk-da-catalog-read' and not config.allowPerkDataAssetCatalogProbes then return false, 'unsafe_disabled' end
+    if probe.set == 'max-safe-play-recorder' and not config.allowMaxSafePlayRecorderProbes then return false, 'unsafe_disabled' end
     if probe.set == 'local-inventory-array-shallow-read' and not config.allowInventoryArrayShallowProbes then return false, 'unsafe_disabled' end
     if probe.set == 'local-inventory-array-shape-confirm' and not config.allowInventoryArrayShapeConfirmProbes then return false, 'unsafe_disabled' end
     if probe.set == 'local-inventory-userdata-introspection' and not config.allowInventoryUserdataIntrospectionProbes then return false, 'unsafe_disabled' end
     if probe.set == 'rpc-dryrun' and not config.allowRpcProbes then return false, 'unsafe_disabled' end
     if probe.set == 'write' and not config.allowWriteProbes then return false, 'unsafe_disabled' end
-    if state.role == 'unknown' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
-    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
+    if state.role == 'unknown' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'safe-scalar-watch' and probe.set ~= 'perk-da-catalog-read' and probe.set ~= 'max-safe-play-recorder' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
+    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'safe-scalar-watch' and probe.set ~= 'perk-da-catalog-read' and probe.set ~= 'max-safe-play-recorder' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
     if probe.set ~= config.probeSet and config.probeSet ~= 'all-readonly' then return false, 'skipped_by_config' end
     return true
   end
@@ -409,6 +549,9 @@ function runner.new(config, safe, writer, evidenceWriter)
       summary = nil
     end
     breadcrumb(probe.id .. ' exit')
+    if type(meta) == 'table' and meta.suppressEmit == true then
+      return
+    end
     emit(probe, result, kind, summary, err, meta)
     self.probesRun = self.probesRun + 1
   end

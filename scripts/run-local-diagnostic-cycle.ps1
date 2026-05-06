@@ -11,6 +11,9 @@ param(
   [switch]$PrepareHealthBaseline,
   [switch]$PrepareHealthPlayerState,
   [switch]$PrepareHealthPlayerStateWatch,
+  [switch]$PrepareSafeScalarWatch,
+  [switch]$PreparePerkDataAssetCatalog,
+  [switch]$PrepareMaxSafePlayRecorder,
   [switch]$Collect,
   [switch]$CollectEquipmentProperty,
   [switch]$CollectHealthBaseline,
@@ -18,6 +21,10 @@ param(
   [switch]$CollectHealthPlayerStateWatch,
   [switch]$CollectResourceVisibility,
   [switch]$CollectCrystalsRead,
+  [switch]$CollectSlotsRead,
+  [switch]$CollectSafeScalarWatch,
+  [switch]$CollectPerkDataAssetCatalog,
+  [switch]$CollectMaxSafePlayRecorder,
   [switch]$CollectLocalInventoryArrayShallow,
   [switch]$CollectLocalInventoryArrayShapeConfirm,
   [switch]$CollectLocalInventoryUserdataIntrospection,
@@ -41,6 +48,9 @@ function Get-CycleMode {
   if ($PrepareHealthBaseline) { $modes += "PrepareHealthBaseline" }
   if ($PrepareHealthPlayerState) { $modes += "PrepareHealthPlayerState" }
   if ($PrepareHealthPlayerStateWatch) { $modes += "PrepareHealthPlayerStateWatch" }
+  if ($PrepareSafeScalarWatch) { $modes += "PrepareSafeScalarWatch" }
+  if ($PreparePerkDataAssetCatalog) { $modes += "PreparePerkDataAssetCatalog" }
+  if ($PrepareMaxSafePlayRecorder) { $modes += "PrepareMaxSafePlayRecorder" }
   if ($Collect) { $modes += "Collect" }
   if ($CollectEquipmentProperty) { $modes += "CollectEquipmentProperty" }
   if ($CollectHealthBaseline) { $modes += "CollectHealthBaseline" }
@@ -48,13 +58,17 @@ function Get-CycleMode {
   if ($CollectHealthPlayerStateWatch) { $modes += "CollectHealthPlayerStateWatch" }
   if ($CollectResourceVisibility) { $modes += "CollectResourceVisibility" }
   if ($CollectCrystalsRead) { $modes += "CollectCrystalsRead" }
+  if ($CollectSlotsRead) { $modes += "CollectSlotsRead" }
+  if ($CollectSafeScalarWatch) { $modes += "CollectSafeScalarWatch" }
+  if ($CollectPerkDataAssetCatalog) { $modes += "CollectPerkDataAssetCatalog" }
+  if ($CollectMaxSafePlayRecorder) { $modes += "CollectMaxSafePlayRecorder" }
   if ($CollectLocalInventoryArrayShallow) { $modes += "CollectLocalInventoryArrayShallow" }
   if ($CollectLocalInventoryArrayShapeConfirm) { $modes += "CollectLocalInventoryArrayShapeConfirm" }
   if ($CollectLocalInventoryUserdataIntrospection) { $modes += "CollectLocalInventoryUserdataIntrospection" }
 
   $unique = @($modes | Sort-Object -Unique)
   if ($unique.Count -ne 1) {
-    throw "Choose exactly one mode: -PrepareSmoke, -CollectSmoke, -PrepareTickDriver <driver>, -PrepareEquipmentProperty, -PrepareHealthBaseline, -PrepareHealthPlayerState, -PrepareHealthPlayerStateWatch, -Collect, -CollectEquipmentProperty, -CollectHealthBaseline, -CollectHealthPlayerState, -CollectHealthPlayerStateWatch, -CollectResourceVisibility, -CollectCrystalsRead, -CollectLocalInventoryArrayShallow, -CollectLocalInventoryArrayShapeConfirm, or -CollectLocalInventoryUserdataIntrospection."
+    throw "Choose exactly one mode: -PrepareSmoke, -CollectSmoke, -PrepareTickDriver <driver>, -PrepareEquipmentProperty, -PrepareHealthBaseline, -PrepareHealthPlayerState, -PrepareHealthPlayerStateWatch, -PrepareSafeScalarWatch, -PreparePerkDataAssetCatalog, -PrepareMaxSafePlayRecorder, -Collect, -CollectEquipmentProperty, -CollectHealthBaseline, -CollectHealthPlayerState, -CollectHealthPlayerStateWatch, -CollectResourceVisibility, -CollectCrystalsRead, -CollectSlotsRead, -CollectSafeScalarWatch, -CollectPerkDataAssetCatalog, -CollectMaxSafePlayRecorder, -CollectLocalInventoryArrayShallow, -CollectLocalInventoryArrayShapeConfirm, or -CollectLocalInventoryUserdataIntrospection."
   }
 
   return $unique[0]
@@ -125,6 +139,10 @@ function Test-CrabRuntimeProbeInstalledSafety {
     [switch]$AllowIdentityProbes,
     [switch]$AllowResourceVisibilityProbes,
     [switch]$AllowCrystalsReadProbes,
+    [switch]$AllowSlotsReadProbes,
+    [switch]$AllowSafeScalarWatchProbes,
+    [switch]$AllowPerkDataAssetCatalogProbes,
+    [switch]$AllowMaxSafePlayRecorderProbes,
     [switch]$AllowInventoryArrayShallowProbes,
     [switch]$AllowInventoryArrayShapeConfirmProbes,
     [switch]$AllowInventoryUserdataIntrospectionProbes
@@ -154,6 +172,10 @@ function Test-CrabRuntimeProbeInstalledSafety {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowCrystalsReadProbes",
+    "allowSlotsReadProbes",
+    "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
+    "allowMaxSafePlayRecorderProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -178,6 +200,18 @@ function Test-CrabRuntimeProbeInstalledSafety {
         continue
       }
       if ($AllowCrystalsReadProbes -and $key -eq "allowCrystalsReadProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
+        continue
+      }
+      if ($AllowSlotsReadProbes -and $key -eq "allowSlotsReadProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
+        continue
+      }
+      if ($AllowSafeScalarWatchProbes -and $key -eq "allowSafeScalarWatchProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
+        continue
+      }
+      if ($AllowPerkDataAssetCatalogProbes -and $key -eq "allowPerkDataAssetCatalogProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
+        continue
+      }
+      if ($AllowMaxSafePlayRecorderProbes -and $key -eq "allowMaxSafePlayRecorderProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
         continue
       }
       if ($AllowInventoryArrayShallowProbes -and $key -eq "allowInventoryArrayShallowProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
@@ -205,12 +239,16 @@ function Assert-CrabRuntimeProbeInstalledSafety {
     [switch]$AllowIdentityProbes,
     [switch]$AllowResourceVisibilityProbes,
     [switch]$AllowCrystalsReadProbes,
+    [switch]$AllowSlotsReadProbes,
+    [switch]$AllowSafeScalarWatchProbes,
+    [switch]$AllowPerkDataAssetCatalogProbes,
+    [switch]$AllowMaxSafePlayRecorderProbes,
     [switch]$AllowInventoryArrayShallowProbes,
     [switch]$AllowInventoryArrayShapeConfirmProbes,
     [switch]$AllowInventoryUserdataIntrospectionProbes
   )
 
-  $errors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $ConfigPath -AllowHealthProbes:$AllowHealthProbes -AllowIdentityProbes:$AllowIdentityProbes -AllowResourceVisibilityProbes:$AllowResourceVisibilityProbes -AllowCrystalsReadProbes:$AllowCrystalsReadProbes -AllowInventoryArrayShallowProbes:$AllowInventoryArrayShallowProbes -AllowInventoryArrayShapeConfirmProbes:$AllowInventoryArrayShapeConfirmProbes -AllowInventoryUserdataIntrospectionProbes:$AllowInventoryUserdataIntrospectionProbes
+  $errors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $ConfigPath -AllowHealthProbes:$AllowHealthProbes -AllowIdentityProbes:$AllowIdentityProbes -AllowResourceVisibilityProbes:$AllowResourceVisibilityProbes -AllowCrystalsReadProbes:$AllowCrystalsReadProbes -AllowSlotsReadProbes:$AllowSlotsReadProbes -AllowSafeScalarWatchProbes:$AllowSafeScalarWatchProbes -AllowPerkDataAssetCatalogProbes:$AllowPerkDataAssetCatalogProbes -AllowMaxSafePlayRecorderProbes:$AllowMaxSafePlayRecorderProbes -AllowInventoryArrayShallowProbes:$AllowInventoryArrayShallowProbes -AllowInventoryArrayShapeConfirmProbes:$AllowInventoryArrayShapeConfirmProbes -AllowInventoryUserdataIntrospectionProbes:$AllowInventoryUserdataIntrospectionProbes
   if ($errors.Count -gt 0) {
     throw "Installed config safety validation failed at $ConfigPath`n$((($errors | ForEach-Object { " - $_" }) -join "`n"))"
   }
@@ -629,6 +667,9 @@ function Set-InstalledSmokeConfig {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowCrystalsReadProbes",
+    "allowSlotsReadProbes",
+    "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -667,6 +708,9 @@ function Set-InstalledTickDriverConfig {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowCrystalsReadProbes",
+    "allowSlotsReadProbes",
+    "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -697,6 +741,9 @@ function Set-InstalledEquipmentPropertyConfig {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowCrystalsReadProbes",
+    "allowSlotsReadProbes",
+    "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -727,6 +774,9 @@ function Set-InstalledHealthBaselineConfig {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowCrystalsReadProbes",
+    "allowSlotsReadProbes",
+    "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -757,6 +807,9 @@ function Set-InstalledHealthPlayerStateConfig {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowCrystalsReadProbes",
+    "allowSlotsReadProbes",
+    "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -788,6 +841,121 @@ function Set-InstalledHealthPlayerStateWatchConfig {
     "allowRawIdentityEvidence",
     "allowResourceVisibilityProbes",
     "allowCrystalsReadProbes",
+    "allowSlotsReadProbes",
+    "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
+    "allowInventoryArrayShallowProbes",
+    "allowInventoryArrayShapeConfirmProbes",
+    "allowInventoryUserdataIntrospectionProbes",
+    "allowWriteProbes",
+    "allowRpcProbes"
+  )) {
+    Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key $key -Value "false"
+  }
+}
+
+function Set-InstalledSafeScalarWatchConfig {
+  param([string]$ConfigPath)
+
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "tickDriver" -Value "executeDelay"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "mode" -Value "active"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "probeSet" -Value "safe-scalar-watch"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugTickHeartbeat" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugWriterSelfTest" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "repeatProbeSet" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "maxProbesPerSession" -Value "240"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "safeScalarWatchIntervalSeconds" -Value "5"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "safeScalarWatchHeartbeatSeconds" -Value "60"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "safeScalarWatchMaxSamples" -Value "240"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "allowSafeScalarWatchProbes" -Value "true"
+  foreach ($key in @(
+    "allowHudTickHook",
+    "allowUnknownRoleProbes",
+    "allowJoinedClientDeepProbes",
+    "allowDeepArrayProbes",
+    "allowInventoryInfoProbes",
+    "allowHealthProbes",
+    "allowIdentityProbes",
+    "allowRawIdentityEvidence",
+    "allowResourceVisibilityProbes",
+    "allowCrystalsReadProbes",
+    "allowSlotsReadProbes",
+    "allowPerkDataAssetCatalogProbes",
+    "allowInventoryArrayShallowProbes",
+    "allowInventoryArrayShapeConfirmProbes",
+    "allowInventoryUserdataIntrospectionProbes",
+    "allowWriteProbes",
+    "allowRpcProbes"
+  )) {
+    Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key $key -Value "false"
+  }
+}
+
+function Set-InstalledPerkDataAssetCatalogConfig {
+  param([string]$ConfigPath)
+
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "tickDriver" -Value "executeDelay"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "mode" -Value "active"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "probeSet" -Value "perk-da-catalog-read"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugTickHeartbeat" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugWriterSelfTest" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "repeatProbeSet" -Value "false"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "maxProbesPerSession" -Value "1"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "allowPerkDataAssetCatalogProbes" -Value "true"
+  foreach ($key in @(
+    "allowHudTickHook",
+    "allowUnknownRoleProbes",
+    "allowJoinedClientDeepProbes",
+    "allowDeepArrayProbes",
+    "allowInventoryInfoProbes",
+    "allowHealthProbes",
+    "allowIdentityProbes",
+    "allowRawIdentityEvidence",
+    "allowResourceVisibilityProbes",
+    "allowCrystalsReadProbes",
+    "allowSlotsReadProbes",
+    "allowSafeScalarWatchProbes",
+    "allowInventoryArrayShallowProbes",
+    "allowInventoryArrayShapeConfirmProbes",
+    "allowInventoryUserdataIntrospectionProbes",
+    "allowWriteProbes",
+    "allowRpcProbes"
+  )) {
+    Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key $key -Value "false"
+  }
+}
+
+function Set-InstalledMaxSafePlayRecorderConfig {
+  param([string]$ConfigPath)
+
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "tickDriver" -Value "executeDelay"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "mode" -Value "active"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "probeSet" -Value "max-safe-play-recorder"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugTickHeartbeat" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugWriterSelfTest" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "repeatProbeSet" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "maxProbesPerSession" -Value "1600"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "maxSafePlayIntervalSeconds" -Value "5"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "maxSafePlayHeartbeatSeconds" -Value "60"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "maxSafePlayMaxSamples" -Value "720"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "maxSafePlayPerkCatalogIntervalSeconds" -Value "60"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "maxSafePlayMaxPerkCatalogSnapshots" -Value "60"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "maxSafePlayLogUnchangedHeartbeat" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "allowMaxSafePlayRecorderProbes" -Value "true"
+  foreach ($key in @(
+    "allowHudTickHook",
+    "allowUnknownRoleProbes",
+    "allowJoinedClientDeepProbes",
+    "allowDeepArrayProbes",
+    "allowInventoryInfoProbes",
+    "allowHealthProbes",
+    "allowIdentityProbes",
+    "allowRawIdentityEvidence",
+    "allowResourceVisibilityProbes",
+    "allowCrystalsReadProbes",
+    "allowSlotsReadProbes",
+    "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -818,7 +986,7 @@ if (-not (Test-Path -LiteralPath $GameBinFull -PathType Container)) {
   throw "Game bin path does not exist: $GameBinFull"
 }
 
-if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "PrepareEquipmentProperty" -or $Mode -eq "PrepareHealthBaseline" -or $Mode -eq "PrepareHealthPlayerState" -or $Mode -eq "PrepareHealthPlayerStateWatch") {
+if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "PrepareEquipmentProperty" -or $Mode -eq "PrepareHealthBaseline" -or $Mode -eq "PrepareHealthPlayerState" -or $Mode -eq "PrepareHealthPlayerStateWatch" -or $Mode -eq "PrepareSafeScalarWatch" -or $Mode -eq "PreparePerkDataAssetCatalog" -or $Mode -eq "PrepareMaxSafePlayRecorder") {
   & (Join-Path $PSScriptRoot "install-client-to-game.ps1") $GameBinFull
   & (Join-Path $PSScriptRoot "verify-installed-client.ps1") $GameBinFull
 
@@ -832,11 +1000,17 @@ if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "Pr
     Set-InstalledHealthPlayerStateConfig -ConfigPath $InstalledConfigPath
   } elseif ($Mode -eq "PrepareHealthPlayerStateWatch") {
     Set-InstalledHealthPlayerStateWatchConfig -ConfigPath $InstalledConfigPath
+  } elseif ($Mode -eq "PrepareSafeScalarWatch") {
+    Set-InstalledSafeScalarWatchConfig -ConfigPath $InstalledConfigPath
+  } elseif ($Mode -eq "PreparePerkDataAssetCatalog") {
+    Set-InstalledPerkDataAssetCatalogConfig -ConfigPath $InstalledConfigPath
+  } elseif ($Mode -eq "PrepareMaxSafePlayRecorder") {
+    Set-InstalledMaxSafePlayRecorderConfig -ConfigPath $InstalledConfigPath
   } else {
     Set-InstalledTickDriverConfig -ConfigPath $InstalledConfigPath -TickDriver $PrepareTickDriver -NoDebug:$NoDiagnosticDebug
   }
 
-  Assert-CrabRuntimeProbeInstalledSafety -ConfigPath $InstalledConfigPath -AllowHealthProbes:($Mode -eq "PrepareHealthBaseline" -or $Mode -eq "PrepareHealthPlayerState" -or $Mode -eq "PrepareHealthPlayerStateWatch")
+  Assert-CrabRuntimeProbeInstalledSafety -ConfigPath $InstalledConfigPath -AllowHealthProbes:($Mode -eq "PrepareHealthBaseline" -or $Mode -eq "PrepareHealthPlayerState" -or $Mode -eq "PrepareHealthPlayerStateWatch") -AllowSafeScalarWatchProbes:($Mode -eq "PrepareSafeScalarWatch") -AllowPerkDataAssetCatalogProbes:($Mode -eq "PreparePerkDataAssetCatalog") -AllowMaxSafePlayRecorderProbes:($Mode -eq "PrepareMaxSafePlayRecorder")
   $removed = Clear-CrabRuntimeProbeRuntimeFiles -GameBinFull $GameBinFull -ScriptsRoot $InstallScriptsRoot
   $buildInfoText = Read-TextFileOrEmpty -Path $BuildInfoPath
   $prepareMarkerPath = Write-CrabRuntimeProbePrepareMarker `
@@ -883,6 +1057,21 @@ if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "Pr
     Write-Host " 3. If a max-health-changing pickup/perk naturally appears, pick it up; otherwise do not force it."
     Write-Host " 4. Quit the game."
     Write-Host " 5. Run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-health-playerstate-watch-collect.ps1"
+  } elseif ($Mode -eq "PrepareSafeScalarWatch") {
+    Write-Host " 2. Launch Crab Champions and play normally for 5 to 20 minutes."
+    Write-Host " 3. This records only proven-safe scalar values every ~5 seconds or when changed. Do not use this for testing unproven inventory internals."
+    Write-Host " 4. Quit the game."
+    Write-Host " 5. Run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-safe-watch-collect.ps1"
+  } elseif ($Mode -eq "PreparePerkDataAssetCatalog") {
+    Write-Host " 2. Launch Crab Champions and reach any stable menu or in-run state."
+    Write-Host " 3. This records only a capped, curated read-only perk DataAsset catalog. Do not use this for writes or inventory testing."
+    Write-Host " 4. Quit the game."
+    Write-Host " 5. Run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-campaign-collect.ps1"
+  } elseif ($Mode -eq "PrepareMaxSafePlayRecorder") {
+    Write-Host " 2. Launch Crab Champions and play normally for up to 60 minutes."
+    Write-Host " 3. This records all currently proven-safe scalar values and capped perk DataAsset catalog snapshots. Do not use this for testing unproven inventory internals."
+    Write-Host " 4. Quit the game."
+    Write-Host " 5. Run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-max-safe-play-collect.ps1"
   } else {
     Write-Host " 2. Sit at the menu for 20 to 30 seconds."
     Write-Host " 3. Quit the game."
@@ -897,6 +1086,10 @@ $safetyErrors = Test-CrabRuntimeProbeInstalledSafety `
   -AllowIdentityProbes:($AllowIdentityProbes -or $Mode -eq "CollectResourceVisibility") `
   -AllowResourceVisibilityProbes:($AllowResourceVisibilityProbes -or $Mode -eq "CollectResourceVisibility") `
   -AllowCrystalsReadProbes:($Mode -eq "CollectCrystalsRead") `
+  -AllowSlotsReadProbes:($Mode -eq "CollectSlotsRead") `
+  -AllowSafeScalarWatchProbes:($Mode -eq "CollectSafeScalarWatch") `
+  -AllowPerkDataAssetCatalogProbes:($Mode -eq "CollectPerkDataAssetCatalog") `
+  -AllowMaxSafePlayRecorderProbes:($Mode -eq "CollectMaxSafePlayRecorder") `
   -AllowInventoryArrayShallowProbes:($Mode -eq "CollectLocalInventoryArrayShallow") `
   -AllowInventoryArrayShapeConfirmProbes:($Mode -eq "CollectLocalInventoryArrayShapeConfirm") `
   -AllowInventoryUserdataIntrospectionProbes:($Mode -eq "CollectLocalInventoryUserdataIntrospection")
@@ -1020,6 +1213,227 @@ $crystalsReadSafetyViolation = @($crystalsReadAllRecords | Where-Object {
   (($_.PSObject.Properties.Name -contains "noHud") -and $_.noHud -ne $true) -or
   (($_.PSObject.Properties.Name -contains "noDeepArrays") -and $_.noDeepArrays -ne $true)
 }).Count -gt 0
+$slotsReadProbeNames = @("Resource.Slots.Read")
+$slotsReadRecords = @($jsonlRecords | Where-Object { $slotsReadProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) })
+$slotsReadAllRecords = @($slotsReadRecords + @($accessEvidenceRecords | Where-Object { $slotsReadProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) }))
+$latestSlotsReadRecord = if ($slotsReadAllRecords.Count -gt 0) { $slotsReadAllRecords[-1] } else { $null }
+$slotsReadAttempted = @($slotsReadAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "slotsReadAttempted") -and $_.slotsReadAttempted -eq $true }).Count -gt 0
+$slotsReadLocalPlayerStatePresent = @($slotsReadAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "localPlayerStatePresent") -and $_.localPlayerStatePresent -eq $true }).Count -gt 0
+$slotsReadValues = if ($null -ne $latestSlotsReadRecord -and ($latestSlotsReadRecord.PSObject.Properties.Name -contains "slotScalarValues")) { Format-RecordObjectMap -Value $latestSlotsReadRecord.slotScalarValues } else { "none" }
+$slotsReadIntegerLike = @($slotsReadAllRecords | Where-Object {
+  if (-not ($_.PSObject.Properties.Name -contains "slotIntegerLike") -or $null -eq $_.slotIntegerLike) { return $false }
+  foreach ($property in $_.slotIntegerLike.PSObject.Properties) {
+    if ($property.Value -ne $true) { return $true }
+  }
+  return $false
+}).Count -eq 0
+$slotsReadByteRange = @($slotsReadAllRecords | Where-Object {
+  if (-not ($_.PSObject.Properties.Name -contains "slotValuesInByteRange") -or $null -eq $_.slotValuesInByteRange) { return $false }
+  foreach ($property in $_.slotValuesInByteRange.PSObject.Properties) {
+    if ($property.Value -ne $true) { return $true }
+  }
+  return $false
+}).Count -eq 0
+$slotsReadSafetyViolation = @($slotsReadAllRecords | Where-Object {
+  (($_.PSObject.Properties.Name -contains "noElementDereference") -and $_.noElementDereference -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noArrayCount") -and $_.noArrayCount -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noArrayTraversal") -and $_.noArrayTraversal -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noInventoryInfo") -and $_.noInventoryInfo -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noEnhancements") -and $_.noEnhancements -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noWrites") -and $_.noWrites -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noRpcs") -and $_.noRpcs -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noHud") -and $_.noHud -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noDeepArrays") -and $_.noDeepArrays -ne $true)
+}).Count -gt 0
+$safeScalarWatchProbeNames = @("SafeWatch.Scalar.Sample", "Runtime.SafeScalarWatch.Sample")
+$safeScalarWatchRecords = @($jsonlRecords | Where-Object { $safeScalarWatchProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) })
+$safeScalarWatchAllRecords = @($safeScalarWatchRecords + @($accessEvidenceRecords | Where-Object { $safeScalarWatchProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) }))
+$latestSafeScalarWatchRecord = if ($safeScalarWatchAllRecords.Count -gt 0) { $safeScalarWatchAllRecords[-1] } else { $null }
+$safeScalarWatchSampleCount = if ($null -ne $latestSafeScalarWatchRecord) { Get-RecordValue -Record $latestSafeScalarWatchRecord -Names @("safeWatchSampleCount") } else { "0" }
+$safeScalarWatchLoggedCount = if ($null -ne $latestSafeScalarWatchRecord) { Get-RecordValue -Record $latestSafeScalarWatchRecord -Names @("safeWatchLoggedCount") } else { "0" }
+$safeScalarWatchFirstValues = if ($null -ne $latestSafeScalarWatchRecord -and ($latestSafeScalarWatchRecord.PSObject.Properties.Name -contains "safeWatchFirstValues")) { Format-RecordObjectMap -Value $latestSafeScalarWatchRecord.safeWatchFirstValues } else { "none" }
+$safeScalarWatchLatestValues = if ($null -ne $latestSafeScalarWatchRecord -and ($latestSafeScalarWatchRecord.PSObject.Properties.Name -contains "safeWatchLatestValues")) { Format-RecordObjectMap -Value $latestSafeScalarWatchRecord.safeWatchLatestValues } else { "none" }
+$safeScalarWatchMinValues = if ($null -ne $latestSafeScalarWatchRecord -and ($latestSafeScalarWatchRecord.PSObject.Properties.Name -contains "safeWatchMinValues")) { Format-RecordObjectMap -Value $latestSafeScalarWatchRecord.safeWatchMinValues } else { "none" }
+$safeScalarWatchMaxValues = if ($null -ne $latestSafeScalarWatchRecord -and ($latestSafeScalarWatchRecord.PSObject.Properties.Name -contains "safeWatchMaxValues")) { Format-RecordObjectMap -Value $latestSafeScalarWatchRecord.safeWatchMaxValues } else { "none" }
+$safeScalarWatchChangedFields = if ($null -ne $latestSafeScalarWatchRecord -and ($latestSafeScalarWatchRecord.PSObject.Properties.Name -contains "safeWatchChangedFields")) { (@($latestSafeScalarWatchRecord.safeWatchChangedFields) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }) -join ", " } else { "" }
+if ([string]::IsNullOrWhiteSpace($safeScalarWatchChangedFields)) { $safeScalarWatchChangedFields = "none" }
+$safeScalarWatchChangeCounts = if ($null -ne $latestSafeScalarWatchRecord -and ($latestSafeScalarWatchRecord.PSObject.Properties.Name -contains "safeWatchChangeCounts")) { Format-RecordObjectMap -Value $latestSafeScalarWatchRecord.safeWatchChangeCounts } else { "none" }
+$safeScalarWatchFirstContext = if ($null -ne $latestSafeScalarWatchRecord) { Get-RecordValue -Record $latestSafeScalarWatchRecord -Names @("firstContext") } else { "not found" }
+$safeScalarWatchLastContext = if ($null -ne $latestSafeScalarWatchRecord) { Get-RecordValue -Record $latestSafeScalarWatchRecord -Names @("lastContext") } else { "not found" }
+$safeScalarWatchFirstRole = if ($null -ne $latestSafeScalarWatchRecord) { Get-RecordValue -Record $latestSafeScalarWatchRecord -Names @("firstRole") } else { "not found" }
+$safeScalarWatchLastRole = if ($null -ne $latestSafeScalarWatchRecord) { Get-RecordValue -Record $latestSafeScalarWatchRecord -Names @("lastRole") } else { "not found" }
+$safeScalarWatchUsableSamples = @($safeScalarWatchAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "playerStatePresent") -and $_.playerStatePresent -eq $true }).Count
+$safeScalarWatchSafetyViolation = @($safeScalarWatchAllRecords | Where-Object {
+  (($_.PSObject.Properties.Name -contains "noElementDereference") -and $_.noElementDereference -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noArrayCount") -and $_.noArrayCount -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noArrayTraversal") -and $_.noArrayTraversal -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noInventoryInfo") -and $_.noInventoryInfo -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noEnhancements") -and $_.noEnhancements -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noWrites") -and $_.noWrites -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noRpcs") -and $_.noRpcs -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noHud") -and $_.noHud -ne $true) -or
+  (($_.PSObject.Properties.Name -contains "noDeepArrays") -and $_.noDeepArrays -ne $true)
+}).Count -gt 0
+foreach ($row in $safeScalarWatchAllRecords) {
+  if (($row.PSObject.Properties.Name -contains "safetyGates") -and $null -ne $row.safetyGates) {
+    foreach ($gate in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+      if (($row.safetyGates.PSObject.Properties.Name -contains $gate) -and $row.safetyGates.$gate -eq $true) {
+        $safeScalarWatchSafetyViolation = $true
+      }
+    }
+  }
+}
+$safeScalarWatchClassification = "no_evidence"
+$parsedSafeScalarWatchSampleCount = 0
+[void][int]::TryParse([string]$safeScalarWatchSampleCount, [ref]$parsedSafeScalarWatchSampleCount)
+if ($safeScalarWatchSafetyViolation) {
+  $safeScalarWatchClassification = "failed"
+} elseif ($safeScalarWatchAllRecords.Count -gt 0 -and $safeScalarWatchUsableSamples -eq 0) {
+  $safeScalarWatchClassification = "no_evidence"
+} elseif ($crashAfterPrepare) {
+  $safeScalarWatchClassification = "crash-suspect"
+} elseif ($safeScalarWatchChangedFields -ne "none") {
+  $safeScalarWatchClassification = "safe_scalar_watch_observed_change"
+} elseif ($parsedSafeScalarWatchSampleCount -gt 1) {
+  $safeScalarWatchClassification = "safe_scalar_watch_confirmed_no_change"
+}
+$perkCatalogProbeNames = @("DataAsset.Perks.CatalogRead")
+$perkCatalogRecords = @($jsonlRecords | Where-Object { $perkCatalogProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) })
+$perkCatalogAllRecords = @($perkCatalogRecords + @($accessEvidenceRecords | Where-Object { $perkCatalogProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) }))
+$latestPerkCatalogRecord = if ($perkCatalogAllRecords.Count -gt 0) { $perkCatalogAllRecords[-1] } else { $null }
+$perkCatalogEntryCount = 0
+$perkCatalogCandidateCount = 0
+$perkCatalogRejectedCandidateCount = 0
+if ($null -ne $latestPerkCatalogRecord) {
+  [void][int]::TryParse([string](Get-RecordValue -Record $latestPerkCatalogRecord -Names @("catalogEntryCount")), [ref]$perkCatalogEntryCount)
+  [void][int]::TryParse([string](Get-RecordValue -Record $latestPerkCatalogRecord -Names @("catalogCandidateCount")), [ref]$perkCatalogCandidateCount)
+  [void][int]::TryParse([string](Get-RecordValue -Record $latestPerkCatalogRecord -Names @("catalogRejectedCandidateCount")), [ref]$perkCatalogRejectedCandidateCount)
+}
+$perkCatalogTopRejectionReasons = if ($null -ne $latestPerkCatalogRecord) { Get-RecordValue -Record $latestPerkCatalogRecord -Names @("catalogTopRejectionReasons") } else { "none" }
+if ([string]::IsNullOrWhiteSpace([string]$perkCatalogTopRejectionReasons) -or $perkCatalogTopRejectionReasons -eq "not found") { $perkCatalogTopRejectionReasons = "none" }
+$perkCatalogFoundPatterns = if ($null -ne $latestPerkCatalogRecord -and ($latestPerkCatalogRecord.PSObject.Properties.Name -contains "catalogFoundPatterns")) { (@($latestPerkCatalogRecord.catalogFoundPatterns) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }) -join ", " } else { "none" }
+if ([string]::IsNullOrWhiteSpace($perkCatalogFoundPatterns)) { $perkCatalogFoundPatterns = "none" }
+$perkCatalogDiscoveryAttempted = @($perkCatalogAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "discoveryAttempted") -and $_.discoveryAttempted -eq $true }).Count -gt 0
+$perkCatalogFound = @($perkCatalogAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "catalogFound") -and $_.catalogFound -eq $true }).Count -gt 0
+$perkCatalogSafetyViolation = @($perkCatalogAllRecords | Where-Object {
+  $bad = $false
+  foreach ($flag in @("noWrites", "noRpcs", "noHud", "noDeepArrays", "noInventoryArrays", "noArrayCount", "noArrayTraversal", "noElementDereference", "noInventoryInfo", "noEnhancements", "noDataAssetMutation", "noFunctionCalls", "passiveOnly")) {
+    if (-not ($_.PSObject.Properties.Name -contains $flag) -or $_.$flag -ne $true) { $bad = $true }
+  }
+  $bad
+}).Count -gt 0
+foreach ($row in $perkCatalogAllRecords) {
+  if (($row.PSObject.Properties.Name -contains "safetyGates") -and $null -ne $row.safetyGates) {
+    if (-not ($row.safetyGates.PSObject.Properties.Name -contains "allowPerkDataAssetCatalogProbes") -or $row.safetyGates.allowPerkDataAssetCatalogProbes -ne $true) {
+      $perkCatalogSafetyViolation = $true
+    }
+    foreach ($gate in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+      if (($row.safetyGates.PSObject.Properties.Name -contains $gate) -and $row.safetyGates.$gate -eq $true) {
+        $perkCatalogSafetyViolation = $true
+      }
+    }
+  }
+}
+$perkCatalogClassification = "no_evidence"
+if ($perkCatalogSafetyViolation) {
+  $perkCatalogClassification = "failed"
+} elseif ($perkCatalogAllRecords.Count -gt 0 -and -not $perkCatalogDiscoveryAttempted) {
+  $perkCatalogClassification = "no_evidence"
+} elseif ($crashAfterPrepare -and $perkCatalogAllRecords.Count -gt 0) {
+  $perkCatalogClassification = "perk_da_catalog_crash_suspect"
+} elseif ($perkCatalogFound -or $perkCatalogEntryCount -gt 0) {
+  $perkCatalogClassification = "perk_da_catalog_confirmed"
+} elseif ($perkCatalogAllRecords.Count -gt 0 -and $perkCatalogCandidateCount -gt 0 -and $perkCatalogRejectedCandidateCount -gt 0) {
+  $perkCatalogClassification = "perk_da_catalog_candidates_rejected"
+} elseif ($perkCatalogAllRecords.Count -gt 0) {
+  $perkCatalogClassification = "perk_da_catalog_not_found"
+}
+$maxSafePlayProbeNames = @("MaxSafePlay.Scalar.Sample", "MaxSafePlay.PerkDataAsset.CatalogSnapshot", "MaxSafePlay.Session.Heartbeat", "MaxSafePlay.Session.Summary")
+$maxSafePlayScalarProbeNames = @("MaxSafePlay.Scalar.Sample")
+$maxSafePlayCatalogProbeNames = @("MaxSafePlay.PerkDataAsset.CatalogSnapshot")
+$maxSafePlayRecords = @($jsonlRecords | Where-Object { $maxSafePlayProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) })
+$maxSafePlayAllRecords = @($maxSafePlayRecords + @($accessEvidenceRecords | Where-Object { $maxSafePlayProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) }))
+$maxSafePlayScalarRecords = @($maxSafePlayAllRecords | Where-Object { $maxSafePlayScalarProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) })
+$maxSafePlayCatalogRecords = @($maxSafePlayAllRecords | Where-Object { $maxSafePlayCatalogProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) })
+$latestMaxSafePlayRecord = if ($maxSafePlayAllRecords.Count -gt 0) { $maxSafePlayAllRecords[-1] } else { $null }
+$latestMaxSafePlayScalarRecord = if ($maxSafePlayScalarRecords.Count -gt 0) { $maxSafePlayScalarRecords[-1] } else { $null }
+$latestMaxSafePlayCatalogRecord = if ($maxSafePlayCatalogRecords.Count -gt 0) { $maxSafePlayCatalogRecords[-1] } else { $null }
+$maxSafePlayScalarSampleCount = if ($null -ne $latestMaxSafePlayRecord) { Get-RecordValue -Record $latestMaxSafePlayRecord -Names @("maxSafePlayScalarSampleCount") } else { "0" }
+$maxSafePlayScalarLoggedCount = if ($null -ne $latestMaxSafePlayRecord) { Get-RecordValue -Record $latestMaxSafePlayRecord -Names @("maxSafePlayScalarLoggedCount") } else { "0" }
+$maxSafePlayFirstValues = if ($null -ne $latestMaxSafePlayRecord -and ($latestMaxSafePlayRecord.PSObject.Properties.Name -contains "maxSafePlayFirstValues")) { Format-RecordObjectMap -Value $latestMaxSafePlayRecord.maxSafePlayFirstValues } else { "none" }
+$maxSafePlayLatestValues = if ($null -ne $latestMaxSafePlayRecord -and ($latestMaxSafePlayRecord.PSObject.Properties.Name -contains "maxSafePlayLatestValues")) { Format-RecordObjectMap -Value $latestMaxSafePlayRecord.maxSafePlayLatestValues } else { "none" }
+$maxSafePlayMinValues = if ($null -ne $latestMaxSafePlayRecord -and ($latestMaxSafePlayRecord.PSObject.Properties.Name -contains "maxSafePlayMinValues")) { Format-RecordObjectMap -Value $latestMaxSafePlayRecord.maxSafePlayMinValues } else { "none" }
+$maxSafePlayMaxValues = if ($null -ne $latestMaxSafePlayRecord -and ($latestMaxSafePlayRecord.PSObject.Properties.Name -contains "maxSafePlayMaxValues")) { Format-RecordObjectMap -Value $latestMaxSafePlayRecord.maxSafePlayMaxValues } else { "none" }
+$maxSafePlayChangedFields = if ($null -ne $latestMaxSafePlayRecord -and ($latestMaxSafePlayRecord.PSObject.Properties.Name -contains "maxSafePlayChangedFields")) { (@($latestMaxSafePlayRecord.maxSafePlayChangedFields) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }) -join ", " } else { "" }
+if ([string]::IsNullOrWhiteSpace($maxSafePlayChangedFields)) { $maxSafePlayChangedFields = "none" }
+$maxSafePlayChangeCounts = if ($null -ne $latestMaxSafePlayRecord -and ($latestMaxSafePlayRecord.PSObject.Properties.Name -contains "maxSafePlayChangeCounts")) { Format-RecordObjectMap -Value $latestMaxSafePlayRecord.maxSafePlayChangeCounts } else { "none" }
+$maxSafePlayCatalogSnapshotCount = if ($null -ne $latestMaxSafePlayRecord) { Get-RecordValue -Record $latestMaxSafePlayRecord -Names @("maxSafePlayCatalogSnapshotCount") } else { "0" }
+$maxSafePlayCatalogKnownEntryCount = if ($null -ne $latestMaxSafePlayRecord) { Get-RecordValue -Record $latestMaxSafePlayRecord -Names @("maxSafePlayCatalogKnownEntryCount") } else { "0" }
+$maxSafePlayCatalogEntryCount = 0
+$maxSafePlayCatalogCandidateCount = 0
+$maxSafePlayCatalogRejectedCount = 0
+if ($null -ne $latestMaxSafePlayCatalogRecord) {
+  [void][int]::TryParse([string](Get-RecordValue -Record $latestMaxSafePlayCatalogRecord -Names @("catalogEntryCount")), [ref]$maxSafePlayCatalogEntryCount)
+  [void][int]::TryParse([string](Get-RecordValue -Record $latestMaxSafePlayCatalogRecord -Names @("catalogCandidateCount")), [ref]$maxSafePlayCatalogCandidateCount)
+  [void][int]::TryParse([string](Get-RecordValue -Record $latestMaxSafePlayCatalogRecord -Names @("catalogRejectedCandidateCount")), [ref]$maxSafePlayCatalogRejectedCount)
+}
+$maxSafePlayCatalogTopRejectionReasons = if ($null -ne $latestMaxSafePlayCatalogRecord) { Get-RecordValue -Record $latestMaxSafePlayCatalogRecord -Names @("catalogTopRejectionReasons", "maxSafePlayCatalogTopRejectionReasons") } else { "none" }
+if ([string]::IsNullOrWhiteSpace([string]$maxSafePlayCatalogTopRejectionReasons) -or $maxSafePlayCatalogTopRejectionReasons -eq "not found") { $maxSafePlayCatalogTopRejectionReasons = "none" }
+$maxSafePlayCatalogFoundPatterns = if ($null -ne $latestMaxSafePlayCatalogRecord -and ($latestMaxSafePlayCatalogRecord.PSObject.Properties.Name -contains "catalogFoundPatterns")) { (@($latestMaxSafePlayCatalogRecord.catalogFoundPatterns) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }) -join ", " } else { "none" }
+if ([string]::IsNullOrWhiteSpace($maxSafePlayCatalogFoundPatterns)) { $maxSafePlayCatalogFoundPatterns = "none" }
+$maxSafePlayTastyOrangeFound = @($maxSafePlayAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "tastyOrangeFound") -and $_.tastyOrangeFound -eq $true }).Count -gt 0
+$maxSafePlayCollectorFound = @($maxSafePlayAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "collectorFound") -and $_.collectorFound -eq $true }).Count -gt 0
+$maxSafePlayNilCount = if ($null -ne $latestMaxSafePlayRecord) { Get-RecordValue -Record $latestMaxSafePlayRecord -Names @("maxSafePlayNilCount") } else { "0" }
+$maxSafePlayErrorCount = if ($null -ne $latestMaxSafePlayRecord) { Get-RecordValue -Record $latestMaxSafePlayRecord -Names @("maxSafePlayErrorCount") } else { "0" }
+$maxSafePlayUsableSamples = @($maxSafePlayScalarRecords | Where-Object { ($_.PSObject.Properties.Name -contains "playerStatePresent") -and $_.playerStatePresent -eq $true }).Count
+$maxSafePlaySafetyViolation = @($maxSafePlayAllRecords | Where-Object {
+  $bad = $false
+  foreach ($flag in @("noWrites", "noRpcs", "noHud", "noDeepArrays", "noInventoryArrays", "noArrayCount", "noArrayTraversal", "noElementDereference", "noInventoryInfo", "noEnhancements", "noDataAssetMutation", "noFunctionCalls", "passiveOnly")) {
+    if (-not ($_.PSObject.Properties.Name -contains $flag) -or $_.$flag -ne $true) { $bad = $true }
+  }
+  $bad
+}).Count -gt 0
+foreach ($row in $maxSafePlayAllRecords) {
+  if (($row.PSObject.Properties.Name -contains "safetyGates") -and $null -ne $row.safetyGates) {
+    if (-not ($row.safetyGates.PSObject.Properties.Name -contains "allowMaxSafePlayRecorderProbes") -or $row.safetyGates.allowMaxSafePlayRecorderProbes -ne $true) {
+      $maxSafePlaySafetyViolation = $true
+    }
+    foreach ($gate in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowPerkDataAssetCatalogProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+      if (($row.safetyGates.PSObject.Properties.Name -contains $gate) -and $row.safetyGates.$gate -eq $true) {
+        $maxSafePlaySafetyViolation = $true
+      }
+    }
+  }
+}
+$maxSafePlayClassification = "no_evidence"
+$maxSafePlayConfiguredProbeSet = Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "probeSet"
+$parsedMaxSafePlayScalarSampleCount = 0
+$parsedMaxSafePlayCatalogSnapshotCount = 0
+$parsedMaxSafePlayCatalogKnownEntryCount = 0
+[void][int]::TryParse([string]$maxSafePlayScalarSampleCount, [ref]$parsedMaxSafePlayScalarSampleCount)
+[void][int]::TryParse([string]$maxSafePlayCatalogSnapshotCount, [ref]$parsedMaxSafePlayCatalogSnapshotCount)
+[void][int]::TryParse([string]$maxSafePlayCatalogKnownEntryCount, [ref]$parsedMaxSafePlayCatalogKnownEntryCount)
+$maxSafePlayNewOrChangedCatalog = @($maxSafePlayCatalogRecords | Where-Object {
+  (($PSItem.PSObject.Properties.Name -contains "maxSafePlayNewDataAssets") -and @($PSItem.maxSafePlayNewDataAssets | Where-Object { $null -ne $PSItem }).Count -gt 0) -or
+  (($PSItem.PSObject.Properties.Name -contains "maxSafePlayChangedCatalogEntries") -and @($PSItem.maxSafePlayChangedCatalogEntries | Where-Object { $null -ne $PSItem }).Count -gt 0)
+}).Count -gt 0
+if ($maxSafePlaySafetyViolation) {
+  $maxSafePlayClassification = "failed"
+} elseif ($crashAfterPrepare -and $maxSafePlayAllRecords.Count -gt 0) {
+  $maxSafePlayClassification = "crash_suspect_max_safe_play"
+} elseif ($maxSafePlayConfiguredProbeSet -eq "max-safe-play-recorder" -and $maxSafePlayUsableSamples -eq 0) {
+  $maxSafePlayClassification = "max_safe_play_no_playerstate_samples"
+} elseif ($maxSafePlayScalarRecords.Count -gt 0 -and $maxSafePlayUsableSamples -eq 0) {
+  $maxSafePlayClassification = "max_safe_play_no_playerstate_samples"
+} elseif ($maxSafePlayScalarRecords.Count -gt 0 -and $maxSafePlayUsableSamples -gt 0 -and $parsedMaxSafePlayCatalogSnapshotCount -gt 0 -and $parsedMaxSafePlayCatalogKnownEntryCount -eq 0 -and $maxSafePlayCatalogRejectedCount -gt 0) {
+  $maxSafePlayClassification = "max_safe_play_catalog_candidates_rejected"
+} elseif ($maxSafePlayScalarRecords.Count -gt 0 -and $maxSafePlayUsableSamples -gt 0 -and $parsedMaxSafePlayCatalogSnapshotCount -gt 0 -and $parsedMaxSafePlayCatalogKnownEntryCount -eq 0) {
+  $maxSafePlayClassification = "max_safe_play_no_catalog_entries"
+} elseif ($maxSafePlayChangedFields -ne "none" -or $maxSafePlayNewOrChangedCatalog) {
+  $maxSafePlayClassification = "max_safe_play_observed_change"
+} elseif (($parsedMaxSafePlayScalarSampleCount -gt 1 -or $parsedMaxSafePlayCatalogSnapshotCount -gt 1) -and $maxSafePlayUsableSamples -gt 0) {
+  $maxSafePlayClassification = "max_safe_play_confirmed_no_change"
+}
 $localInventoryProbeNames = @(
   "Inventory.LocalSlots.Sample",
   "Inventory.LocalArrays.Shape",
@@ -1194,6 +1608,9 @@ $staleArtifactSuspected = $prepareMarkerFound -and (
   ($latestManifestSessionId -ne "not found" -and -not $ue4ssLogContainsLatestSession) -or
   -not $evidenceFilesMatchInstalledConfigProbeSet
 )
+if ($Mode -eq "CollectMaxSafePlayRecorder" -and ($crashAfterPrepare -or $staleArtifactSuspected)) {
+  $maxSafePlayClassification = "crash_suspect_max_safe_play"
+}
 
 $failures = New-Object System.Collections.Generic.List[string]
 foreach ($err in $safetyErrors) { $failures.Add($err) | Out-Null }
@@ -1368,7 +1785,7 @@ if ($Mode -eq "CollectCrystalsRead") {
   if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowCrystalsReadProbes") -ne "true") {
     $failures.Add("Crystals read collect expected allowCrystalsReadProbes = true.") | Out-Null
   }
-  foreach ($key in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+  foreach ($key in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowSlotsReadProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
     if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
       $failures.Add("Crystals read collect expected $key = false.") | Out-Null
     }
@@ -1384,6 +1801,105 @@ if ($Mode -eq "CollectCrystalsRead") {
   if ($crystalsReadSafetyViolation) { $failures.Add("Crystals read evidence touched or omitted forbidden safety markers.") | Out-Null }
 }
 
+if ($Mode -eq "CollectSlotsRead") {
+  if ($installedMode -ne "active") { $failures.Add("Slots read collect expected mode = active, got '$installedMode'.") | Out-Null }
+  if ($tickDriver -ne "executeDelay") { $failures.Add("Slots read collect expected tickDriver = executeDelay, got '$tickDriver'.") | Out-Null }
+  if ($probeSet -ne "slots-read") { $failures.Add("Slots read collect expected probeSet = slots-read, got '$probeSet'.") | Out-Null }
+  if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowSlotsReadProbes") -ne "true") {
+    $failures.Add("Slots read collect expected allowSlotsReadProbes = true.") | Out-Null
+  }
+  foreach ($key in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+    if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+      $failures.Add("Slots read collect expected $key = false.") | Out-Null
+    }
+  }
+  foreach ($probeName in $slotsReadProbeNames) {
+    if (@($slotsReadRecords | Where-Object { (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) -eq $probeName }).Count -eq 0) {
+      $failures.Add("Expected $probeName during slots read collection, but it did not run.") | Out-Null
+    }
+  }
+  if (-not $slotsReadLocalPlayerStatePresent) { $failures.Add("Slots read evidence did not confirm local PlayerState present.") | Out-Null }
+  if (-not $slotsReadAttempted) { $failures.Add("Slots read evidence did not attempt the slot scalar reads.") | Out-Null }
+  if (-not $slotsReadIntegerLike) { $failures.Add("A present slot value was not finite/integer-like.") | Out-Null }
+  if (-not $slotsReadByteRange) { $failures.Add("A present slot value was outside the documented ByteProperty range 0..255.") | Out-Null }
+  if ($slotsReadSafetyViolation) { $failures.Add("Slots read evidence touched or omitted forbidden safety markers.") | Out-Null }
+}
+
+if ($Mode -eq "CollectSafeScalarWatch") {
+  if ($installedMode -ne "active") { $failures.Add("Safe scalar watch collect expected mode = active, got '$installedMode'.") | Out-Null }
+  if ($tickDriver -ne "executeDelay") { $failures.Add("Safe scalar watch collect expected tickDriver = executeDelay, got '$tickDriver'.") | Out-Null }
+  if ($probeSet -ne "safe-scalar-watch") { $failures.Add("Safe scalar watch collect expected probeSet = safe-scalar-watch, got '$probeSet'.") | Out-Null }
+  if (-not $prepareMarkerFound) { $failures.Add("Safe scalar watch collect expected prepare_marker.json from quick-safe-watch-prepare.ps1.") | Out-Null }
+  if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowSafeScalarWatchProbes") -ne "true") {
+    $failures.Add("Safe scalar watch collect expected allowSafeScalarWatchProbes = true.") | Out-Null
+  }
+  if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "repeatProbeSet") -ne "true") {
+    $failures.Add("Safe scalar watch collect expected repeatProbeSet = true.") | Out-Null
+  }
+  foreach ($key in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+    if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+      $failures.Add("Safe scalar watch collect expected $key = false.") | Out-Null
+    }
+  }
+  if ($safeScalarWatchRecords.Count -eq 0) {
+    $failures.Add("Expected SafeWatch.Scalar.Sample during safe scalar watch collection, but it did not run.") | Out-Null
+  }
+  if ($safeScalarWatchSafetyViolation) {
+    $failures.Add("Safe scalar watch evidence touched or omitted forbidden safety markers.") | Out-Null
+  }
+  if ($safeScalarWatchUsableSamples -eq 0) {
+    $failures.Add("Safe scalar watch did not collect any usable PlayerState-present samples.") | Out-Null
+  }
+}
+
+if ($Mode -eq "CollectPerkDataAssetCatalog") {
+  if ($installedMode -ne "active") { $failures.Add("Perk DataAsset catalog collect expected mode = active, got '$installedMode'.") | Out-Null }
+  if ($tickDriver -ne "executeDelay") { $failures.Add("Perk DataAsset catalog collect expected tickDriver = executeDelay, got '$tickDriver'.") | Out-Null }
+  if ($probeSet -ne "perk-da-catalog-read") { $failures.Add("Perk DataAsset catalog collect expected probeSet = perk-da-catalog-read, got '$probeSet'.") | Out-Null }
+  if (-not $prepareMarkerFound) { $failures.Add("Perk DataAsset catalog collect expected prepare_marker.json from quick-campaign-prepare.ps1.") | Out-Null }
+  if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowPerkDataAssetCatalogProbes") -ne "true") {
+    $failures.Add("Perk DataAsset catalog collect expected allowPerkDataAssetCatalogProbes = true.") | Out-Null
+  }
+  foreach ($key in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+    if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+      $failures.Add("Perk DataAsset catalog collect expected $key = false.") | Out-Null
+    }
+  }
+  if ($perkCatalogRecords.Count -eq 0) {
+    $failures.Add("Expected DataAsset.Perks.CatalogRead during perk DataAsset catalog collection, but it did not run.") | Out-Null
+  }
+  if (-not $perkCatalogDiscoveryAttempted) {
+    $failures.Add("Perk DataAsset catalog evidence did not mark discoveryAttempted = true.") | Out-Null
+  }
+  if ($perkCatalogSafetyViolation) {
+    $failures.Add("Perk DataAsset catalog evidence touched or omitted forbidden safety markers.") | Out-Null
+  }
+}
+
+if ($Mode -eq "CollectMaxSafePlayRecorder") {
+  if ($installedMode -ne "active") { $failures.Add("Max-safe play recorder collect expected mode = active, got '$installedMode'.") | Out-Null }
+  if ($tickDriver -ne "executeDelay") { $failures.Add("Max-safe play recorder collect expected tickDriver = executeDelay, got '$tickDriver'.") | Out-Null }
+  if ($probeSet -ne "max-safe-play-recorder") { $failures.Add("Max-safe play recorder collect expected probeSet = max-safe-play-recorder, got '$probeSet'.") | Out-Null }
+  if (-not $prepareMarkerFound) { $failures.Add("Max-safe play recorder collect expected prepare_marker.json from quick-max-safe-play-prepare.ps1.") | Out-Null }
+  if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowMaxSafePlayRecorderProbes") -ne "true") {
+    $failures.Add("Max-safe play recorder collect expected allowMaxSafePlayRecorderProbes = true.") | Out-Null
+  }
+  foreach ($key in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowPerkDataAssetCatalogProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+    if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+      $failures.Add("Max-safe play recorder collect expected $key = false.") | Out-Null
+    }
+  }
+  if ($maxSafePlayScalarRecords.Count -eq 0 -and $maxSafePlayCatalogRecords.Count -eq 0) {
+    $failures.Add("Expected max-safe play recorder rows, but no useful recorder rows were collected.") | Out-Null
+  }
+  if ($maxSafePlaySafetyViolation) {
+    $failures.Add("Max-safe play recorder evidence touched or omitted forbidden safety markers.") | Out-Null
+  }
+  if ($maxSafePlayUsableSamples -eq 0) {
+    $failures.Add("No PlayerState-present samples collected. Launch into a stable world/run and play for at least 1 to 5 minutes before collecting.") | Out-Null
+  }
+}
+
 if ($Mode -eq "CollectLocalInventoryArrayShallow") {
   if ($installedMode -ne "active") { $failures.Add("Local inventory array shallow collect expected mode = active, got '$installedMode'.") | Out-Null }
   if ($tickDriver -ne "executeDelay") { $failures.Add("Local inventory array shallow collect expected tickDriver = executeDelay, got '$tickDriver'.") | Out-Null }
@@ -1391,7 +1907,7 @@ if ($Mode -eq "CollectLocalInventoryArrayShallow") {
   if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryArrayShallowProbes") -ne "true") {
     $failures.Add("Local inventory array shallow collect expected allowInventoryArrayShallowProbes = true.") | Out-Null
   }
-  foreach ($key in @("allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowRawIdentityEvidence")) {
+  foreach ($key in @("allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowRawIdentityEvidence", "allowCrystalsReadProbes", "allowSlotsReadProbes")) {
     if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
       $failures.Add("Local inventory array shallow collect expected $key = false.") | Out-Null
     }
@@ -1413,7 +1929,7 @@ if ($Mode -eq "CollectLocalInventoryArrayShapeConfirm") {
   if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryArrayShapeConfirmProbes") -ne "true") {
     $failures.Add("Local inventory array shape confirm collect expected allowInventoryArrayShapeConfirmProbes = true.") | Out-Null
   }
-  foreach ($key in @("allowInventoryArrayShallowProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowRawIdentityEvidence", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes")) {
+  foreach ($key in @("allowInventoryArrayShallowProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowRawIdentityEvidence", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes")) {
     if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
       $failures.Add("Local inventory array shape confirm collect expected $key = false.") | Out-Null
     }
@@ -1441,7 +1957,7 @@ if ($Mode -eq "CollectLocalInventoryUserdataIntrospection") {
   if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryUserdataIntrospectionProbes") -ne "true") {
     $failures.Add("Local inventory userdata introspection collect expected allowInventoryUserdataIntrospectionProbes = true.") | Out-Null
   }
-  foreach ($key in @("allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowRawIdentityEvidence", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes")) {
+  foreach ($key in @("allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowRawIdentityEvidence", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes")) {
     if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
       $failures.Add("Local inventory userdata introspection collect expected $key = false.") | Out-Null
     }
@@ -1585,6 +2101,60 @@ $summaryLines = @(
   "crystals_read_value_kind = $crystalsReadValueKind",
   "crystals_read_value_integer_like = $crystalsReadIntegerLike",
   "crystals_read_safety_violation = $crystalsReadSafetyViolation",
+  "slots_read_probe_ran = $($slotsReadRecords.Count -gt 0)",
+  "slots_read_local_playerstate_present = $slotsReadLocalPlayerStatePresent",
+  "slots_read_attempted = $slotsReadAttempted",
+  "slots_read_values = $slotsReadValues",
+  "slots_read_values_integer_like = $slotsReadIntegerLike",
+  "slots_read_values_in_byte_range = $slotsReadByteRange",
+  "slots_read_locked_slot_model = unresolved",
+  "slots_read_safety_violation = $slotsReadSafetyViolation",
+  "safe_scalar_watch_probe_ran = $($safeScalarWatchRecords.Count -gt 0)",
+  "safe_scalar_watch_classification = $safeScalarWatchClassification",
+  "safe_scalar_watch_sample_count = $safeScalarWatchSampleCount",
+  "safe_scalar_watch_logged_count = $safeScalarWatchLoggedCount",
+  "safe_scalar_watch_first_values = $safeScalarWatchFirstValues",
+  "safe_scalar_watch_latest_values = $safeScalarWatchLatestValues",
+  "safe_scalar_watch_min_values = $safeScalarWatchMinValues",
+  "safe_scalar_watch_max_values = $safeScalarWatchMaxValues",
+  "safe_scalar_watch_changed_fields = $safeScalarWatchChangedFields",
+  "safe_scalar_watch_change_counts = $safeScalarWatchChangeCounts",
+  "safe_scalar_watch_first_context = $safeScalarWatchFirstContext",
+  "safe_scalar_watch_last_context = $safeScalarWatchLastContext",
+  "safe_scalar_watch_first_role = $safeScalarWatchFirstRole",
+  "safe_scalar_watch_last_role = $safeScalarWatchLastRole",
+  "safe_scalar_watch_slot_model_status = observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total slot model unresolved",
+  "safe_scalar_watch_safety_violation = $safeScalarWatchSafetyViolation",
+  "perk_da_catalog_probe_ran = $($perkCatalogRecords.Count -gt 0)",
+  "perk_da_catalog_classification = $perkCatalogClassification",
+  "perk_da_catalog_discovery_attempted = $perkCatalogDiscoveryAttempted",
+  "perk_da_catalog_entry_count = $perkCatalogEntryCount",
+  "perk_da_catalog_candidate_count = $perkCatalogCandidateCount",
+  "perk_da_catalog_rejected_candidate_count = $perkCatalogRejectedCandidateCount",
+  "perk_da_catalog_top_rejection_reasons = $perkCatalogTopRejectionReasons",
+  "perk_da_catalog_found_patterns = $perkCatalogFoundPatterns",
+  "perk_da_catalog_safety_violation = $perkCatalogSafetyViolation",
+  "max_safe_play_probe_ran = $($maxSafePlayAllRecords.Count -gt 0)",
+  "max_safe_play_classification = $maxSafePlayClassification",
+  "max_safe_play_scalar_sample_count = $maxSafePlayScalarSampleCount",
+  "max_safe_play_scalar_logged_count = $maxSafePlayScalarLoggedCount",
+  "max_safe_play_first_values = $maxSafePlayFirstValues",
+  "max_safe_play_latest_values = $maxSafePlayLatestValues",
+  "max_safe_play_min_values = $maxSafePlayMinValues",
+  "max_safe_play_max_values = $maxSafePlayMaxValues",
+  "max_safe_play_changed_fields = $maxSafePlayChangedFields",
+  "max_safe_play_change_counts = $maxSafePlayChangeCounts",
+  "max_safe_play_perk_catalog_snapshot_count = $maxSafePlayCatalogSnapshotCount",
+  "max_safe_play_perk_da_candidate_count = $maxSafePlayCatalogCandidateCount",
+  "max_safe_play_perk_da_entry_count = $maxSafePlayCatalogKnownEntryCount",
+  "max_safe_play_perk_da_rejected_candidate_count = $maxSafePlayCatalogRejectedCount",
+  "max_safe_play_perk_da_top_rejection_reasons = $maxSafePlayCatalogTopRejectionReasons",
+  "max_safe_play_perk_da_found_patterns = $maxSafePlayCatalogFoundPatterns",
+  "max_safe_play_tasty_orange_found = $maxSafePlayTastyOrangeFound",
+  "max_safe_play_collector_found = $maxSafePlayCollectorFound",
+  "max_safe_play_nil_count = $maxSafePlayNilCount",
+  "max_safe_play_error_count = $maxSafePlayErrorCount",
+  "max_safe_play_safety_violation = $maxSafePlaySafetyViolation",
   "local_inventory_array_shallow_probe_ran = $($localInventoryRecords.Count -gt 0)",
   "local_inventory_array_shallow_sample_count = $($localInventoryRecords.Count)",
   "local_inventory_array_element_dereference = $localInventoryElementDereference",
@@ -1633,6 +2203,10 @@ $summaryLines = @(
   "allowRawIdentityEvidence = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowRawIdentityEvidence")",
   "allowResourceVisibilityProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowResourceVisibilityProbes")",
   "allowCrystalsReadProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowCrystalsReadProbes")",
+  "allowSlotsReadProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowSlotsReadProbes")",
+  "allowSafeScalarWatchProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowSafeScalarWatchProbes")",
+  "allowPerkDataAssetCatalogProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowPerkDataAssetCatalogProbes")",
+  "allowMaxSafePlayRecorderProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowMaxSafePlayRecorderProbes")",
   "allowInventoryArrayShallowProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryArrayShallowProbes")",
   "allowInventoryArrayShapeConfirmProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryArrayShapeConfirmProbes")",
   "allowInventoryUserdataIntrospectionProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryUserdataIntrospectionProbes")",
@@ -1743,7 +2317,7 @@ if ($errorLines.Count -eq 0) {
   }
 }
 
-if ($Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch" -or $Mode -eq "CollectResourceVisibility" -or $Mode -eq "CollectCrystalsRead" -or $Mode -eq "CollectLocalInventoryArrayShallow" -or $Mode -eq "CollectLocalInventoryArrayShapeConfirm" -or $Mode -eq "CollectLocalInventoryUserdataIntrospection") {
+if ($Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch" -or $Mode -eq "CollectResourceVisibility" -or $Mode -eq "CollectCrystalsRead" -or $Mode -eq "CollectSlotsRead" -or $Mode -eq "CollectSafeScalarWatch" -or $Mode -eq "CollectPerkDataAssetCatalog" -or $Mode -eq "CollectMaxSafePlayRecorder" -or $Mode -eq "CollectLocalInventoryArrayShallow" -or $Mode -eq "CollectLocalInventoryArrayShapeConfirm" -or $Mode -eq "CollectLocalInventoryUserdataIntrospection") {
   $summaryLines += ""
   $summaryLines += "files_to_upload:"
   $summaryLines += " - $SummaryPath"

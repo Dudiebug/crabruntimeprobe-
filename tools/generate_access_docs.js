@@ -2,7 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 const { parseIdentityFromFullName, extractFullNameFromSummary } = require('./identity_helpers');
-const { classifyCrystalsReadEvidence, classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
+const { classifyCrystalsReadEvidence, classifySafeScalarWatchEvidence, classifyPerkDataAssetCatalogEvidence, classifySlotsReadEvidence, classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
+const { generatePerkDataAssetCatalogOutputs } = require('./extract_perk_dataasset_catalog');
 
 function walk(dir, name) {
   if (!fs.existsSync(dir)) return [];
@@ -331,6 +332,33 @@ const latestCrystalsReadSessionId = evidenceRows
 const crystalsRead = classifyCrystalsReadEvidence(evidenceRows, {
   crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestCrystalsReadSessionId)
 });
+const latestSlotsReadSessionId = evidenceRows
+  .filter((row) => (row.probeId || row.probeName || row.event || '') === 'Resource.Slots.Read')
+  .map((row) => row.sessionId)
+  .filter(Boolean)
+  .sort()
+  .pop();
+const slotsRead = classifySlotsReadEvidence(evidenceRows, {
+  crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestSlotsReadSessionId)
+});
+const latestSafeScalarWatchSessionId = evidenceRows
+  .filter((row) => ['SafeWatch.Scalar.Sample', 'Runtime.SafeScalarWatch.Sample'].includes(row.probeId || row.probeName || row.event || ''))
+  .map((row) => row.sessionId)
+  .filter(Boolean)
+  .sort()
+  .pop();
+const safeScalarWatch = classifySafeScalarWatchEvidence(evidenceRows, {
+  crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestSafeScalarWatchSessionId)
+});
+const latestPerkCatalogSessionId = evidenceRows
+  .filter((row) => (row.probeId || row.probeName || row.event || '') === 'DataAsset.Perks.CatalogRead')
+  .map((row) => row.sessionId)
+  .filter(Boolean)
+  .sort()
+  .pop();
+const perkCatalog = classifyPerkDataAssetCatalogEvidence(evidenceRows, {
+  crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestPerkCatalogSessionId)
+});
 index += '\n## Local Inventory Array Shallow/Count Visibility Summary\n\n';
 if (!localInventory.localInventoryArrayEvidenceFound) {
   index += '- Summary: unresolved; no `local-inventory-array-shallow-read` evidence has been imported yet.\n';
@@ -417,6 +445,60 @@ if (!crystalsRead.crystalsReadEvidenceFound) {
   index += `- Inventory arrays/InventoryInfo/Enhancements: ${crystalsRead.noArrayTraversal && crystalsRead.noElementDereference && crystalsRead.noInventoryInfo && crystalsRead.noEnhancements ? 'no' : 'yes'}\n`;
   index += '- UInt32 range is documentation only for this read-only phase; RuntimeProbe does not write or clamp the value.\n';
 }
+index += '\n## Local Slots Read Summary\n\n';
+if (!slotsRead.slotsReadEvidenceFound) {
+  index += '- Summary: unresolved; no `slots-read` evidence has been imported yet.\n';
+  index += '- Slots-read will read only local `CrabPC -> PlayerState -> CrabPS` scalar fields: `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, `NumPerkSlots`.\n';
+  index += '- ByteProperty range 0..255 is documentation only; RuntimeProbe does not write or clamp values.\n';
+  index += '- Locked slots remain unresolved; no separate locked/max/total slot-capacity field was found in the tracked objectdump-derived notes.\n';
+} else {
+  index += `- Summary: ${slotsRead.classification}\n`;
+  index += `- Slots read status: ${slotsRead.status}\n`;
+  index += `- Local PlayerState present: ${slotsRead.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
+  index += `- Slot read attempted: ${slotsRead.slotsReadAttempted ? 'yes' : 'no'}\n`;
+  index += `- Present slot values: ${Object.keys(slotsRead.slotScalarValues).length ? Object.entries(slotsRead.slotScalarValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Present slot values integer-like: ${slotsRead.valuesIntegerLike ? 'yes' : 'no'}\n`;
+  index += `- Present slot values within 0..255: ${slotsRead.valuesInByteRange ? 'yes' : 'no'}\n`;
+  index += `- Writes/RPCs: ${slotsRead.noWrites && slotsRead.noRpcs ? 'no' : 'yes'}\n`;
+  index += `- HUD/deep arrays: ${slotsRead.noHud && slotsRead.noDeepArrays ? 'no' : 'yes'}\n`;
+  index += `- Inventory arrays/InventoryInfo/Enhancements: ${slotsRead.noArrayCount && slotsRead.noArrayTraversal && slotsRead.noElementDereference && slotsRead.noInventoryInfo && slotsRead.noEnhancements ? 'no' : 'yes'}\n`;
+  index += '- These are observed scalar slot counters / candidate unlocked slot counters only; they are not proven total capacity or locked-slot state.\n';
+}
+index += '\n## Safe Scalar Watch Summary\n\n';
+if (!safeScalarWatch.safeScalarWatchEvidenceFound) {
+  index += '- Summary: unresolved; no `safe-scalar-watch` evidence has been imported yet.\n';
+  index += '- Safe scalar watch will sample only proven-safe local scalar/property paths about every 5 seconds, with first/changed rows and 60-second heartbeats.\n';
+} else {
+  index += `- Summary: ${safeScalarWatch.classification}\n`;
+  index += `- Safe scalar watch status: ${safeScalarWatch.status}\n`;
+  index += `- Sample count: ${safeScalarWatch.sampleCount}\n`;
+  index += `- First values: ${Object.keys(safeScalarWatch.firstValues).length ? Object.entries(safeScalarWatch.firstValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Latest values: ${Object.keys(safeScalarWatch.latestValues).length ? Object.entries(safeScalarWatch.latestValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Min/max numeric values: ${Object.keys(safeScalarWatch.minValues).length ? Object.keys(safeScalarWatch.minValues).sort().map((key) => `${key}=${safeScalarWatch.minValues[key]}/${safeScalarWatch.maxValues[key]}`).join(', ') : 'none'}\n`;
+  index += `- Changed fields: ${safeScalarWatch.changedFields.length ? safeScalarWatch.changedFields.join(', ') : 'none'}\n`;
+  index += `- Change counts: ${Object.keys(safeScalarWatch.changeCounts).length ? Object.entries(safeScalarWatch.changeCounts).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- First/last context: ${safeScalarWatch.firstContext || 'not found'} / ${safeScalarWatch.lastContext || 'not found'}\n`;
+  index += `- First/last role: ${safeScalarWatch.firstRole || 'not found'} / ${safeScalarWatch.lastRole || 'not found'}\n`;
+  index += `- Slot model status: ${safeScalarWatch.slotModelStatus}\n`;
+  index += `- No writes/RPCs/HUD/deep arrays/inventory traversal/InventoryInfo/Enhancements: ${safeScalarWatch.noWrites && safeScalarWatch.noRpcs && safeScalarWatch.noHud && safeScalarWatch.noDeepArrays && safeScalarWatch.noArrayCount && safeScalarWatch.noArrayTraversal && safeScalarWatch.noElementDereference && safeScalarWatch.noInventoryInfo && safeScalarWatch.noEnhancements ? 'yes' : 'no'}\n`;
+}
+index += '\n## Perk DataAsset Catalog Summary\n\n';
+if (!perkCatalog.perkDataAssetCatalogEvidenceFound) {
+  index += '- Summary: unresolved; no `perk-da-catalog-read` evidence has been imported yet.\n';
+  index += '- Perk catalog evidence will be read-only and is not permission to mutate DataAssets.\n';
+  index += '- RuntimeProbe will prove read paths only; future CrabModFramework / CrabTastyMod write/edit APIs must be designed separately.\n';
+  index += '- TastyOrange is not special-cased by RuntimeProbe. It will be cataloged as a normal perk if found.\n';
+  index += '- Collector is not special-cased by RuntimeProbe. It will be cataloged as a normal perk if found.\n';
+} else {
+  index += `- Summary: ${perkCatalog.classification}\n`;
+  index += `- Perk DataAsset catalog status: ${perkCatalog.status}\n`;
+  index += `- Catalog entries: ${perkCatalog.catalogEntryCount}\n`;
+  index += `- Candidate count/cap: ${perkCatalog.catalogCandidateCount}/${perkCatalog.catalogCandidateCap || 'unknown'}\n`;
+  index += `- No writes/RPCs/HUD/deep arrays/live inventory arrays/counts/InventoryInfo/Enhancements/DataAsset mutation/function calls: ${perkCatalog.noWrites && perkCatalog.noRpcs && perkCatalog.noHud && perkCatalog.noDeepArrays && perkCatalog.noInventoryArrays && perkCatalog.noArrayCount && perkCatalog.noArrayTraversal && perkCatalog.noElementDereference && perkCatalog.noInventoryInfo && perkCatalog.noEnhancements && perkCatalog.noDataAssetMutation && perkCatalog.noFunctionCalls ? 'yes' : 'no'}\n`;
+  index += '- RuntimeProbe proves read paths only. Future CrabModFramework / CrabTastyMod work must build controlled write/edit APIs separately.\n';
+  index += '- TastyOrange is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.\n';
+  index += '- Collector is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.\n';
+}
 index += '\n## Confirmed SAFE Access Rows\n\n';
 const safeRows = rows.filter((row) => bestStatus(row.statuses) === 'SAFE');
 if (safeRows.length === 0) {
@@ -428,6 +510,7 @@ if (safeRows.length === 0) {
 let matrix = '# Safe Access Matrix\n\n';
 matrix += 'SAFE status is scoped to the contexts, roles, lifecycle states, and access method shown in the evidence. DirectField and GetPropertyValue are separate access paths.\n\n';
 matrix += 'Health source scope matters: `CrabPC -> PlayerState -> CrabPS -> HealthInfo` is the only currently confirmed safe player health read path. Unscoped `FindFirstOf.CrabHC` is ambiguous and has already found `BP_Destructible_ChaoticBarrel10.HC`, so it is not player-health proof. `health-playerstate-watch` is read-only local PlayerState time-series evidence for vanilla visibility; pooled/shared health is a CrabInvSync design concept, not vanilla RuntimeProbe evidence. Identity context `solo-or-host` means local-player-present, not confirmed solo.\n\n';
+matrix += 'DataAsset catalog evidence is read-only definition evidence for future CrabModFramework APIs. It is not permission to mutate DataAssets or call DataAsset functions.\n\n';
 matrix += matrixTable(rows);
 
 const byOwner = new Map();
@@ -474,10 +557,12 @@ const defaultUntested = [
   ['FindAllOf(PlayerController,CrabPC).PlayerState', 'identity controller candidates', 'UNTESTED', 'Capped controller discovery reads only PlayerState from valid controllers.'],
   ['FindAllOf(PlayerState,CrabPS)', 'resource visibility candidates', 'UNTESTED', 'Capped resource visibility discovery is gated by allowResourceVisibilityProbes and reads only explicitly named PlayerState fields.'],
   ['CrabPS.Crystals', 'GetPropertyValue', 'UNTESTED', 'Local crystals-read evidence has not been imported yet; remote resource visibility remains separate.'],
+  ['CrabPS.NumWeaponModSlots', 'GetPropertyValue', 'UNTESTED', 'Local slots-read evidence has not been imported yet; these scalars are candidate unlocked slot counters only.'],
   ['CrabPS.WeaponMods', 'RemotePlayerStateCountOnly', 'UNTESTED', 'Remote inventory arrays are count-only in resource visibility and remain unresolved until evidence proves visibility.'],
   ['CrabPS.WeaponMods', 'GetPropertyValueCountOnly', 'UNTESTED', 'Local inventory arrays require local-inventory-array-shallow-read; no element dereference.'],
   ['CrabPS.WeaponMods', 'GetPropertyValueShapeConfirm', 'UNTESTED', 'Local inventory shape confirm reads property presence/value kind only; no count, traversal, element dereference, InventoryInfo, or Enhancements.'],
   ['CrabPS.WeaponMods', 'GetPropertyValueUserdataMetadata', 'UNTESTED', 'Local inventory userdata introspection reads wrapper metadata only; length operator results are metadata-only and not element traversal proof.'],
+  ['CrabPerkDA', 'FindAllOfCappedCuratedClasses', 'UNTESTED', 'Perk DataAsset catalog reads are gated by allowPerkDataAssetCatalogProbes and are read-only evidence, not permission to mutate DataAssets.'],
   ['PlayerState.UniqueId', 'identity', 'UNTESTED', 'Stable IDs must be fingerprinted unless allowRawIdentityEvidence is explicitly enabled.'],
   ['GameplayState.*', 'write', 'UNSAFE_DISABLED', 'Writes are disabled.'],
   ['RPC.*', 'rpc', 'UNSAFE_DISABLED', 'RPC probes are disabled.']
@@ -492,5 +577,6 @@ fs.writeFileSync(path.join(docsDir, 'SAFE_ACCESS_MATRIX.md'), matrix);
 fs.writeFileSync(path.join(docsDir, 'SYMBOL_ACCESS_REFERENCE.md'), reference);
 fs.writeFileSync(path.join(docsDir, 'KNOWN_UNSAFE_PATHS.md'), unsafe);
 fs.writeFileSync(path.join(docsDir, 'UNTESTED_ACCESS_PATHS.md'), untested);
+generatePerkDataAssetCatalogOutputs({ repoRoot: process.cwd(), quiet: true });
 
-console.log('generated access docs = docs/RUNTIME_EVIDENCE_INDEX.md, docs/SAFE_ACCESS_MATRIX.md, docs/SYMBOL_ACCESS_REFERENCE.md, docs/KNOWN_UNSAFE_PATHS.md, docs/UNTESTED_ACCESS_PATHS.md');
+console.log('generated access docs = docs/RUNTIME_EVIDENCE_INDEX.md, docs/SAFE_ACCESS_MATRIX.md, docs/SYMBOL_ACCESS_REFERENCE.md, docs/KNOWN_UNSAFE_PATHS.md, docs/UNTESTED_ACCESS_PATHS.md, docs/PERK_DATAASSET_CATALOG.md, docs/data/perk_dataasset_catalog.latest.json, docs/data/perk_dataasset_catalog.latest.csv');

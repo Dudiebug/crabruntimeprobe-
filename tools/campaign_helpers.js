@@ -17,6 +17,10 @@ const ALL_GATES = [
   'allowRawIdentityEvidence',
   'allowResourceVisibilityProbes',
   'allowCrystalsReadProbes',
+  'allowSlotsReadProbes',
+  'allowSafeScalarWatchProbes',
+  'allowPerkDataAssetCatalogProbes',
+  'allowMaxSafePlayRecorderProbes',
   'allowInventoryArrayShallowProbes',
   'allowInventoryArrayShapeConfirmProbes',
   'allowInventoryUserdataIntrospectionProbes',
@@ -271,6 +275,10 @@ function classifyCrystalsReadEvidence(rows, options = {}) {
     'allowIdentityProbes',
     'allowRawIdentityEvidence',
     'allowResourceVisibilityProbes',
+    'allowSlotsReadProbes',
+    'allowSafeScalarWatchProbes',
+    'allowPerkDataAssetCatalogProbes',
+    'allowMaxSafePlayRecorderProbes',
     'allowInventoryArrayShallowProbes',
     'allowInventoryArrayShapeConfirmProbes',
     'allowInventoryUserdataIntrospectionProbes',
@@ -312,6 +320,472 @@ function classifyCrystalsReadEvidence(rows, options = {}) {
     noRpcs: crystalRows.length > 0 && crystalRows.every((row) => row.noRpcs === true),
     noHud: crystalRows.length > 0 && crystalRows.every((row) => row.noHud === true),
     noDeepArrays: crystalRows.length > 0 && crystalRows.every((row) => row.noDeepArrays === true),
+    safetyViolation,
+    crashSuspect: options.crashSuspect === true,
+    classification,
+    status
+  };
+}
+
+function isSlotsReadRow(row) {
+  return (row.probeName || row.probeId || row.event || '') === 'Resource.Slots.Read';
+}
+
+function objectValues(obj) {
+  if (!obj || typeof obj !== 'object') return [];
+  return Object.values(obj);
+}
+
+function valueInByteRange(value) {
+  if (!isFiniteIntegerLike(value)) return false;
+  const numberValue = typeof value === 'number' ? value : Number(value);
+  return numberValue >= 0 && numberValue <= 255;
+}
+
+function classifySlotsReadEvidence(rows, options = {}) {
+  const slotRows = rows.filter(isSlotsReadRow);
+  const localPlayerStatePresent = slotRows.some((row) => row.localPlayerStatePresent === true);
+  const slotsReadAttempted = slotRows.some((row) => row.slotsReadAttempted === true);
+  const slotScalarValues = {};
+  for (const row of slotRows) {
+    if (row.slotScalarValues && typeof row.slotScalarValues === 'object') {
+      for (const [name, value] of Object.entries(row.slotScalarValues)) {
+        slotScalarValues[name] = value;
+      }
+    }
+  }
+  const presentValues = Object.values(slotScalarValues);
+  const valuesIntegerLike = presentValues.every(isFiniteIntegerLike);
+  const valuesInByteRange = presentValues.every(valueInByteRange);
+  const forbiddenGateNames = [
+    'allowHudTickHook',
+    'allowUnknownRoleProbes',
+    'allowJoinedClientDeepProbes',
+    'allowDeepArrayProbes',
+    'allowInventoryInfoProbes',
+    'allowHealthProbes',
+    'allowIdentityProbes',
+    'allowRawIdentityEvidence',
+    'allowResourceVisibilityProbes',
+    'allowCrystalsReadProbes',
+    'allowSafeScalarWatchProbes',
+    'allowPerkDataAssetCatalogProbes',
+    'allowMaxSafePlayRecorderProbes',
+    'allowInventoryArrayShallowProbes',
+    'allowInventoryArrayShapeConfirmProbes',
+    'allowInventoryUserdataIntrospectionProbes',
+    'allowWriteProbes',
+    'allowRpcProbes'
+  ];
+  const safetyViolation = slotRows.some((row) => {
+    const gates = row && row.safetyGates ? row.safetyGates : {};
+    return forbiddenGateNames.some((gate) => gates[gate] === true) ||
+      row.noElementDereference !== true ||
+      row.noArrayCount !== true ||
+      row.noArrayTraversal !== true ||
+      row.noInventoryInfo !== true ||
+      row.noEnhancements !== true ||
+      row.noWrites !== true ||
+      row.noRpcs !== true ||
+      row.noHud !== true ||
+      row.noDeepArrays !== true;
+  });
+  const explicitIntegerViolation = slotRows.some((row) =>
+    objectValues(row.slotIntegerLike).some((value) => value !== true)
+  );
+  const explicitRangeViolation = slotRows.some((row) =>
+    objectValues(row.slotValuesInByteRange).some((value) => value !== true)
+  );
+  let status = 'no_evidence';
+  let classification = 'unresolved';
+  if (safetyViolation || !valuesIntegerLike || !valuesInByteRange || explicitIntegerViolation || explicitRangeViolation) {
+    status = 'failed';
+  } else if (slotRows.length > 0 && localPlayerStatePresent && slotsReadAttempted) {
+    status = options.crashSuspect ? 'crash_suspect_slots_read' : 'slots_read_confirmed';
+    classification = options.crashSuspect ? 'slots_read_crash_suspect' : 'slots_read_confirmed';
+  }
+  return {
+    slotsReadEvidenceFound: slotRows.length > 0,
+    localPlayerStatePresent,
+    slotsReadAttempted,
+    slotScalarValues,
+    presentSlotFieldCount: presentValues.length,
+    valuesIntegerLike,
+    valuesInByteRange,
+    lockedSlotModel: 'unresolved',
+    noElementDereference: slotRows.length > 0 && slotRows.every((row) => row.noElementDereference === true),
+    noArrayCount: slotRows.length > 0 && slotRows.every((row) => row.noArrayCount === true),
+    noArrayTraversal: slotRows.length > 0 && slotRows.every((row) => row.noArrayTraversal === true),
+    noInventoryInfo: slotRows.length > 0 && slotRows.every((row) => row.noInventoryInfo === true),
+    noEnhancements: slotRows.length > 0 && slotRows.every((row) => row.noEnhancements === true),
+    noWrites: slotRows.length > 0 && slotRows.every((row) => row.noWrites === true),
+    noRpcs: slotRows.length > 0 && slotRows.every((row) => row.noRpcs === true),
+    noHud: slotRows.length > 0 && slotRows.every((row) => row.noHud === true),
+    noDeepArrays: slotRows.length > 0 && slotRows.every((row) => row.noDeepArrays === true),
+    safetyViolation,
+    crashSuspect: options.crashSuspect === true,
+    classification,
+    status
+  };
+}
+
+function isSafeScalarWatchRow(row) {
+  const id = row.probeName || row.probeId || row.event || '';
+  return id === 'SafeWatch.Scalar.Sample' || id === 'Runtime.SafeScalarWatch.Sample';
+}
+
+function arrayFromValue(value) {
+  if (Array.isArray(value)) return value;
+  if (value === null || value === undefined) return [];
+  if (typeof value === 'object' && Object.keys(value).length === 0) return [];
+  return [value];
+}
+
+function classifySafeScalarWatchEvidence(rows, options = {}) {
+  const watchRows = rows.filter(isSafeScalarWatchRow);
+  const latest = watchRows.length ? watchRows[watchRows.length - 1] : {};
+  const sampleCount = Number(latest.safeWatchSampleCount || watchRows.length || 0);
+  const loggedCount = Number(latest.safeWatchLoggedCount || watchRows.length || 0);
+  const usableSampleCount = watchRows.filter((row) => row.playerStatePresent === true || row.localPlayerStatePresent === true).length;
+  const changedFields = arrayFromValue(latest.safeWatchChangedFields).filter((item) => String(item || '').trim() !== '');
+  const forbiddenGateNames = [
+    'allowHudTickHook',
+    'allowUnknownRoleProbes',
+    'allowJoinedClientDeepProbes',
+    'allowDeepArrayProbes',
+    'allowInventoryInfoProbes',
+    'allowHealthProbes',
+    'allowIdentityProbes',
+    'allowRawIdentityEvidence',
+    'allowResourceVisibilityProbes',
+    'allowCrystalsReadProbes',
+    'allowSlotsReadProbes',
+    'allowPerkDataAssetCatalogProbes',
+    'allowMaxSafePlayRecorderProbes',
+    'allowInventoryArrayShallowProbes',
+    'allowInventoryArrayShapeConfirmProbes',
+    'allowInventoryUserdataIntrospectionProbes',
+    'allowWriteProbes',
+    'allowRpcProbes'
+  ];
+  const safetyViolation = watchRows.some((row) => {
+    const gates = row && row.safetyGates ? row.safetyGates : {};
+    return forbiddenGateNames.some((gate) => gates[gate] === true) ||
+      row.noElementDereference !== true ||
+      row.noArrayCount !== true ||
+      row.noArrayTraversal !== true ||
+      row.noInventoryInfo !== true ||
+      row.noEnhancements !== true ||
+      row.noWrites !== true ||
+      row.noRpcs !== true ||
+      row.noHud !== true ||
+      row.noDeepArrays !== true;
+  });
+  let status = 'no_evidence';
+  let classification = 'unresolved';
+  if (safetyViolation) {
+    status = 'failed';
+    classification = 'failed';
+  } else if (watchRows.length > 0 && usableSampleCount > 0 && options.crashSuspect) {
+    status = 'crash_suspect_safe_scalar_watch';
+    classification = 'crash-suspect';
+  } else if (watchRows.length > 0 && usableSampleCount > 0 && changedFields.length > 0) {
+    status = 'safe_scalar_watch_observed_change';
+    classification = 'safe_scalar_watch_observed_change';
+  } else if (watchRows.length > 0 && usableSampleCount > 0 && sampleCount > 1) {
+    status = 'safe_scalar_watch_confirmed_no_change';
+    classification = 'safe_scalar_watch_confirmed_no_change';
+  }
+  return {
+    safeScalarWatchEvidenceFound: watchRows.length > 0,
+    sampleCount,
+    loggedCount,
+    usableSampleCount,
+    firstValues: latest.safeWatchFirstValues || {},
+    latestValues: latest.safeWatchLatestValues || {},
+    minValues: latest.safeWatchMinValues || {},
+    maxValues: latest.safeWatchMaxValues || {},
+    changedFields,
+    changeCounts: latest.safeWatchChangeCounts || {},
+    firstContext: latest.firstContext || '',
+    lastContext: latest.lastContext || '',
+    firstRole: latest.firstRole || '',
+    lastRole: latest.lastRole || '',
+    slotModelStatus: 'observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total slot model unresolved',
+    noElementDereference: watchRows.length > 0 && watchRows.every((row) => row.noElementDereference === true),
+    noArrayCount: watchRows.length > 0 && watchRows.every((row) => row.noArrayCount === true),
+    noArrayTraversal: watchRows.length > 0 && watchRows.every((row) => row.noArrayTraversal === true),
+    noInventoryInfo: watchRows.length > 0 && watchRows.every((row) => row.noInventoryInfo === true),
+    noEnhancements: watchRows.length > 0 && watchRows.every((row) => row.noEnhancements === true),
+    noWrites: watchRows.length > 0 && watchRows.every((row) => row.noWrites === true),
+    noRpcs: watchRows.length > 0 && watchRows.every((row) => row.noRpcs === true),
+    noHud: watchRows.length > 0 && watchRows.every((row) => row.noHud === true),
+    noDeepArrays: watchRows.length > 0 && watchRows.every((row) => row.noDeepArrays === true),
+    safetyViolation,
+    crashSuspect: options.crashSuspect === true,
+    classification,
+    status
+  };
+}
+
+function isPerkDataAssetCatalogRow(row) {
+  const id = row.probeName || row.probeId || row.event || '';
+  return id === 'DataAsset.Perks.CatalogRead';
+}
+
+function classifyPerkDataAssetCatalogEvidence(rows, options = {}) {
+  const catalogRows = rows.filter(isPerkDataAssetCatalogRow);
+  const latest = catalogRows.length ? catalogRows[catalogRows.length - 1] : {};
+  const catalogEntryCount = Math.max(0, ...catalogRows.map((row) => rowNumber(row, 'catalogEntryCount')));
+  const catalogCandidateCount = Math.max(0, ...catalogRows.map((row) => rowNumber(row, 'catalogCandidateCount')));
+  const catalogRejectedCandidateCount = Math.max(0, ...catalogRows.map((row) => rowNumber(row, 'catalogRejectedCandidateCount')));
+  const discoveryAttempted = catalogRows.some((row) => row.discoveryAttempted === true);
+  const catalogFound = catalogRows.some((row) => row.catalogFound === true || rowNumber(row, 'catalogEntryCount') > 0);
+  const forbiddenGateNames = [
+    'allowHudTickHook',
+    'allowUnknownRoleProbes',
+    'allowJoinedClientDeepProbes',
+    'allowDeepArrayProbes',
+    'allowInventoryInfoProbes',
+    'allowHealthProbes',
+    'allowIdentityProbes',
+    'allowRawIdentityEvidence',
+    'allowResourceVisibilityProbes',
+    'allowCrystalsReadProbes',
+    'allowSlotsReadProbes',
+    'allowSafeScalarWatchProbes',
+    'allowMaxSafePlayRecorderProbes',
+    'allowInventoryArrayShallowProbes',
+    'allowInventoryArrayShapeConfirmProbes',
+    'allowInventoryUserdataIntrospectionProbes',
+    'allowWriteProbes',
+    'allowRpcProbes'
+  ];
+  const safetyViolation = catalogRows.some((row) => {
+    const hasGates = row && row.safetyGates && typeof row.safetyGates === 'object';
+    const gates = hasGates ? row.safetyGates : {};
+    return (hasGates && (
+      forbiddenGateNames.some((gate) => gates[gate] === true) ||
+      gates.allowPerkDataAssetCatalogProbes !== true
+    )) ||
+      row.noWrites !== true ||
+      row.noRpcs !== true ||
+      row.noHud !== true ||
+      row.noDeepArrays !== true ||
+      row.noInventoryArrays !== true ||
+      row.noArrayCount !== true ||
+      row.noArrayTraversal !== true ||
+      row.noElementDereference !== true ||
+      row.noInventoryInfo !== true ||
+      row.noEnhancements !== true ||
+      row.noDataAssetMutation !== true ||
+      row.noFunctionCalls !== true ||
+      row.passiveOnly !== true;
+  });
+  let status = 'no_evidence';
+  let classification = 'unresolved';
+  if (safetyViolation) {
+    status = 'failed';
+    classification = 'failed';
+  } else if (catalogRows.length > 0 && discoveryAttempted && options.crashSuspect) {
+    status = 'perk_da_catalog_crash_suspect';
+    classification = 'perk_da_catalog_crash_suspect';
+  } else if (catalogRows.length > 0 && discoveryAttempted && catalogFound) {
+    status = 'perk_da_catalog_confirmed';
+    classification = 'perk_da_catalog_confirmed';
+  } else if (catalogRows.length > 0 && discoveryAttempted && catalogCandidateCount > 0 && catalogRejectedCandidateCount > 0) {
+    status = 'perk_da_catalog_candidates_rejected';
+    classification = 'perk_da_catalog_candidates_rejected';
+  } else if (catalogRows.length > 0 && discoveryAttempted) {
+    status = 'perk_da_catalog_not_found';
+    classification = 'perk_da_catalog_not_found';
+  }
+  return {
+    perkDataAssetCatalogEvidenceFound: catalogRows.length > 0,
+    discoveryAttempted,
+    catalogFound,
+    catalogEntryCount,
+    catalogCandidateCount,
+    catalogRejectedCandidateCount,
+    catalogCandidateCap: latest.catalogCandidateCap || 0,
+    catalogFieldCap: latest.catalogFieldCap || 0,
+    catalogRejectionDiagnosticCap: latest.catalogRejectionDiagnosticCap || 0,
+    catalogRejectionDiagnostics: latest.catalogRejectionDiagnostics || [],
+    catalogRejectionReasons: latest.catalogRejectionReasons || {},
+    catalogTopRejectionReasons: latest.catalogTopRejectionReasons || 'none',
+    catalogFoundPatterns: latest.catalogFoundPatterns || [],
+    catalogEntries: latest.catalogEntries || [],
+    catalogFieldNames: latest.catalogFieldNames || [],
+    catalogReadStatuses: latest.catalogReadStatuses || {},
+    catalogValueKinds: latest.catalogValueKinds || {},
+    noWrites: catalogRows.length > 0 && catalogRows.every((row) => row.noWrites === true),
+    noRpcs: catalogRows.length > 0 && catalogRows.every((row) => row.noRpcs === true),
+    noHud: catalogRows.length > 0 && catalogRows.every((row) => row.noHud === true),
+    noDeepArrays: catalogRows.length > 0 && catalogRows.every((row) => row.noDeepArrays === true),
+    noInventoryArrays: catalogRows.length > 0 && catalogRows.every((row) => row.noInventoryArrays === true),
+    noArrayCount: catalogRows.length > 0 && catalogRows.every((row) => row.noArrayCount === true),
+    noArrayTraversal: catalogRows.length > 0 && catalogRows.every((row) => row.noArrayTraversal === true),
+    noElementDereference: catalogRows.length > 0 && catalogRows.every((row) => row.noElementDereference === true),
+    noInventoryInfo: catalogRows.length > 0 && catalogRows.every((row) => row.noInventoryInfo === true),
+    noEnhancements: catalogRows.length > 0 && catalogRows.every((row) => row.noEnhancements === true),
+    noDataAssetMutation: catalogRows.length > 0 && catalogRows.every((row) => row.noDataAssetMutation === true),
+    noFunctionCalls: catalogRows.length > 0 && catalogRows.every((row) => row.noFunctionCalls === true),
+    passiveOnly: catalogRows.length > 0 && catalogRows.every((row) => row.passiveOnly === true),
+    safetyViolation,
+    crashSuspect: options.crashSuspect === true,
+    classification,
+    status
+  };
+}
+
+function isMaxSafePlayRow(row) {
+  const id = row.probeName || row.probeId || row.event || '';
+  return /^MaxSafePlay\./.test(id);
+}
+
+function isMaxSafePlayScalarRow(row) {
+  const id = row.probeName || row.probeId || row.event || '';
+  return id === 'MaxSafePlay.Scalar.Sample';
+}
+
+function isMaxSafePlayCatalogRow(row) {
+  const id = row.probeName || row.probeId || row.event || '';
+  return id === 'MaxSafePlay.PerkDataAsset.CatalogSnapshot';
+}
+
+function containsNamedCatalogEntry(rows, name) {
+  return rows.some((row) => {
+    if (name === 'TastyOrange' && row.tastyOrangeFound === true) return true;
+    if (name === 'Collector' && row.collectorFound === true) return true;
+    const entries = Array.isArray(row.catalogEntries) ? row.catalogEntries : [];
+    return entries.some((entry) => `${entry.shortName || ''} ${entry.fullName || ''}`.includes(name));
+  });
+}
+
+function classifyMaxSafePlayEvidence(rows, options = {}) {
+  const recorderRows = rows.filter(isMaxSafePlayRow);
+  const scalarRows = rows.filter(isMaxSafePlayScalarRow);
+  const catalogRows = rows.filter(isMaxSafePlayCatalogRow);
+  const latest = recorderRows.length ? recorderRows[recorderRows.length - 1] : {};
+  const latestScalar = scalarRows.length ? scalarRows[scalarRows.length - 1] : {};
+  const latestCatalog = catalogRows.length ? catalogRows[catalogRows.length - 1] : {};
+  const scalarSampleCount = Number(latest.maxSafePlayScalarSampleCount || latestScalar.maxSafePlayScalarSampleCount || scalarRows.length || 0);
+  const scalarLoggedCount = Number(latest.maxSafePlayScalarLoggedCount || latestScalar.maxSafePlayScalarLoggedCount || scalarRows.length || 0);
+  const usableScalarSamples = scalarRows.filter((row) => row.playerStatePresent === true || row.localPlayerStatePresent === true).length;
+  const changedFields = arrayFromValue(latest.maxSafePlayChangedFields || latestScalar.maxSafePlayChangedFields).filter((item) => String(item || '').trim() !== '');
+  const catalogSnapshotCount = Number(latest.maxSafePlayCatalogSnapshotCount || latestCatalog.maxSafePlayCatalogSnapshotCount || catalogRows.length || 0);
+  const catalogCandidateCount = Math.max(0, ...catalogRows.map((row) => rowNumber(row, 'catalogCandidateCount')));
+  const catalogRejectedCandidateCount = Math.max(
+    Number(latest.maxSafePlayCatalogRejectedCount || latestCatalog.maxSafePlayCatalogRejectedCount || 0),
+    ...catalogRows.map((row) => rowNumber(row, 'catalogRejectedCandidateCount'))
+  );
+  const catalogEntryCount = Math.max(
+    Number(latest.maxSafePlayCatalogKnownEntryCount || latestCatalog.maxSafePlayCatalogKnownEntryCount || 0),
+    ...catalogRows.map((row) => rowNumber(row, 'catalogEntryCount'))
+  );
+  const newOrChangedCatalog = catalogRows.some((row) =>
+    arrayFromValue(row.maxSafePlayNewDataAssets).filter(Boolean).length > 0 ||
+    arrayFromValue(row.maxSafePlayChangedCatalogEntries).filter(Boolean).length > 0
+  );
+  const forbiddenGateNames = [
+    'allowHudTickHook',
+    'allowUnknownRoleProbes',
+    'allowJoinedClientDeepProbes',
+    'allowDeepArrayProbes',
+    'allowInventoryInfoProbes',
+    'allowHealthProbes',
+    'allowIdentityProbes',
+    'allowRawIdentityEvidence',
+    'allowResourceVisibilityProbes',
+    'allowCrystalsReadProbes',
+    'allowSlotsReadProbes',
+    'allowSafeScalarWatchProbes',
+    'allowPerkDataAssetCatalogProbes',
+    'allowInventoryArrayShallowProbes',
+    'allowInventoryArrayShapeConfirmProbes',
+    'allowInventoryUserdataIntrospectionProbes',
+    'allowWriteProbes',
+    'allowRpcProbes'
+  ];
+  const safetyViolation = recorderRows.some((row) => {
+    const hasGates = row && row.safetyGates && typeof row.safetyGates === 'object';
+    const gates = hasGates ? row.safetyGates : {};
+    return (hasGates && (
+      forbiddenGateNames.some((gate) => gates[gate] === true) ||
+      gates.allowMaxSafePlayRecorderProbes !== true
+    )) ||
+      row.noWrites !== true ||
+      row.noRpcs !== true ||
+      row.noHud !== true ||
+      row.noDeepArrays !== true ||
+      row.noInventoryArrays !== true ||
+      row.noArrayCount !== true ||
+      row.noArrayTraversal !== true ||
+      row.noElementDereference !== true ||
+      row.noInventoryInfo !== true ||
+      row.noEnhancements !== true ||
+      row.noDataAssetMutation !== true ||
+      row.noFunctionCalls !== true ||
+      row.passiveOnly !== true;
+  });
+  let status = 'no_evidence';
+  let classification = 'unresolved';
+  if (safetyViolation) {
+    status = 'failed';
+    classification = 'failed';
+  } else if (recorderRows.length > 0 && options.crashSuspect) {
+    status = 'crash_suspect_max_safe_play';
+    classification = 'crash-suspect';
+  } else if (scalarRows.length > 0 && usableScalarSamples === 0) {
+    status = 'max_safe_play_no_playerstate_samples';
+    classification = 'failed-no-sample';
+  } else if (scalarRows.length > 0 && usableScalarSamples > 0 && catalogSnapshotCount > 0 && catalogEntryCount === 0 && catalogRejectedCandidateCount > 0) {
+    status = 'max_safe_play_catalog_candidates_rejected';
+    classification = 'partial-catalog-candidates-rejected';
+  } else if (scalarRows.length > 0 && usableScalarSamples > 0 && catalogSnapshotCount > 0 && catalogEntryCount === 0) {
+    status = 'max_safe_play_no_catalog_entries';
+    classification = 'partial-no-catalog';
+  } else if (changedFields.length > 0 || newOrChangedCatalog) {
+    status = 'max_safe_play_observed_change';
+    classification = 'max_safe_play_observed_change';
+  } else if ((scalarSampleCount > 1 || catalogSnapshotCount > 1) && usableScalarSamples > 0) {
+    status = 'max_safe_play_confirmed_no_change';
+    classification = 'max_safe_play_confirmed_no_change';
+  }
+  return {
+    maxSafePlayEvidenceFound: recorderRows.length > 0,
+    scalarSampleCount,
+    scalarLoggedCount,
+    usableScalarSamples,
+    firstValues: latest.maxSafePlayFirstValues || latestScalar.maxSafePlayFirstValues || {},
+    latestValues: latest.maxSafePlayLatestValues || latestScalar.maxSafePlayLatestValues || {},
+    minValues: latest.maxSafePlayMinValues || latestScalar.maxSafePlayMinValues || {},
+    maxValues: latest.maxSafePlayMaxValues || latestScalar.maxSafePlayMaxValues || {},
+    changedFields,
+    changeCounts: latest.maxSafePlayChangeCounts || latestScalar.maxSafePlayChangeCounts || {},
+    catalogSnapshotCount,
+    catalogCandidateCount,
+    catalogRejectedCandidateCount,
+    catalogTopRejectionReasons: latest.maxSafePlayCatalogTopRejectionReasons || latestCatalog.catalogTopRejectionReasons || latestCatalog.maxSafePlayCatalogTopRejectionReasons || 'none',
+    catalogFoundPatterns: latest.maxSafePlayCatalogFoundPatterns || latestCatalog.catalogFoundPatterns || latestCatalog.maxSafePlayCatalogFoundPatterns || [],
+    catalogEntryCount,
+    tastyOrangeFound: containsNamedCatalogEntry(recorderRows, 'TastyOrange'),
+    collectorFound: containsNamedCatalogEntry(recorderRows, 'Collector'),
+    nilCount: Number(latest.maxSafePlayNilCount || 0),
+    errorCount: Number(latest.maxSafePlayErrorCount || 0),
+    noWrites: recorderRows.length > 0 && recorderRows.every((row) => row.noWrites === true),
+    noRpcs: recorderRows.length > 0 && recorderRows.every((row) => row.noRpcs === true),
+    noHud: recorderRows.length > 0 && recorderRows.every((row) => row.noHud === true),
+    noDeepArrays: recorderRows.length > 0 && recorderRows.every((row) => row.noDeepArrays === true),
+    noInventoryArrays: recorderRows.length > 0 && recorderRows.every((row) => row.noInventoryArrays === true),
+    noArrayCount: recorderRows.length > 0 && recorderRows.every((row) => row.noArrayCount === true),
+    noArrayTraversal: recorderRows.length > 0 && recorderRows.every((row) => row.noArrayTraversal === true),
+    noElementDereference: recorderRows.length > 0 && recorderRows.every((row) => row.noElementDereference === true),
+    noInventoryInfo: recorderRows.length > 0 && recorderRows.every((row) => row.noInventoryInfo === true),
+    noEnhancements: recorderRows.length > 0 && recorderRows.every((row) => row.noEnhancements === true),
+    noDataAssetMutation: recorderRows.length > 0 && recorderRows.every((row) => row.noDataAssetMutation === true),
+    noFunctionCalls: recorderRows.length > 0 && recorderRows.every((row) => row.noFunctionCalls === true),
+    passiveOnly: recorderRows.length > 0 && recorderRows.every((row) => row.passiveOnly === true),
     safetyViolation,
     crashSuspect: options.crashSuspect === true,
     classification,
@@ -374,6 +848,7 @@ function classifyLocalInventoryArrayEvidence(rows, options = {}) {
     return gates.allowDeepArrayProbes === true ||
       gates.allowInventoryInfoProbes === true ||
       gates.allowCrystalsReadProbes === true ||
+      gates.allowSlotsReadProbes === true ||
       gates.allowWriteProbes === true ||
       gates.allowRpcProbes === true ||
       gates.allowHudTickHook === true ||
@@ -448,6 +923,9 @@ function classifyLocalInventoryArrayShapeConfirmEvidence(rows, options = {}) {
     'allowIdentityProbes',
     'allowResourceVisibilityProbes',
     'allowCrystalsReadProbes',
+    'allowSlotsReadProbes',
+    'allowPerkDataAssetCatalogProbes',
+    'allowMaxSafePlayRecorderProbes',
     'allowUnknownRoleProbes',
     'allowJoinedClientDeepProbes',
     'allowInventoryUserdataIntrospectionProbes'
@@ -545,6 +1023,9 @@ function classifyLocalInventoryUserdataIntrospectionEvidence(rows, options = {})
     'allowIdentityProbes',
     'allowResourceVisibilityProbes',
     'allowCrystalsReadProbes',
+    'allowSlotsReadProbes',
+    'allowPerkDataAssetCatalogProbes',
+    'allowMaxSafePlayRecorderProbes',
     'allowUnknownRoleProbes',
     'allowJoinedClientDeepProbes'
   ];
@@ -673,6 +1154,18 @@ function validatePhaseSafety(phase, gates = gateConfigForPhaseUnchecked(phase)) 
   }
   if (gates.allowCrystalsReadProbes && phase.phaseId !== 'crystals-read') {
     throw new Error(`${phase.phaseId} may not enable allowCrystalsReadProbes.`);
+  }
+  if (gates.allowSlotsReadProbes && phase.phaseId !== 'slots-read') {
+    throw new Error(`${phase.phaseId} may not enable allowSlotsReadProbes.`);
+  }
+  if (gates.allowSafeScalarWatchProbes && phase.phaseId !== 'safe-scalar-watch') {
+    throw new Error(`${phase.phaseId} may not enable allowSafeScalarWatchProbes.`);
+  }
+  if (gates.allowPerkDataAssetCatalogProbes && phase.phaseId !== 'perk-da-catalog-read') {
+    throw new Error(`${phase.phaseId} may not enable allowPerkDataAssetCatalogProbes.`);
+  }
+  if (gates.allowMaxSafePlayRecorderProbes && phase.phaseId !== 'max-safe-play-recorder') {
+    throw new Error(`${phase.phaseId} may not enable allowMaxSafePlayRecorderProbes.`);
   }
   if (gates.allowInventoryArrayShallowProbes && phase.phaseId !== 'local-inventory-array-shallow-read') {
     throw new Error(`${phase.phaseId} may not enable allowInventoryArrayShallowProbes.`);
@@ -928,6 +1421,68 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
       latestSummaryPath: facts.latestSummaryPath || ''
     });
   }
+  const slotsReadSessionId = latestSessionIdForRows(facts.rows, isSlotsReadRow);
+  const slotsRead = classifySlotsReadEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, slotsReadSessionId)
+  });
+  if (slotsRead.status === 'slots_read_confirmed') {
+    add('slots-read', 'Imported evidence contains local PlayerState candidate slot scalar reads with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays.');
+  } else if (slotsRead.slotsReadEvidenceFound && slotsRead.status !== 'failed') {
+    partial.push({
+      phaseId: 'slots-read',
+      status: slotsRead.status,
+      updatedAt: nowIso(),
+      source: 'imported-evidence',
+      reason: slotsRead.status === 'crash_suspect_slots_read'
+        ? 'Local PlayerState slot scalars were read safely, but a crash dump exists after this run.'
+        : 'Slots read did not produce usable evidence.',
+      latestSessionId: slotsReadSessionId || facts.latestSessionId || '',
+      latestCommit: facts.latestCommit || '',
+      latestSummaryPath: facts.latestSummaryPath || ''
+    });
+  }
+  const safeScalarWatchSessionId = latestSessionIdForRows(facts.rows, isSafeScalarWatchRow);
+  const safeScalarWatch = classifySafeScalarWatchEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, safeScalarWatchSessionId)
+  });
+  if (safeScalarWatch.status === 'safe_scalar_watch_confirmed_no_change' || safeScalarWatch.status === 'safe_scalar_watch_observed_change') {
+    add('safe-scalar-watch', 'Imported evidence contains safe scalar watch samples over already proven local scalar/property paths with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays.');
+  } else if (safeScalarWatch.safeScalarWatchEvidenceFound && safeScalarWatch.status !== 'failed') {
+    partial.push({
+      phaseId: 'safe-scalar-watch',
+      status: safeScalarWatch.status,
+      updatedAt: nowIso(),
+      source: 'imported-evidence',
+      reason: safeScalarWatch.status === 'crash_suspect_safe_scalar_watch'
+        ? 'Safe scalar watch collected samples, but a crash dump exists after this run.'
+        : 'Safe scalar watch did not produce usable multi-sample or changed-value evidence.',
+      latestSessionId: safeScalarWatchSessionId || facts.latestSessionId || '',
+      latestCommit: facts.latestCommit || '',
+      latestSummaryPath: facts.latestSummaryPath || ''
+    });
+  }
+  const perkCatalogSessionId = latestSessionIdForRows(facts.rows, isPerkDataAssetCatalogRow);
+  const perkCatalog = classifyPerkDataAssetCatalogEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, perkCatalogSessionId)
+  });
+  if (perkCatalog.status === 'perk_da_catalog_confirmed') {
+    add('perk-da-catalog-read', 'Imported evidence contains read-only perk DataAsset catalog entries with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, DataAsset mutation, or nested object walking.');
+  } else if (perkCatalog.perkDataAssetCatalogEvidenceFound && perkCatalog.status !== 'failed') {
+    partial.push({
+      phaseId: 'perk-da-catalog-read',
+      status: perkCatalog.status,
+      updatedAt: nowIso(),
+      source: 'imported-evidence',
+      reason: perkCatalog.status === 'perk_da_catalog_crash_suspect'
+        ? 'Perk DataAsset catalog discovery ran, but a crash dump exists after this run.'
+        : (perkCatalog.status === 'perk_da_catalog_candidates_rejected'
+          ? 'Perk DataAsset catalog discovery ran safely, but candidates were rejected by capped class/name/identity filters.'
+          : 'Perk DataAsset catalog discovery ran safely but found no perk DataAssets.'),
+      latestSessionId: perkCatalogSessionId || facts.latestSessionId || '',
+      latestCommit: facts.latestCommit || '',
+      latestSummaryPath: facts.latestSummaryPath || ''
+    });
+  }
 
   return { completed, partial, facts };
 }
@@ -946,7 +1501,7 @@ function blockedPhaseIds(state) {
 
 function advanceablePartialPhaseIds(state) {
   return new Set((state.partialPhases || [])
-    .filter((entry) => entry.status === 'remote_resources_partial' || entry.status === 'crash_suspect_local_inventory_shape_visible')
+    .filter((entry) => entry.status === 'remote_resources_partial' || entry.status === 'crash_suspect_local_inventory_shape_visible' || entry.status === 'perk_da_catalog_not_found' || entry.status === 'perk_da_catalog_candidates_rejected')
     .map((entry) => entry.phaseId || entry));
 }
 
@@ -959,6 +1514,17 @@ function findNextRunnablePhase(plan, state) {
     if (completed.has(phase.phaseId) || failed.has(phase.phaseId) || blocked.has(phase.phaseId) || advanceablePartial.has(phase.phaseId)) continue;
     if (phase.implemented !== true) continue;
     gateConfigForPhase(phase);
+    return phase;
+  }
+  return null;
+}
+
+function findNextRecommendedPhase(plan, state) {
+  const completed = completedPhaseIds(state);
+  const failed = failedPhaseIds(state);
+  const advanceablePartial = advanceablePartialPhaseIds(state);
+  for (const phase of plan.phases) {
+    if (completed.has(phase.phaseId) || failed.has(phase.phaseId) || advanceablePartial.has(phase.phaseId)) continue;
     return phase;
   }
   return null;
@@ -1046,7 +1612,7 @@ function reconcileState(plan, state = null, repoRoot = process.cwd()) {
     out.phaseStatuses[out.currentPhase].status = 'current';
   }
 
-  const next = findNextRunnablePhase(plan, out);
+  const next = findNextRecommendedPhase(plan, out) || findNextRunnablePhase(plan, out);
   out.nextRecommendedPhase = next ? next.phaseId : null;
   return out;
 }
@@ -1113,6 +1679,39 @@ function markCollected(plan, state, phaseId, result) {
       completedAt: nowIso(),
       source: 'campaign-collect',
       reason: result.reason || 'Local PlayerState Crystals scalar was read with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays.',
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
+  } else if (phaseId === 'slots-read' && result.status === 'slots_read_confirmed') {
+    out.completedPhases.push({
+      phaseId,
+      status: 'complete',
+      completedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || 'Local PlayerState candidate slot scalars were read with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays.',
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
+  } else if (phaseId === 'safe-scalar-watch' && (result.status === 'safe_scalar_watch_confirmed_no_change' || result.status === 'safe_scalar_watch_observed_change')) {
+    out.completedPhases.push({
+      phaseId,
+      status: 'complete',
+      completedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || 'Safe scalar watch sampled already proven local scalar/property paths with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays.',
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
+  } else if (phaseId === 'perk-da-catalog-read' && result.status === 'perk_da_catalog_confirmed') {
+    out.completedPhases.push({
+      phaseId,
+      status: 'complete',
+      completedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || 'Perk DataAsset catalog entries were read through capped curated discovery with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, DataAsset mutation, or nested object walking.',
       latestSessionId: out.latestSessionId,
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
@@ -1208,6 +1807,58 @@ function markCollected(plan, state, phaseId, result) {
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
     });
+  } else if (phaseId === 'slots-read' && (
+    result.status === 'crash_suspect_slots_read' ||
+    result.status === 'no_evidence'
+  )) {
+    out.partialPhases.push({
+      phaseId,
+      status: result.status,
+      updatedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || (result.status === 'crash_suspect_slots_read'
+        ? 'Local PlayerState slot scalars were read, but crash evidence exists after this run.'
+        : 'No local PlayerState slots read evidence was found.'),
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
+  } else if (phaseId === 'safe-scalar-watch' && (
+    result.status === 'crash_suspect_safe_scalar_watch' ||
+    result.status === 'no_evidence'
+  )) {
+    out.partialPhases.push({
+      phaseId,
+      status: result.status,
+      updatedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || (result.status === 'crash_suspect_safe_scalar_watch'
+        ? 'Safe scalar watch collected samples, but crash evidence exists after this run.'
+        : 'No usable safe scalar watch evidence was found.'),
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
+  } else if (phaseId === 'perk-da-catalog-read' && (
+    result.status === 'perk_da_catalog_not_found' ||
+    result.status === 'perk_da_catalog_candidates_rejected' ||
+    result.status === 'perk_da_catalog_crash_suspect' ||
+    result.status === 'no_evidence'
+  )) {
+    out.partialPhases.push({
+      phaseId,
+      status: result.status,
+      updatedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || (result.status === 'perk_da_catalog_crash_suspect'
+        ? 'Perk DataAsset catalog discovery ran, but crash evidence exists after this run.'
+        : (result.status === 'perk_da_catalog_candidates_rejected'
+          ? 'Perk DataAsset catalog discovery ran safely, but all candidates were rejected; inspect rejection diagnostics before treating candidate count as entries.'
+          : 'Perk DataAsset catalog discovery ran safely but found no catalogable perk DataAssets.')),
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
   } else {
     out.failedPhases.push({
       phaseId,
@@ -1255,7 +1906,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '## Completed Phases\n\n';
   out += renderList(listByStatus(plan, state, 'complete'));
   out += '\n## Partial Phases\n\n';
-  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$|^local_inventory_unresolved$|^crash_suspect_local_inventory_shape_visible$|^crash_suspect_local_inventory_shape_confirmed$|^crash_suspect_crystals_read$|^no_evidence$/.test(phaseStatus(state, phase.phaseId)));
+  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$|^local_inventory_unresolved$|^crash_suspect_local_inventory_shape_visible$|^crash_suspect_local_inventory_shape_confirmed$|^crash_suspect_crystals_read$|^crash_suspect_safe_scalar_watch$|^perk_da_catalog_not_found$|^perk_da_catalog_candidates_rejected$|^perk_da_catalog_crash_suspect$|^no_evidence$/.test(phaseStatus(state, phase.phaseId)));
   if (!partial.length) {
     out += '- None.\n';
   } else {
@@ -1311,6 +1962,26 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     crashSuspect: hasCrashSuspectEvidenceForSession(facts, crystalsReadSessionId || state.latestSessionId || facts.latestSessionId)
   });
   if (crystalsRead.status === 'crystals_read_confirmed') safeSignals.push('local PlayerState Crystals scalar read through CrabPC -> PlayerState -> CrabPS');
+  const slotsReadSessionId = latestSessionIdForRows(facts.rows, isSlotsReadRow);
+  const slotsRead = classifySlotsReadEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, slotsReadSessionId || state.latestSessionId || facts.latestSessionId)
+  });
+  if (slotsRead.status === 'slots_read_confirmed') safeSignals.push('local PlayerState candidate slot scalar reads through CrabPC -> PlayerState -> CrabPS');
+  const safeScalarWatchSessionId = latestSessionIdForRows(facts.rows, isSafeScalarWatchRow);
+  const safeScalarWatch = classifySafeScalarWatchEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, safeScalarWatchSessionId || state.latestSessionId || facts.latestSessionId)
+  });
+  if (safeScalarWatch.status === 'safe_scalar_watch_confirmed_no_change' || safeScalarWatch.status === 'safe_scalar_watch_observed_change') safeSignals.push('safe scalar watch over proven local scalar/property paths');
+  const perkCatalogSessionId = latestSessionIdForRows(facts.rows, isPerkDataAssetCatalogRow);
+  const perkCatalog = classifyPerkDataAssetCatalogEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, perkCatalogSessionId || state.latestSessionId || facts.latestSessionId)
+  });
+  if (perkCatalog.status === 'perk_da_catalog_confirmed') safeSignals.push('read-only perk DataAsset catalog discovery and curated field reads');
+  const maxSafePlaySessionId = latestSessionIdForRows(facts.rows, isMaxSafePlayRow);
+  const maxSafePlay = classifyMaxSafePlayEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, maxSafePlaySessionId || state.latestSessionId || facts.latestSessionId)
+  });
+  if (maxSafePlay.status === 'max_safe_play_confirmed_no_change' || maxSafePlay.status === 'max_safe_play_observed_change') safeSignals.push('direct max-safe play recorder over proven scalars plus capped perk DataAsset snapshots');
   if (!safeSignals.length) out += '- None imported yet.\n';
   else out += safeSignals.map((item) => `- ${item}\n`).join('');
 
@@ -1476,6 +2147,110 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     out += '- UInt32 range is documentation only for this read-only phase; RuntimeProbe does not write or clamp the value.\n';
   }
 
+  out += '\n## Local Slots Read\n\n';
+  if (!slotsRead.slotsReadEvidenceFound) {
+    out += '- Summary: unresolved; no `slots-read` evidence has been imported yet.\n';
+    out += '- Purpose: read only local PlayerState candidate slot counters through `CrabPC -> PlayerState -> CrabPS`.\n';
+    out += '- Fields: `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, `NumPerkSlots`; documented as ByteProperty-backed scalar counters in the expected range 0..255.\n';
+    out += '- Locked slots remain unresolved; no separate locked/max/total slot field was found in the tracked objectdump-derived notes, and RuntimeProbe does not call `ServerIncrementNumInventorySlots`.\n';
+  } else {
+    out += `- Summary: ${slotsRead.classification}\n`;
+    out += `- Slots read status: ${slotsRead.status}\n`;
+    out += `- Local PlayerState present: ${slotsRead.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
+    out += `- Slot read attempted: ${slotsRead.slotsReadAttempted ? 'yes' : 'no'}\n`;
+    out += `- Present slot values: ${Object.keys(slotsRead.slotScalarValues).length ? Object.entries(slotsRead.slotScalarValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Present slot values integer-like: ${slotsRead.valuesIntegerLike ? 'yes' : 'no'}\n`;
+    out += `- Present slot values within 0..255: ${slotsRead.valuesInByteRange ? 'yes' : 'no'}\n`;
+    out += `- Writes/RPCs: ${slotsRead.noWrites && slotsRead.noRpcs ? 'no' : 'yes'}\n`;
+    out += `- HUD/deep arrays: ${slotsRead.noHud && slotsRead.noDeepArrays ? 'no' : 'yes'}\n`;
+    out += `- Inventory arrays/InventoryInfo/Enhancements: ${slotsRead.noArrayCount && slotsRead.noArrayTraversal && slotsRead.noElementDereference && slotsRead.noInventoryInfo && slotsRead.noEnhancements ? 'no' : 'yes'}\n`;
+    out += slotsRead.crashSuspect
+      ? '- A crash dump exists after this run, so this scalar path remains crash-suspect pending a repeat.\n'
+      : '- No crash dump is associated with the imported slots-read evidence.\n';
+    out += '- These are observed scalar slot counters / candidate unlocked slot counters only; they are not proven total capacity or locked-slot state.\n';
+  }
+
+  out += '\n## Safe Scalar Watch\n\n';
+  if (!safeScalarWatch.safeScalarWatchEvidenceFound) {
+    out += '- Summary: unresolved; no `safe-scalar-watch` evidence has been imported yet.\n';
+    out += '- Purpose: recurring watch of already proven local scalar/property paths only: context/role/lifecycle, `WeaponDA`, `AbilityDA`, `MeleeDA`, `Crystals`, observed scalar slot counters, and PlayerState health fields.\n';
+  } else {
+    out += `- Summary: ${safeScalarWatch.classification}\n`;
+    out += `- Safe scalar watch status: ${safeScalarWatch.status}\n`;
+    out += `- Sample count: ${safeScalarWatch.sampleCount}\n`;
+    out += `- Logged row count: ${safeScalarWatch.loggedCount}\n`;
+    out += `- First values: ${Object.keys(safeScalarWatch.firstValues).length ? Object.entries(safeScalarWatch.firstValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Latest values: ${Object.keys(safeScalarWatch.latestValues).length ? Object.entries(safeScalarWatch.latestValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Min numeric values: ${Object.keys(safeScalarWatch.minValues).length ? Object.entries(safeScalarWatch.minValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Max numeric values: ${Object.keys(safeScalarWatch.maxValues).length ? Object.entries(safeScalarWatch.maxValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Changed fields: ${safeScalarWatch.changedFields.length ? safeScalarWatch.changedFields.join(', ') : 'none'}\n`;
+    out += `- Change counts: ${Object.keys(safeScalarWatch.changeCounts).length ? Object.entries(safeScalarWatch.changeCounts).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- First/last context: ${safeScalarWatch.firstContext || 'not found'} / ${safeScalarWatch.lastContext || 'not found'}\n`;
+    out += `- First/last role: ${safeScalarWatch.firstRole || 'not found'} / ${safeScalarWatch.lastRole || 'not found'}\n`;
+    out += `- Slot model status: ${safeScalarWatch.slotModelStatus}\n`;
+    out += `- Writes/RPCs/HUD/deep arrays: ${safeScalarWatch.noWrites && safeScalarWatch.noRpcs && safeScalarWatch.noHud && safeScalarWatch.noDeepArrays ? 'no' : 'yes'}\n`;
+    out += `- Inventory arrays/count/traversal/elements, InventoryInfo, Enhancements: ${safeScalarWatch.noArrayCount && safeScalarWatch.noArrayTraversal && safeScalarWatch.noElementDereference && safeScalarWatch.noInventoryInfo && safeScalarWatch.noEnhancements ? 'no' : 'yes'}\n`;
+    out += safeScalarWatch.crashSuspect
+      ? '- A crash dump exists after this run, so this watch remains crash-suspect pending a repeat.\n'
+      : '- No crash dump is associated with the imported safe-scalar-watch evidence.\n';
+  }
+
+  out += '\n## Perk DataAsset Catalog\n\n';
+  if (!perkCatalog.perkDataAssetCatalogEvidenceFound) {
+    out += '- Summary: unresolved; no `perk-da-catalog-read` evidence has been imported yet.\n';
+    out += '- Purpose: read-only catalog of safely discoverable perk DataAssets through curated class/name discovery and curated field allowlists.\n';
+    out += '- TastyOrange and Collector are not special-cased; if they are safely discoverable, they should appear as normal catalog entries.\n';
+  } else {
+    out += `- Summary: ${perkCatalog.classification}\n`;
+    out += `- Perk DataAsset catalog status: ${perkCatalog.status}\n`;
+    out += `- Discovery attempted: ${perkCatalog.discoveryAttempted ? 'yes' : 'no'}\n`;
+    out += `- Catalog entries: ${perkCatalog.catalogEntryCount}\n`;
+    out += `- Candidate count/cap: ${perkCatalog.catalogCandidateCount}/${perkCatalog.catalogCandidateCap || 'unknown'}\n`;
+    out += `- Rejected candidate count/cap: ${perkCatalog.catalogRejectedCandidateCount}/${perkCatalog.catalogRejectionDiagnosticCap || 'unknown'}\n`;
+    out += `- Top rejection reasons: ${perkCatalog.catalogTopRejectionReasons || 'none'}\n`;
+    out += `- Perk-like class/name patterns: ${(perkCatalog.catalogFoundPatterns || []).length ? perkCatalog.catalogFoundPatterns.join(', ') : 'none'}\n`;
+    out += `- Field cap: ${perkCatalog.catalogFieldCap || 'unknown'}\n`;
+    out += `- Writes/RPCs/HUD/deep arrays: ${perkCatalog.noWrites && perkCatalog.noRpcs && perkCatalog.noHud && perkCatalog.noDeepArrays ? 'no' : 'yes'}\n`;
+    out += `- Inventory arrays/count/traversal/elements, InventoryInfo, Enhancements: ${perkCatalog.noInventoryArrays && perkCatalog.noArrayCount && perkCatalog.noArrayTraversal && perkCatalog.noElementDereference && perkCatalog.noInventoryInfo && perkCatalog.noEnhancements ? 'no' : 'yes'}\n`;
+    out += `- DataAsset mutation/function calls/passive-only violation: ${perkCatalog.noDataAssetMutation && perkCatalog.noFunctionCalls && perkCatalog.passiveOnly ? 'no' : 'yes'}\n`;
+    out += perkCatalog.crashSuspect
+      ? '- A crash dump exists after this run, so this catalog evidence remains crash-suspect pending a repeat.\n'
+      : '- No crash dump is associated with the imported perk catalog evidence.\n';
+    out += '- Catalog evidence is read-path evidence only. It is not permission to mutate DataAssets.\n';
+  }
+  out += '- RuntimeProbe proves read paths only; future CrabModFramework / CrabTastyMod write or edit APIs must be designed and gated separately.\n';
+  out += '- TastyOrange is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.\n';
+  out += '- Collector is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.\n';
+
+  out += '\n## Max Safe Play Recorder\n\n';
+  if (!maxSafePlay.maxSafePlayEvidenceFound) {
+    out += '- Summary: unresolved; no direct `max-safe-play-recorder` evidence has been imported yet.\n';
+    out += '- Purpose: long normal play sessions that combine all currently proven-safe scalar state recording with capped perk DataAsset catalog snapshots.\n';
+    out += '- Failed/no-sample runs are diagnostic failures and are not useful confirmed evidence.\n';
+  } else {
+    out += `- Summary: ${maxSafePlay.classification}\n`;
+    out += `- Max-safe play status: ${maxSafePlay.status}\n`;
+    out += `- Scalar samples/logged rows: ${maxSafePlay.scalarSampleCount}/${maxSafePlay.scalarLoggedCount}\n`;
+    out += `- First values: ${Object.keys(maxSafePlay.firstValues).length ? Object.entries(maxSafePlay.firstValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Latest values: ${Object.keys(maxSafePlay.latestValues).length ? Object.entries(maxSafePlay.latestValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Min numeric values: ${Object.keys(maxSafePlay.minValues).length ? Object.entries(maxSafePlay.minValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Max numeric values: ${Object.keys(maxSafePlay.maxValues).length ? Object.entries(maxSafePlay.maxValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Changed fields: ${maxSafePlay.changedFields.length ? maxSafePlay.changedFields.join(', ') : 'none'}\n`;
+    out += `- Change counts: ${Object.keys(maxSafePlay.changeCounts).length ? Object.entries(maxSafePlay.changeCounts).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Perk catalog snapshots: ${maxSafePlay.catalogSnapshotCount}\n`;
+    out += `- Perk DA candidate count: ${maxSafePlay.catalogCandidateCount}\n`;
+    out += `- Perk DA entry count: ${maxSafePlay.catalogEntryCount}\n`;
+    out += `- Perk DA rejected candidate count: ${maxSafePlay.catalogRejectedCandidateCount}\n`;
+    out += `- Perk DA top rejection reasons: ${maxSafePlay.catalogTopRejectionReasons || 'none'}\n`;
+    out += `- Perk-like class/name patterns: ${(maxSafePlay.catalogFoundPatterns || []).length ? maxSafePlay.catalogFoundPatterns.join(', ') : 'none'}\n`;
+    out += `- TastyOrange found as normal entry: ${maxSafePlay.tastyOrangeFound ? 'yes' : 'no'}\n`;
+    out += `- Collector found as normal entry: ${maxSafePlay.collectorFound ? 'yes' : 'no'}\n`;
+    out += `- Nil/error counts: ${maxSafePlay.nilCount}/${maxSafePlay.errorCount}\n`;
+    out += `- Writes/RPCs/HUD/deep arrays: ${maxSafePlay.noWrites && maxSafePlay.noRpcs && maxSafePlay.noHud && maxSafePlay.noDeepArrays ? 'no' : 'yes'}\n`;
+    out += `- Inventory arrays/count/traversal/elements, InventoryInfo, Enhancements: ${maxSafePlay.noInventoryArrays && maxSafePlay.noArrayCount && maxSafePlay.noArrayTraversal && maxSafePlay.noElementDereference && maxSafePlay.noInventoryInfo && maxSafePlay.noEnhancements ? 'no' : 'yes'}\n`;
+    out += `- DataAsset mutation/function calls/passive-only violation: ${maxSafePlay.noDataAssetMutation && maxSafePlay.noFunctionCalls && maxSafePlay.passiveOnly ? 'no' : 'yes'}\n`;
+  }
+
   out += '\n## Confirmed Unsafe Paths\n\n';
   out += '- HUD ReceiveDrawHUD tick hook remains blocked by default.\n';
   out += '- `FindFirstOf.CrabHC` is not confirmed as a player-health source; imported evidence has seen an unscoped destructible/barrel candidate.\n';
@@ -1486,10 +2261,11 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- Multiplayer roster identity is only complete after visible roster evidence exists; local PlayerState identity alone is partial evidence.\n';
   out += '- Roster candidate probes currently include GameState/GameStateBase source identity, CrabGS source identity, PlayerArray shape, capped FindAll PlayerState-like candidates, capped PlayerController/CrabPC candidates, and a capped visible players source candidate.\n';
   out += '- Local crystals are covered only by `crystals-read`; remote crystals remain covered separately by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.\n';
-  out += '- Slots remain unresolved; `slots-read` must later search for separate locked/max slot fields before CrabSync assumes anything.\n';
-  out += '- `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, and `NumPerkSlots` are only candidate observed/unlocked slot counters. Locked slots may be UI-derived or stored elsewhere and are not proven by RuntimeProbe.\n';
+  out += '- Locked slots remain unresolved; no separate locked/max/total slot-capacity field is present in the tracked objectdump-derived notes, so locked slots may be UI-derived or stored elsewhere.\n';
+  out += '- `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, and `NumPerkSlots` are only observed scalar slot counters / candidate unlocked slot counters. They are not proven total capacity or locked-slot state.\n';
   out += '- Local inventory array shallow/count visibility is covered by `local-inventory-array-shallow-read`; property-shape confirmation is covered by `local-inventory-array-shape-confirm`; userdata wrapper metadata is covered by `local-inventory-userdata-introspection`.\n';
   out += '- Item contents are still not proven; userdata metadata does not read item data asset fields or element contents.\n';
+  out += '- Perk DataAsset catalog evidence, when present, proves only curated read paths for future CrabModFramework / CrabTastyMod design; controlled write/edit APIs must be built separately.\n';
   out += '- `InventoryInfo` and enhancements remain placeholders until explicit probe sets are implemented.\n';
   out += '- Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.\n';
 
@@ -1500,6 +2276,10 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- `allowIdentityProbes` is enabled only for the explicit multiplayer roster and resource visibility phases; `allowRawIdentityEvidence` remains false by default.\n';
   out += '- `allowResourceVisibilityProbes` is enabled only for `multiplayer-resource-visibility-read`.\n';
   out += '- `allowCrystalsReadProbes` is enabled only for `crystals-read`.\n';
+  out += '- `allowSlotsReadProbes` is enabled only for `slots-read`.\n';
+  out += '- `allowSafeScalarWatchProbes` is enabled only for `safe-scalar-watch`.\n';
+  out += '- `allowPerkDataAssetCatalogProbes` is enabled only for `perk-da-catalog-read`.\n';
+  out += '- `allowMaxSafePlayRecorderProbes` is enabled only for the direct `max-safe-play-recorder` profile.\n';
   out += '- `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.\n';
   out += '- `allowInventoryArrayShapeConfirmProbes` is enabled only for `local-inventory-array-shape-confirm`.\n';
   out += '- `allowInventoryUserdataIntrospectionProbes` is enabled only for `local-inventory-userdata-introspection`.\n';
@@ -1514,6 +2294,10 @@ module.exports = {
   PLAN_PATH,
   STATE_PATH,
   classifyCrystalsReadEvidence,
+  classifySafeScalarWatchEvidence,
+  classifyPerkDataAssetCatalogEvidence,
+  classifyMaxSafePlayEvidence,
+  classifySlotsReadEvidence,
   classifyLocalInventoryArrayEvidence,
   classifyLocalInventoryArrayShapeConfirmEvidence,
   classifyLocalInventoryUserdataIntrospectionEvidence,

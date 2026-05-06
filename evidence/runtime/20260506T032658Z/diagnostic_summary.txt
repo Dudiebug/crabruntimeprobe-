@@ -1,0 +1,336 @@
+CrabRuntimeProbe diagnostic summary
+timestamp = 2026-05-05T20:27:45.2080832-07:00
+collection_mode = CollectMaxSafePlayRecorder
+source_repo_path = <REDACTED_LOCAL_PATH>
+game_bin_path = <REDACTED_LOCAL_PATH>
+installed_mod_path = <REDACTED_LOCAL_PATH>
+installed_config_path = <REDACTED_LOCAL_PATH>
+ue4ss_log_path = <REDACTED_LOCAL_PATH>
+jsonl_file_count = 1
+jsonl_event_count = 7
+access_evidence_file_count = 1
+access_evidence_event_count = 5
+session_manifest_file_count = 1
+prepare_marker_found = True
+prepare_marker_path = <REDACTED_LOCAL_PATH>
+prepare_marker_preparedAt = 2026-05-06T03:26:41.6128262Z
+expected_git_commit = 2681213933be20a2e95d432bbd3531ef045077d4
+expected_probeSet = max-safe-play-recorder
+expected_tickDriver = executeDelay
+expected_mode = active
+installed_git_commit = 2681213933be20a2e95d432bbd3531ef045077d4
+latest_session_manifest_file = <REDACTED_LOCAL_PATH>
+latest_manifest_sessionId = 20260506T032658Z
+latest_manifest_git_commit = 2681213933be20a2e95d432bbd3531ef045077d4
+latest_manifest_probeSet = max-safe-play-recorder
+latest_manifest_tickDriver = executeDelay
+latest_probe_results_file = <REDACTED_LOCAL_PATH>
+latest_access_evidence_file = <REDACTED_LOCAL_PATH>
+artifact_session_matches_prepare = True
+ue4ss_log_contains_session = True
+ue4ss_log_contains_installed_git_commit = True
+evidence_files_match_installed_config_probeSet = True
+latest_evidence_older_than_prepare = False
+stale_artifact_suspected = False
+jsonl_first_timestamp = 2026-05-06T03:26:58Z
+jsonl_last_timestamp = 2026-05-06T03:27:11Z
+observe_context_count = 0
+debug_startup_smoke_count = 1
+debug_writer_self_test_count = 1
+tickDriver = executeDelay
+mode = active
+probeSet = max-safe-play-recorder
+direct_field_probe_ran = False
+equipment_property_probe_ran = False
+equipment_property_weapon_count = 0
+equipment_property_ability_count = 0
+equipment_property_melee_count = 0
+latest_WeaponDA_value_summary = not found
+latest_AbilityDA_value_summary = not found
+latest_MeleeDA_value_summary = not found
+health_probe_ran = False
+latest_CrabHC_CurrentHealth = not found
+latest_CrabHC_CurrentMaxHealth = not found
+latest_CrabHC_BaseMaxHealth = not found
+latest_CrabPS_CurrentHealth = not found
+latest_CrabPS_CurrentMaxHealth = not found
+latest_CrabPS_BaseMaxHealth = not found
+latest_CrabPS_MaxHealthMultiplier = not found
+playerstate_health_probe_ran = False
+playerstate_health_watch_probe_ran = False
+ambiguous_crabhc_detected = False
+crab_hc_touched = False
+unscoped_crabhc_fullName = not found
+playerstate_current_health = not found
+playerstate_current_max_health = not found
+playerstate_base_max_health = not found
+playerstate_max_health_multiplier = not found
+health_playerstate_watch_sample_count = 0
+health_playerstate_watch_currentHealth_first = not found
+health_playerstate_watch_currentHealth_last = not found
+health_playerstate_watch_currentHealth_min = not found
+health_playerstate_watch_currentHealth_max = not found
+health_playerstate_watch_currentMaxHealth_first = not found
+health_playerstate_watch_currentMaxHealth_last = not found
+health_playerstate_watch_currentMaxHealth_min = not found
+health_playerstate_watch_currentMaxHealth_max = not found
+health_playerstate_watch_baseMaxHealth_first = not found
+health_playerstate_watch_baseMaxHealth_last = not found
+health_playerstate_watch_baseMaxHealth_min = not found
+health_playerstate_watch_baseMaxHealth_max = not found
+health_playerstate_watch_maxHealthMultiplier_first = not found
+health_playerstate_watch_maxHealthMultiplier_last = not found
+health_playerstate_watch_maxHealthMultiplier_min = not found
+health_playerstate_watch_maxHealthMultiplier_max = not found
+resource_visibility_probe_ran = False
+resource_visibility_visible_player_count = 0
+resource_visibility_sampled_playerstate_count = 0
+resource_visibility_readable_crystals_count = 0
+resource_visibility_readable_slots_count = 0
+resource_visibility_readable_equipment_count = 0
+resource_visibility_readable_inventory_array_count = 0
+crystals_read_probe_ran = False
+crystals_read_local_playerstate_present = False
+crystals_read_attempted = False
+crystals_read_value = not found
+crystals_read_value_kind = not found
+crystals_read_value_integer_like = True
+crystals_read_safety_violation = False
+slots_read_probe_ran = False
+slots_read_local_playerstate_present = False
+slots_read_attempted = False
+slots_read_values = none
+slots_read_values_integer_like = True
+slots_read_values_in_byte_range = True
+slots_read_locked_slot_model = unresolved
+slots_read_safety_violation = False
+safe_scalar_watch_probe_ran = False
+safe_scalar_watch_classification = no_evidence
+safe_scalar_watch_sample_count = 0
+safe_scalar_watch_logged_count = 0
+safe_scalar_watch_first_values = none
+safe_scalar_watch_latest_values = none
+safe_scalar_watch_min_values = none
+safe_scalar_watch_max_values = none
+safe_scalar_watch_changed_fields = none
+safe_scalar_watch_change_counts = none
+safe_scalar_watch_first_context = not found
+safe_scalar_watch_last_context = not found
+safe_scalar_watch_first_role = not found
+safe_scalar_watch_last_role = not found
+safe_scalar_watch_slot_model_status = observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total slot model unresolved
+safe_scalar_watch_safety_violation = False
+perk_da_catalog_probe_ran = False
+perk_da_catalog_classification = no_evidence
+perk_da_catalog_discovery_attempted = False
+perk_da_catalog_entry_count = 0
+perk_da_catalog_candidate_count = 0
+perk_da_catalog_rejected_candidate_count = 0
+perk_da_catalog_top_rejection_reasons = none
+perk_da_catalog_found_patterns = none
+perk_da_catalog_safety_violation = False
+max_safe_play_probe_ran = True
+max_safe_play_classification = max_safe_play_observed_change
+max_safe_play_scalar_sample_count = 2
+max_safe_play_scalar_logged_count = 2
+max_safe_play_first_values = AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=250.0, context=solo, Crystals=0, CurrentHealth=250.0, CurrentMaxHealth=250.0, lifecycleState=stable, MaxHealthMultiplier=1.0, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24, playerStatePresent=True, role=solo-or-host, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/LightningScepter/DA_Weapon_LightningScepter.DA_Weapon_LightningScepter name=DA_Weapon_LightningScepter nameSource=fullNameFallback
+max_safe_play_latest_values = AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=250.0, context=solo, Crystals=0, CurrentHealth=250.0, CurrentMaxHealth=250.0, lifecycleState=stable, MaxHealthMultiplier=1.0, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24, playerStatePresent=True, role=solo-or-host, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=DA_Weapon_Minigun nameSource=fullNameFallback
+max_safe_play_min_values = BaseMaxHealth=250.0, Crystals=0, CurrentHealth=250.0, CurrentMaxHealth=250.0, MaxHealthMultiplier=1.0, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
+max_safe_play_max_values = BaseMaxHealth=250.0, Crystals=0, CurrentHealth=250.0, CurrentMaxHealth=250.0, MaxHealthMultiplier=1.0, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
+max_safe_play_changed_fields = WeaponDA
+max_safe_play_change_counts = WeaponDA=1
+max_safe_play_perk_catalog_snapshot_count = 1
+max_safe_play_perk_da_candidate_count = 64
+max_safe_play_perk_da_entry_count = 64
+max_safe_play_perk_da_rejected_candidate_count = 0
+max_safe_play_perk_da_top_rejection_reasons = none
+max_safe_play_perk_da_found_patterns = identity:PerkDataAsset, name:path-or-da-perk
+max_safe_play_tasty_orange_found = True
+max_safe_play_collector_found = False
+max_safe_play_nil_count = 0
+max_safe_play_error_count = 0
+max_safe_play_safety_violation = False
+local_inventory_array_shallow_probe_ran = False
+local_inventory_array_shallow_sample_count = 0
+local_inventory_array_element_dereference = False
+local_inventory_shape_confirm_probe_ran = False
+local_inventory_shape_confirm_array_value_kinds = none
+local_inventory_shape_confirm_sample_count = 0
+local_inventory_shape_confirm_no_array_count = True
+local_inventory_shape_confirm_no_array_traversal = True
+local_inventory_shape_confirm_no_element_dereference = True
+local_inventory_userdata_introspection_probe_ran = False
+local_inventory_userdata_introspection_value_kinds = none
+local_inventory_userdata_introspection_metatable_kinds = none
+local_inventory_userdata_introspection_len_operator_attempted = none
+local_inventory_userdata_introspection_sample_count = 0
+local_inventory_userdata_introspection_no_array_traversal = True
+local_inventory_userdata_introspection_no_element_dereference = True
+possible_base_health_model = unknown
+terminal_zero_note = terminal 0/0 not observed
+unique_contexts_seen = solo, startup
+unique_roles_seen = solo-or-host, unknown
+first_context = startup
+last_context = solo
+crabruntimeprobe_started = True
+startup_smoke_appeared = True
+writer_self_test_appeared = True
+observe_context_appeared = False
+tick_source_registered = executeDelay
+hud_receive_draw_hud_used = False
+crabinventorysync_appeared_unexpectedly = False
+last_crabruntimeprobe_log_line = [2026-05-06 03:27:11] [Lua] [CrabRuntimeProbe][breadcrumb] MaxSafePlay.Scalar.Sample exit
+crash_suspicion = none
+crash_after_prepare = False
+crash_suspect = False
+latest_crash_folder = <REDACTED_LOCAL_PATH>
+startup_complete_reached = True
+tick_registration_happened = True
+probe_breadcrumbs_appeared = True
+likely_crash_phase = after current-run probe breadcrumbs appeared
+allowHudTickHook = false
+allowUnknownRoleProbes = false
+allowJoinedClientDeepProbes = false
+allowDeepArrayProbes = false
+allowInventoryInfoProbes = false
+allowHealthProbes = false
+allowIdentityProbes = false
+allowRawIdentityEvidence = false
+allowResourceVisibilityProbes = false
+allowCrystalsReadProbes = false
+allowSlotsReadProbes = false
+allowSafeScalarWatchProbes = false
+allowPerkDataAssetCatalogProbes = false
+allowMaxSafePlayRecorderProbes = true
+allowInventoryArrayShallowProbes = false
+allowInventoryArrayShapeConfirmProbes = false
+allowInventoryUserdataIntrospectionProbes = false
+allowWriteProbes = false
+allowRpcProbes = false
+observe_context_latest_context = not found
+observe_context_latest_role = not found
+observe_context_latest_lifecycle = not found
+observe_context_latest_world = not found
+observe_context_latest_map = not found
+observe_context_latest_player = not found
+
+installed_build_info:
+ - action = install
+ - git_commit = 2681213933be20a2e95d432bbd3531ef045077d4
+ - git_branch = docs/import-local-inventory-userdata-introspection-evidence
+ - timestamp = 2026-05-05T20:26:41.3106402-07:00
+ - source_repo_path = <REDACTED_LOCAL_PATH>
+
+installed_config:
+ - enabled = true
+ - mode = active
+ - tickDriver = executeDelay
+ - debugBreadcrumbs = true
+ - debugTickHeartbeat = true
+ - debugWriterSelfTest = true
+ - allowHudTickHook = false
+ - writeJsonlResults = true
+ - writeMarkdownSnapshots = false
+ - observeIntervalTicks = 10
+ - probeIntervalTicks = 10
+ - startupWarmupTicks = 60
+ - contextStableTicksRequired = 10
+ - maxProbesPerSession = 1600
+ - repeatProbeSet = true
+ - allowUnknownRoleProbes = false
+ - allowJoinedClientDeepProbes = false
+ - allowDeepArrayProbes = false
+ - allowInventoryInfoProbes = false
+ - allowHealthProbes = false
+ - allowIdentityProbes = false
+ - allowRawIdentityEvidence = false
+ - allowResourceVisibilityProbes = false
+ - allowCrystalsReadProbes = false
+ - allowSlotsReadProbes = false
+ - allowSafeScalarWatchProbes = false
+ - allowPerkDataAssetCatalogProbes = false
+ - allowMaxSafePlayRecorderProbes = true
+ - allowInventoryArrayShallowProbes = false
+ - allowInventoryArrayShapeConfirmProbes = false
+ - allowInventoryUserdataIntrospectionProbes = false
+ - allowWriteProbes = false
+ - allowRpcProbes = false
+ - safeScalarWatchIntervalSeconds = 5
+ - safeScalarWatchHeartbeatSeconds = 60
+ - safeScalarWatchMaxSamples = 240
+ - maxSafePlayIntervalSeconds = 5
+ - maxSafePlayHeartbeatSeconds = 60
+ - maxSafePlayMaxSamples = 720
+ - maxSafePlayPerkCatalogIntervalSeconds = 60
+ - maxSafePlayMaxPerkCatalogSnapshots = 60
+ - maxSafePlayLogUnchangedHeartbeat = true
+ - perkDataAssetCatalogMaxCandidates = 64
+ - perkDataAssetCatalogMaxFields = 32
+ - perkDataAssetCatalogMaxRejectionDiagnostics = 16
+ - probeSet = max-safe-play-recorder
+
+jsonl_event_type_counts:
+ - Debug.StartupSmoke: 1
+ - Debug.WriterSelfTest: 1
+ - MaxSafePlay.PerkDataAsset.CatalogSnapshot: 1
+ - MaxSafePlay.Scalar.Sample: 2
+ - MaxSafePlay.Session.Heartbeat: 1
+ - MaxSafePlay.Session.Summary: 1
+
+probe_result_counts_by_probe_name:
+ - Debug.StartupSmoke: 1
+ - Debug.WriterSelfTest: 1
+ - MaxSafePlay.PerkDataAsset.CatalogSnapshot: 1
+ - MaxSafePlay.Scalar.Sample: 2
+ - MaxSafePlay.Session.Heartbeat: 1
+ - MaxSafePlay.Session.Summary: 1
+
+access_evidence_counts_by_symbol_accessMethod:
+ - CrabPerkDA / FindAllOfCappedCuratedClasses: 1
+ - CrabPS.MaxSafePlayScalar / MaxSafePlayScalarSample: 2
+ - Runtime.MaxSafePlaySession / MaxSafePlaySessionHeartbeat: 1
+ - Runtime.MaxSafePlaySession / MaxSafePlaySessionSummary: 1
+
+jsonl_files:
+ - <REDACTED_LOCAL_PATH>
+
+access_evidence_files:
+ - <REDACTED_LOCAL_PATH>
+
+session_manifest_files:
+ - <REDACTED_LOCAL_PATH>
+
+last_5_crabruntimeprobe_log_lines:
+ - [2026-05-06 03:27:10] [Lua] [CrabRuntimeProbe] tick heartbeat tick=100 mode=active
+ - [2026-05-06 03:27:10] [Lua] [CrabRuntimeProbe][breadcrumb] MaxSafePlay.Session.Summary enter
+ - [2026-05-06 03:27:10] [Lua] [CrabRuntimeProbe][breadcrumb] MaxSafePlay.Session.Summary exit
+ - [2026-05-06 03:27:11] [Lua] [CrabRuntimeProbe][breadcrumb] MaxSafePlay.Scalar.Sample enter
+ - [2026-05-06 03:27:11] [Lua] [CrabRuntimeProbe][breadcrumb] MaxSafePlay.Scalar.Sample exit
+
+last_5_jsonl_events:
+ - ts=2026-05-06T03:27:06Z tick=70 event=MaxSafePlay.Scalar.Sample result=ok context=solo role=solo-or-host summary=category=max-safe-play-recorder scalar sampleCount=1 loggedCount=1 reason=first_sample playerStatePresent=true changed=false changedFields=none noWrites=true noRpcs=true noHud=true noDeepArrays=true noInventoryArrays=true noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noDataAssetMutation=true noFunctionCalls=true passiveOnly=true crashAttributionMarker=max-safe-play-recorder
+ - ts=2026-05-06T03:27:07Z tick=80 event=MaxSafePlay.PerkDataAsset.CatalogSnapshot result=ok context=solo role=solo-or-host summary=category=max-safe-play-recorder perkCatalog snapshotCount=1 loggedCount=1 reason=first_full_catalog_snapshot entryCount=64 candidateCount=64 rejectedCount=0 knownEntryCount=64 topRejectionReasons=none foundPatterns=identity:PerkDataAsset,name:path-or-da-perk newDataAssets=64 changedCatalogEntries=0 tastyOrangeFound=true collectorFound=false noWrites=true noRpcs=true noHud=true noDeepArrays=true noInventoryArrays=true noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noDataAssetMutation=true noFunctionCalls=true passiveOnly=true crashAttributionMarker=max-safe-play-recorder
+ - ts=2026-05-06T03:27:09Z tick=90 event=MaxSafePlay.Session.Heartbeat result=ok context=solo role=solo-or-host summary=category=max-safe-play-recorder heartbeat scalarSamples=1 scalarLogged=1 catalogSnapshots=1 catalogKnownEntries=64 catalogRejected=0 catalogTopRejectionReasons=none changedFields=none passiveOnly=true
+ - ts=2026-05-06T03:27:10Z tick=100 event=MaxSafePlay.Session.Summary result=ok context=solo role=solo-or-host summary=category=max-safe-play-recorder summary scalarSamples=1 scalarLogged=1 catalogSnapshots=1 catalogKnownEntries=64 catalogRejected=0 catalogTopRejectionReasons=none nilCount=0 errorCount=0 passiveOnly=true
+ - ts=2026-05-06T03:27:11Z tick=110 event=MaxSafePlay.Scalar.Sample result=ok context=solo role=solo-or-host summary=category=max-safe-play-recorder scalar sampleCount=2 loggedCount=2 reason=changed playerStatePresent=true changed=true changedFields=WeaponDA noWrites=true noRpcs=true noHud=true noDeepArrays=true noInventoryArrays=true noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noDataAssetMutation=true noFunctionCalls=true passiveOnly=true crashAttributionMarker=max-safe-play-recorder
+
+latest_5_access_evidence_rows:
+ - ts=2026-05-06T03:27:06Z symbol=CrabPS.MaxSafePlayScalar accessMethod=MaxSafePlayScalarSample status=SAFE context=solo role=solo-or-host summary=category=max-safe-play-recorder scalar sampleCount=1 loggedCount=1 reason=first_sample playerStatePresent=true changed=false changedFields=none noWrites=true noRpcs=true noHud=true noDeepArrays=true noInventoryArrays=true noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noDataAssetMutation=true noFunctionCalls=true passiveOnly=true crashAttributionMarker=max-safe-play-recorder
+ - ts=2026-05-06T03:27:08Z symbol=CrabPerkDA accessMethod=FindAllOfCappedCuratedClasses status=SAFE context=solo role=solo-or-host summary=category=max-safe-play-recorder perkCatalog snapshotCount=1 loggedCount=1 reason=first_full_catalog_snapshot entryCount=64 candidateCount=64 rejectedCount=0 knownEntryCount=64 topRejectionReasons=none foundPatterns=identity:PerkDataAsset,name:path-or-da-perk newDataAssets=64 changedCatalogEntries=0 tastyOrangeFound=true collectorFound=false noWrites=true noRpcs=true noHud=true noDeepArrays=true noInventoryArrays=true noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noDataAssetMutation=true noFunctionCalls=true passiveOnly=true crashAttributionMarker=max-safe-play-recorder
+ - ts=2026-05-06T03:27:09Z symbol=Runtime.MaxSafePlaySession accessMethod=MaxSafePlaySessionHeartbeat status=SAFE context=solo role=solo-or-host summary=category=max-safe-play-recorder heartbeat scalarSamples=1 scalarLogged=1 catalogSnapshots=1 catalogKnownEntries=64 catalogRejected=0 catalogTopRejectionReasons=none changedFields=none passiveOnly=true
+ - ts=2026-05-06T03:27:10Z symbol=Runtime.MaxSafePlaySession accessMethod=MaxSafePlaySessionSummary status=SAFE context=solo role=solo-or-host summary=category=max-safe-play-recorder summary scalarSamples=1 scalarLogged=1 catalogSnapshots=1 catalogKnownEntries=64 catalogRejected=0 catalogTopRejectionReasons=none nilCount=0 errorCount=0 passiveOnly=true
+ - ts=2026-05-06T03:27:11Z symbol=CrabPS.MaxSafePlayScalar accessMethod=MaxSafePlayScalarSample status=SAFE context=solo role=solo-or-host summary=category=max-safe-play-recorder scalar sampleCount=2 loggedCount=2 reason=changed playerStatePresent=true changed=true changedFields=WeaponDA noWrites=true noRpcs=true noHud=true noDeepArrays=true noInventoryArrays=true noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noDataAssetMutation=true noFunctionCalls=true passiveOnly=true crashAttributionMarker=max-safe-play-recorder
+
+crabruntimeprobe_error_lines:
+ - none
+
+files_to_upload:
+ - <REDACTED_LOCAL_PATH>
+ - <REDACTED_LOCAL_PATH>
+ - <REDACTED_LOCAL_PATH>
+ - <REDACTED_LOCAL_PATH>
+ - <REDACTED_LOCAL_PATH>
+ - crash files only if a crash happened
+
+failures:
+ - none
