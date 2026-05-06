@@ -6,6 +6,8 @@ Any future write-smoke test requires explicit user approval before it exists as 
 
 Future checklist proposals should follow [P2P Carrier Evidence Mapping](P2P_CARRIER_EVIDENCE_MAPPING.md). Mapping evidence into this template does not approve write-smoke.
 
+Future approval requests must also satisfy [P2P Carrier Safety Gates](P2P_CARRIER_SAFETY_GATES.md). That safety-gate document does not implement or authorize write-smoke.
+
 ## Minimum Prerequisites
 
 Before a write-smoke can even be considered:

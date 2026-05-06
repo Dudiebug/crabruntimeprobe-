@@ -192,6 +192,8 @@ Template/status docs now exist for [P2P Carrier Candidates](P2P_CARRIER_CANDIDAT
 
 [P2P Carrier Evidence Mapping](P2P_CARRIER_EVIDENCE_MAPPING.md) defines how future read-only carrier-discovery rows should map into those template/status docs. It is a mapping specification, not an importer or implementation.
 
+[P2P Carrier Discovery Phase Contracts](P2P_CARRIER_DISCOVERY_PHASE_CONTRACTS.md) and [P2P Carrier Safety Gates](P2P_CARRIER_SAFETY_GATES.md) define future read-only phase boundaries and planning gate names. They are not implemented phases or RuntimeProbe configuration changes.
+
 ## 9. Interaction With Inventory Sync
 
 Inventory item sync can use pure remote visibility only if remote item identity and metadata are proven visible.

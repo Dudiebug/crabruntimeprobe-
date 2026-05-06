@@ -18,6 +18,8 @@ Carrier template/status docs exist for future evidence outputs: [P2P Carrier Can
 
 [P2P Carrier Evidence Mapping](P2P_CARRIER_EVIDENCE_MAPPING.md) is a prerequisite for any future generated/status updates to those carrier docs; it defines classification rules only and does not implement collectors or import tooling.
 
+[P2P Carrier Discovery Phase Contracts](P2P_CARRIER_DISCOVERY_PHASE_CONTRACTS.md) and [P2P Carrier Safety Gates](P2P_CARRIER_SAFETY_GATES.md) are prerequisites for future implementation discussions of carrier research phases. They define read-only boundaries and planning gate names only.
+
 ## Inventory Proof Track
 
 | Phase | Goal | Required config gates | Allowed | Forbidden | Expected evidence file | Success criteria | Crash stop condition | CrabSyncV2 decision unlocked |

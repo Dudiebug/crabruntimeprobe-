@@ -41,6 +41,8 @@
 
 ## P2P Carrier Research Templates
 
+- [P2P Carrier Discovery Phase Contracts](P2P_CARRIER_DISCOVERY_PHASE_CONTRACTS.md)
+- [P2P Carrier Safety Gates](P2P_CARRIER_SAFETY_GATES.md)
 - [P2P Carrier Evidence Mapping](P2P_CARRIER_EVIDENCE_MAPPING.md)
 - [P2P Carrier Candidates](P2P_CARRIER_CANDIDATES.md)
 - [P2P Carrier Visibility Matrix](P2P_CARRIER_VISIBILITY_MATRIX.md)

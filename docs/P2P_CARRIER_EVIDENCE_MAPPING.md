@@ -11,6 +11,8 @@ This document defines how future read-only RuntimeProbe carrier-discovery rows s
 - [P2P Carrier Unsafe Paths](P2P_CARRIER_UNSAFE_PATHS.md).
 - [P2P Carrier Write-Smoke Plan](P2P_CARRIER_WRITE_SMOKE_PLAN.md).
 
+Future rows should be produced only by phases that satisfy [P2P Carrier Discovery Phase Contracts](P2P_CARRIER_DISCOVERY_PHASE_CONTRACTS.md) and [P2P Carrier Safety Gates](P2P_CARRIER_SAFETY_GATES.md).
+
 Mapping evidence into a candidate/status doc does not approve a carrier. Read evidence never equals write evidence. A path can be visible, useful for P2P derivation, and still forbidden for `CrabSyncBlock` payload transport.
 
 ## 2. Source Evidence Row Families
