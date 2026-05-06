@@ -6,6 +6,8 @@ Visibility is read-only proof. It is not write proof.
 
 Future row updates should follow [P2P Carrier Evidence Mapping](P2P_CARRIER_EVIDENCE_MAPPING.md).
 
+Use [P2P Carrier Readiness Checklist](P2P_CARRIER_READINESS_CHECKLIST.md) for decision outcomes after visibility rows exist. Visibility remains read-only proof, not write proof.
+
 ## Visibility Directions
 
 - `local-only`: visible only on the local client.

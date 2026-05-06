@@ -8,6 +8,8 @@ Future checklist proposals should follow [P2P Carrier Evidence Mapping](P2P_CARR
 
 Future approval requests must also satisfy [P2P Carrier Safety Gates](P2P_CARRIER_SAFETY_GATES.md). That safety-gate document does not implement or authorize write-smoke.
 
+[P2P Carrier Readiness Checklist](P2P_CARRIER_READINESS_CHECKLIST.md) is a prerequisite for any future write-smoke proposal. It does not approve write-smoke by itself.
+
 ## Minimum Prerequisites
 
 Before a write-smoke can even be considered:

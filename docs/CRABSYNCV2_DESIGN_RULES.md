@@ -50,6 +50,7 @@ These are future CrabSyncV2 constraints. They do not authorize RuntimeProbe writ
 - [P2P Carrier Unsafe Paths](P2P_CARRIER_UNSAFE_PATHS.md) records forbidden carrier paths and must be checked before any future carrier status can advance.
 - [CrabSyncV2 P2P Carrier Research Plan](CRABSYNCV2_P2P_CARRIER_RESEARCH_PLAN.md) is the only approved planning path toward a future `CrabSyncBlock` carrier; it does not prove or authorize a carrier today.
 - [P2P Carrier Safety Gates](P2P_CARRIER_SAFETY_GATES.md) defines future planning gate names; no carrier gate may enable RuntimeProbe writes or RPCs.
+- [P2P Carrier Readiness Checklist](P2P_CARRIER_READINESS_CHECKLIST.md) must be satisfied before any future `CrabSyncBlock` design depends on a carrier.
 - Custom `CrabSyncBlock` carrier work requires:
   1. Dedicated carrier-discovery/read phase.
   2. Evidence review and explicit gate approval.

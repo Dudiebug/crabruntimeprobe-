@@ -6,6 +6,8 @@ These entries do not mean normal read access is unsafe. They mean custom payload
 
 Future row updates should follow [P2P Carrier Evidence Mapping](P2P_CARRIER_EVIDENCE_MAPPING.md).
 
+Use [P2P Carrier Readiness Checklist](P2P_CARRIER_READINESS_CHECKLIST.md) for rejection and blocked-status decisions.
+
 ## Unsafe Reason Taxonomy
 
 - `gameplay-authoritative`.

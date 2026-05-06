@@ -6,6 +6,8 @@ No candidate is currently proven.
 
 Future row updates should follow [P2P Carrier Evidence Mapping](P2P_CARRIER_EVIDENCE_MAPPING.md).
 
+Interpret candidate status with [P2P Carrier Readiness Checklist](P2P_CARRIER_READINESS_CHECKLIST.md); no row here proves a carrier is approved.
+
 ## Candidate Status Values
 
 - `unreviewed`: named for later review, with no evidence classification yet.

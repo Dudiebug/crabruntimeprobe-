@@ -20,6 +20,8 @@ Carrier template/status docs exist for future evidence outputs: [P2P Carrier Can
 
 [P2P Carrier Discovery Phase Contracts](P2P_CARRIER_DISCOVERY_PHASE_CONTRACTS.md) and [P2P Carrier Safety Gates](P2P_CARRIER_SAFETY_GATES.md) are prerequisites for future implementation discussions of carrier research phases. They define read-only boundaries and planning gate names only.
 
+[P2P Carrier Readiness Checklist](P2P_CARRIER_READINESS_CHECKLIST.md) is required before any `CrabSyncBlock` design depends on a carrier. It does not prove a carrier exists or authorize write-smoke.
+
 ## Inventory Proof Track
 
 | Phase | Goal | Required config gates | Allowed | Forbidden | Expected evidence file | Success criteria | Crash stop condition | CrabSyncV2 decision unlocked |

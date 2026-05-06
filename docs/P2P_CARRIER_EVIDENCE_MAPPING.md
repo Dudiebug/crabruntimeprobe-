@@ -15,6 +15,8 @@ Future rows should be produced only by phases that satisfy [P2P Carrier Discover
 
 Mapping evidence into a candidate/status doc does not approve a carrier. Read evidence never equals write evidence. A path can be visible, useful for P2P derivation, and still forbidden for `CrabSyncBlock` payload transport.
 
+[P2P Carrier Readiness Checklist](P2P_CARRIER_READINESS_CHECKLIST.md) defines readiness levels and decision outcomes after evidence rows are mapped.
+
 ## 2. Source Evidence Row Families
 
 These future evidence kinds are planned names only. They are not currently implemented and this document does not require local UE4SS runtime.
