@@ -20,6 +20,7 @@ The following areas remain UNTESTED or UNSAFE_DISABLED unless explicit runtime e
 | `FindAllOf(PlayerController,CrabPC).PlayerState` | identity controller candidates | UNTESTED | Capped controller discovery reads only PlayerState from valid controllers. |
 | `FindAllOf(PlayerState,CrabPS)` | resource visibility candidates | UNTESTED | Capped resource visibility discovery is gated by allowResourceVisibilityProbes and reads only explicitly named PlayerState fields. |
 | `CrabPS.WeaponMods` | RemotePlayerStateCountOnly | UNTESTED | Remote inventory arrays are count-only in resource visibility and remain unresolved until evidence proves visibility. |
+| `CrabPerkDA` | FindAllOfCappedCuratedClasses | UNTESTED | Perk DataAsset catalog reads are gated by allowPerkDataAssetCatalogProbes and are read-only evidence, not permission to mutate DataAssets. |
 | `PlayerState.UniqueId` | identity | UNTESTED | Stable IDs must be fingerprinted unless allowRawIdentityEvidence is explicitly enabled. |
 | `GameplayState.*` | write | UNSAFE_DISABLED | Writes are disabled. |
 | `RPC.*` | rpc | UNSAFE_DISABLED | RPC probes are disabled. |

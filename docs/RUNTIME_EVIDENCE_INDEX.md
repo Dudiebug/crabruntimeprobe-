@@ -164,6 +164,14 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 - Slot model status: observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total slot model unresolved
 - No writes/RPCs/HUD/deep arrays/inventory traversal/InventoryInfo/Enhancements: yes
 
+## Perk DataAsset Catalog Summary
+
+- Summary: unresolved; no `perk-da-catalog-read` evidence has been imported yet.
+- Perk catalog evidence will be read-only and is not permission to mutate DataAssets.
+- RuntimeProbe will prove read paths only; future CrabModFramework / CrabTastyMod write/edit APIs must be designed separately.
+- TastyOrange is not special-cased by RuntimeProbe. It will be cataloged as a normal perk if found.
+- Collector is not special-cased by RuntimeProbe. It will be cataloged as a normal perk if found.
+
 ## Confirmed SAFE Access Rows
 
 | Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |

@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { parseIdentityFromFullName, extractFullNameFromSummary } = require('./identity_helpers');
-const { classifyCrystalsReadEvidence, classifySafeScalarWatchEvidence, classifySlotsReadEvidence, classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
+const { classifyCrystalsReadEvidence, classifySafeScalarWatchEvidence, classifyPerkDataAssetCatalogEvidence, classifySlotsReadEvidence, classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
 
 function walk(dir, name) {
   if (!fs.existsSync(dir)) return [];
@@ -349,6 +349,15 @@ const latestSafeScalarWatchSessionId = evidenceRows
 const safeScalarWatch = classifySafeScalarWatchEvidence(evidenceRows, {
   crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestSafeScalarWatchSessionId)
 });
+const latestPerkCatalogSessionId = evidenceRows
+  .filter((row) => (row.probeId || row.probeName || row.event || '') === 'DataAsset.Perks.CatalogRead')
+  .map((row) => row.sessionId)
+  .filter(Boolean)
+  .sort()
+  .pop();
+const perkCatalog = classifyPerkDataAssetCatalogEvidence(evidenceRows, {
+  crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestPerkCatalogSessionId)
+});
 index += '\n## Local Inventory Array Shallow/Count Visibility Summary\n\n';
 if (!localInventory.localInventoryArrayEvidenceFound) {
   index += '- Summary: unresolved; no `local-inventory-array-shallow-read` evidence has been imported yet.\n';
@@ -472,6 +481,23 @@ if (!safeScalarWatch.safeScalarWatchEvidenceFound) {
   index += `- Slot model status: ${safeScalarWatch.slotModelStatus}\n`;
   index += `- No writes/RPCs/HUD/deep arrays/inventory traversal/InventoryInfo/Enhancements: ${safeScalarWatch.noWrites && safeScalarWatch.noRpcs && safeScalarWatch.noHud && safeScalarWatch.noDeepArrays && safeScalarWatch.noArrayCount && safeScalarWatch.noArrayTraversal && safeScalarWatch.noElementDereference && safeScalarWatch.noInventoryInfo && safeScalarWatch.noEnhancements ? 'yes' : 'no'}\n`;
 }
+index += '\n## Perk DataAsset Catalog Summary\n\n';
+if (!perkCatalog.perkDataAssetCatalogEvidenceFound) {
+  index += '- Summary: unresolved; no `perk-da-catalog-read` evidence has been imported yet.\n';
+  index += '- Perk catalog evidence will be read-only and is not permission to mutate DataAssets.\n';
+  index += '- RuntimeProbe will prove read paths only; future CrabModFramework / CrabTastyMod write/edit APIs must be designed separately.\n';
+  index += '- TastyOrange is not special-cased by RuntimeProbe. It will be cataloged as a normal perk if found.\n';
+  index += '- Collector is not special-cased by RuntimeProbe. It will be cataloged as a normal perk if found.\n';
+} else {
+  index += `- Summary: ${perkCatalog.classification}\n`;
+  index += `- Perk DataAsset catalog status: ${perkCatalog.status}\n`;
+  index += `- Catalog entries: ${perkCatalog.catalogEntryCount}\n`;
+  index += `- Candidate count/cap: ${perkCatalog.catalogCandidateCount}/${perkCatalog.catalogCandidateCap || 'unknown'}\n`;
+  index += `- No writes/RPCs/HUD/deep arrays/live inventory arrays/counts/InventoryInfo/Enhancements/DataAsset mutation/function calls: ${perkCatalog.noWrites && perkCatalog.noRpcs && perkCatalog.noHud && perkCatalog.noDeepArrays && perkCatalog.noInventoryArrays && perkCatalog.noArrayCount && perkCatalog.noArrayTraversal && perkCatalog.noElementDereference && perkCatalog.noInventoryInfo && perkCatalog.noEnhancements && perkCatalog.noDataAssetMutation && perkCatalog.noFunctionCalls ? 'yes' : 'no'}\n`;
+  index += '- RuntimeProbe proves read paths only. Future CrabModFramework / CrabTastyMod work must build controlled write/edit APIs separately.\n';
+  index += '- TastyOrange is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.\n';
+  index += '- Collector is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.\n';
+}
 index += '\n## Confirmed SAFE Access Rows\n\n';
 const safeRows = rows.filter((row) => bestStatus(row.statuses) === 'SAFE');
 if (safeRows.length === 0) {
@@ -483,6 +509,7 @@ if (safeRows.length === 0) {
 let matrix = '# Safe Access Matrix\n\n';
 matrix += 'SAFE status is scoped to the contexts, roles, lifecycle states, and access method shown in the evidence. DirectField and GetPropertyValue are separate access paths.\n\n';
 matrix += 'Health source scope matters: `CrabPC -> PlayerState -> CrabPS -> HealthInfo` is the only currently confirmed safe player health read path. Unscoped `FindFirstOf.CrabHC` is ambiguous and has already found `BP_Destructible_ChaoticBarrel10.HC`, so it is not player-health proof. `health-playerstate-watch` is read-only local PlayerState time-series evidence for vanilla visibility; pooled/shared health is a CrabInvSync design concept, not vanilla RuntimeProbe evidence. Identity context `solo-or-host` means local-player-present, not confirmed solo.\n\n';
+matrix += 'DataAsset catalog evidence is read-only definition evidence for future CrabModFramework APIs. It is not permission to mutate DataAssets or call DataAsset functions.\n\n';
 matrix += matrixTable(rows);
 
 const byOwner = new Map();
@@ -534,6 +561,7 @@ const defaultUntested = [
   ['CrabPS.WeaponMods', 'GetPropertyValueCountOnly', 'UNTESTED', 'Local inventory arrays require local-inventory-array-shallow-read; no element dereference.'],
   ['CrabPS.WeaponMods', 'GetPropertyValueShapeConfirm', 'UNTESTED', 'Local inventory shape confirm reads property presence/value kind only; no count, traversal, element dereference, InventoryInfo, or Enhancements.'],
   ['CrabPS.WeaponMods', 'GetPropertyValueUserdataMetadata', 'UNTESTED', 'Local inventory userdata introspection reads wrapper metadata only; length operator results are metadata-only and not element traversal proof.'],
+  ['CrabPerkDA', 'FindAllOfCappedCuratedClasses', 'UNTESTED', 'Perk DataAsset catalog reads are gated by allowPerkDataAssetCatalogProbes and are read-only evidence, not permission to mutate DataAssets.'],
   ['PlayerState.UniqueId', 'identity', 'UNTESTED', 'Stable IDs must be fingerprinted unless allowRawIdentityEvidence is explicitly enabled.'],
   ['GameplayState.*', 'write', 'UNSAFE_DISABLED', 'Writes are disabled.'],
   ['RPC.*', 'rpc', 'UNSAFE_DISABLED', 'RPC probes are disabled.']

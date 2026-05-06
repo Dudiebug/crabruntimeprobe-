@@ -35,6 +35,7 @@ function Assert-UnsafeGatesFalse {
     "allowCrystalsReadProbes",
     "allowSlotsReadProbes",
     "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -61,6 +62,7 @@ function Assert-HealthBaselineGates {
     "allowCrystalsReadProbes",
     "allowSlotsReadProbes",
     "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -138,6 +140,7 @@ function Write-TestSessionManifest {
       allowCrystalsReadProbes = $false
       allowSlotsReadProbes = $false
       allowSafeScalarWatchProbes = $false
+      allowPerkDataAssetCatalogProbes = $false
       allowInventoryArrayShallowProbes = $false
       allowInventoryArrayShapeConfirmProbes = $false
       allowInventoryUserdataIntrospectionProbes = $false
@@ -233,6 +236,7 @@ foreach ($key in @(
   "allowCrystalsReadProbes",
   "allowSlotsReadProbes",
   "allowSafeScalarWatchProbes",
+  "allowPerkDataAssetCatalogProbes",
   "allowWriteProbes",
   "allowRpcProbes"
 )) {
@@ -258,6 +262,65 @@ foreach ($key in @(
   "allowResourceVisibilityProbes",
   "allowCrystalsReadProbes",
   "allowSlotsReadProbes",
+  "allowPerkDataAssetCatalogProbes",
+  "allowInventoryArrayShallowProbes",
+  "allowInventoryArrayShapeConfirmProbes",
+  "allowInventoryUserdataIntrospectionProbes",
+  "allowWriteProbes",
+  "allowRpcProbes"
+)) {
+  Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key $key -Expected "false"
+}
+
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PreparePerkDataAssetCatalog
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected "executeDelay"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "active"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "perk-da-catalog-read"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "repeatProbeSet" -Expected "false"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxProbesPerSession" -Expected "1"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "allowPerkDataAssetCatalogProbes" -Expected "true"
+foreach ($key in @(
+  "allowHudTickHook",
+  "allowUnknownRoleProbes",
+  "allowJoinedClientDeepProbes",
+  "allowDeepArrayProbes",
+  "allowInventoryInfoProbes",
+  "allowHealthProbes",
+  "allowIdentityProbes",
+  "allowRawIdentityEvidence",
+  "allowResourceVisibilityProbes",
+  "allowCrystalsReadProbes",
+  "allowSlotsReadProbes",
+  "allowSafeScalarWatchProbes",
+  "allowInventoryArrayShallowProbes",
+  "allowInventoryArrayShapeConfirmProbes",
+  "allowInventoryUserdataIntrospectionProbes",
+  "allowWriteProbes",
+  "allowRpcProbes"
+)) {
+  Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key $key -Expected "false"
+}
+
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PreparePerkDataAssetCatalog
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected "executeDelay"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "active"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "perk-da-catalog-read"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "repeatProbeSet" -Expected "false"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxProbesPerSession" -Expected "1"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "allowPerkDataAssetCatalogProbes" -Expected "true"
+foreach ($key in @(
+  "allowHudTickHook",
+  "allowUnknownRoleProbes",
+  "allowJoinedClientDeepProbes",
+  "allowDeepArrayProbes",
+  "allowInventoryInfoProbes",
+  "allowHealthProbes",
+  "allowIdentityProbes",
+  "allowRawIdentityEvidence",
+  "allowResourceVisibilityProbes",
+  "allowCrystalsReadProbes",
+  "allowSlotsReadProbes",
+  "allowSafeScalarWatchProbes",
   "allowInventoryArrayShallowProbes",
   "allowInventoryArrayShapeConfirmProbes",
   "allowInventoryUserdataIntrospectionProbes",

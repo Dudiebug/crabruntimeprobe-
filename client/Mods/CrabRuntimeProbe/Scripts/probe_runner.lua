@@ -167,6 +167,22 @@ function runner.new(config, safe, writer, evidenceWriter)
       record.noRpcs = meta.noRpcs
       record.noHud = meta.noHud
       record.noDeepArrays = meta.noDeepArrays
+      record.noInventoryArrays = meta.noInventoryArrays
+      record.noDataAssetMutation = meta.noDataAssetMutation
+      record.noFunctionCalls = meta.noFunctionCalls
+      record.discoveryAttempted = meta.discoveryAttempted
+      record.discoveryMethod = meta.discoveryMethod
+      record.catalogFound = meta.catalogFound
+      record.catalogEntryCount = meta.catalogEntryCount
+      record.catalogCandidateCount = meta.catalogCandidateCount
+      record.catalogCandidateCap = meta.catalogCandidateCap
+      record.catalogFieldCap = meta.catalogFieldCap
+      record.catalogEntries = meta.catalogEntries
+      record.catalogFieldNames = meta.catalogFieldNames
+      record.catalogReadStatuses = meta.catalogReadStatuses
+      record.catalogValueKinds = meta.catalogValueKinds
+      record.catalogObjectReferenceSummaries = meta.catalogObjectReferenceSummaries
+      record.notFoundClassification = meta.notFoundClassification
       record.crashAttributionMarker = meta.crashAttributionMarker
       record.playerStatePresent = meta.playerStatePresent
       record.sampleReason = meta.sampleReason
@@ -289,6 +305,22 @@ function runner.new(config, safe, writer, evidenceWriter)
       row.noRpcs = meta.noRpcs
       row.noHud = meta.noHud
       row.noDeepArrays = meta.noDeepArrays
+      row.noInventoryArrays = meta.noInventoryArrays
+      row.noDataAssetMutation = meta.noDataAssetMutation
+      row.noFunctionCalls = meta.noFunctionCalls
+      row.discoveryAttempted = meta.discoveryAttempted
+      row.discoveryMethod = meta.discoveryMethod
+      row.catalogFound = meta.catalogFound
+      row.catalogEntryCount = meta.catalogEntryCount
+      row.catalogCandidateCount = meta.catalogCandidateCount
+      row.catalogCandidateCap = meta.catalogCandidateCap
+      row.catalogFieldCap = meta.catalogFieldCap
+      row.catalogEntries = meta.catalogEntries
+      row.catalogFieldNames = meta.catalogFieldNames
+      row.catalogReadStatuses = meta.catalogReadStatuses
+      row.catalogValueKinds = meta.catalogValueKinds
+      row.catalogObjectReferenceSummaries = meta.catalogObjectReferenceSummaries
+      row.notFoundClassification = meta.notFoundClassification
       row.crashAttributionMarker = meta.crashAttributionMarker
       row.playerStatePresent = meta.playerStatePresent
       row.sampleReason = meta.sampleReason
@@ -321,13 +353,14 @@ function runner.new(config, safe, writer, evidenceWriter)
     if probe.set == 'crystals-read' and not config.allowCrystalsReadProbes then return false, 'unsafe_disabled' end
     if probe.set == 'slots-read' and not config.allowSlotsReadProbes then return false, 'unsafe_disabled' end
     if probe.set == 'safe-scalar-watch' and not config.allowSafeScalarWatchProbes then return false, 'unsafe_disabled' end
+    if probe.set == 'perk-da-catalog-read' and not config.allowPerkDataAssetCatalogProbes then return false, 'unsafe_disabled' end
     if probe.set == 'local-inventory-array-shallow-read' and not config.allowInventoryArrayShallowProbes then return false, 'unsafe_disabled' end
     if probe.set == 'local-inventory-array-shape-confirm' and not config.allowInventoryArrayShapeConfirmProbes then return false, 'unsafe_disabled' end
     if probe.set == 'local-inventory-userdata-introspection' and not config.allowInventoryUserdataIntrospectionProbes then return false, 'unsafe_disabled' end
     if probe.set == 'rpc-dryrun' and not config.allowRpcProbes then return false, 'unsafe_disabled' end
     if probe.set == 'write' and not config.allowWriteProbes then return false, 'unsafe_disabled' end
-    if state.role == 'unknown' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'safe-scalar-watch' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
-    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'safe-scalar-watch' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
+    if state.role == 'unknown' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'safe-scalar-watch' and probe.set ~= 'perk-da-catalog-read' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
+    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'safe-scalar-watch' and probe.set ~= 'perk-da-catalog-read' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
     if probe.set ~= config.probeSet and config.probeSet ~= 'all-readonly' then return false, 'skipped_by_config' end
     return true
   end

@@ -1557,6 +1557,265 @@ function registry.build(safe)
     return sample.playerStatePresent and 'ok' or 'nil', 'safe_scalar_watch', summary, nil, meta
   end
 
+  local PERK_DA_CLASS_CANDIDATES = {
+    'CrabPerkDA',
+    'CrabPerkDataAsset',
+    'PerkDataAsset'
+  }
+
+  local PERK_DA_FIELD_ALLOWLIST = {
+    'Name',
+    'DisplayName',
+    'Title',
+    'Description',
+    'DescriptionText',
+    'ShortDescription',
+    'FlavorText',
+    'Rarity',
+    'PerkRarity',
+    'Tier',
+    'PerkTier',
+    'Type',
+    'PerkType',
+    'Category',
+    'Tags',
+    'GameplayTag',
+    'Icon',
+    'Texture',
+    'Material',
+    'Color',
+    'MaxStacks',
+    'StackLimit',
+    'BaseValue',
+    'Value',
+    'Multiplier',
+    'Cooldown',
+    'Duration',
+    'Weight',
+    'bEnabled',
+    'bCanStack',
+    'bHidden',
+    'bUnlockedByDefault'
+  }
+
+  local function clampCatalogLimit(value, fallback, hardCap)
+    local numberValue = tonumber(value)
+    if numberValue == nil or numberValue < 1 then numberValue = fallback end
+    numberValue = math.floor(numberValue)
+    if numberValue > hardCap then numberValue = hardCap end
+    return numberValue
+  end
+
+  local function sanitizeCatalogText(value)
+    local text = tostring(value or '')
+    text = text:gsub('[\r\n\t]+', ' ')
+    text = text:gsub('%s%s+', ' ')
+    if #text > 160 then text = text:sub(1, 157) .. '...' end
+    return text
+  end
+
+  local function perkCatalogSafetyMeta(extra)
+    local meta = {
+      sourceScope = 'perk_data_asset_catalog',
+      sourcePath = 'objectdump/docs-index curated class list -> FindAllOf(CrabPerkDA,CrabPerkDataAsset,PerkDataAsset)',
+      sourceClass = 'CrabPerkDA',
+      candidateClasses = PERK_DA_CLASS_CANDIDATES,
+      noWrites = true,
+      noRpcs = true,
+      noHud = true,
+      noDeepArrays = true,
+      noInventoryArrays = true,
+      noArrayCount = true,
+      noArrayTraversal = true,
+      noElementDereference = true,
+      noInventoryInfo = true,
+      noEnhancements = true,
+      noDataAssetMutation = true,
+      noFunctionCalls = true,
+      crashAttributionMarker = 'perk-da-catalog-read',
+      localNotes = 'Read-only curated FindAllOf class/name discovery for perk DataAssets; no live inventory arrays, InventoryInfo, Enhancements, DataAsset mutation, gameplay/RPC calls, or nested object walking'
+    }
+    for key, value in pairs(extra or {}) do meta[key] = value end
+    return meta
+  end
+
+  local function isPerkDataAssetIdentity(identity, className)
+    local fullName = tostring((identity and identity.fullName) or '')
+    local shortName = tostring((identity and identity.shortName) or '')
+    local objectClass = tostring(className or (identity and identity.objectClass) or '')
+    local combined = fullName .. ' ' .. shortName .. ' ' .. objectClass
+    if objectClass ~= '' and not objectClass:find('Perk') then return false end
+    if combined:find('CrabPerk') or combined:find('PerkDA') or combined:find('PerkDataAsset') then return true end
+    if fullName:find('/Perk') or fullName:find('/Perks') or shortName:find('DA_Perk') then return true end
+    return false
+  end
+
+  local function summarizeCatalogObjectReference(value)
+    if value == nil then
+      return 'exists=false valid=false'
+    end
+    if type(value) ~= 'userdata' then
+      return 'exists=true valid=unsupported kind=' .. type(value)
+    end
+    local valid = safe.isValidObject(value)
+    if not valid then return 'exists=true valid=false' end
+    local fullName = safe.getFullName(value)
+    local className = safe.getObjectClassName(value)
+    return 'exists=true valid=true class=' .. sanitizeCatalogText(className or '') .. ' fullName=' .. sanitizeCatalogText(fullName or '')
+  end
+
+  local function classifyCatalogValue(fieldName, value)
+    if value == nil then return 'nil', 'nil' end
+    local kind = type(value)
+    local fieldText = tostring(fieldName or '')
+    if fieldText:find('Rarity') or fieldText:find('Tier') or fieldText:find('Type') or fieldText:find('Category') then
+      return 'enum', sanitizeCatalogText(value)
+    end
+    if kind == 'boolean' then return 'bool', tostring(value) end
+    if kind == 'number' then return 'scalar', tostring(value) end
+    if kind == 'string' then return 'string', sanitizeCatalogText(value) end
+    if kind == 'userdata' then
+      return 'object_ref', summarizeCatalogObjectReference(value)
+    end
+    return kind, sanitizeCatalogText(value)
+  end
+
+  local function readPerkDataAssetFields(obj, fieldCap)
+    local fields = {}
+    local fieldNames = {}
+    local statuses = {}
+    local valueKinds = {}
+    local objectRefs = {}
+    local attempted = 0
+    for _, fieldName in ipairs(PERK_DA_FIELD_ALLOWLIST) do
+      if attempted >= fieldCap then break end
+      attempted = attempted + 1
+      fieldNames[#fieldNames + 1] = fieldName
+      local value, err = safe.getProperty(obj, fieldName)
+      local status = 'read'
+      if err then status = 'error'
+      elseif value == nil then status = 'nil' end
+      local valueKind, summary = classifyCatalogValue(fieldName, value)
+      if err then
+        valueKind = 'unsupported'
+        summary = sanitizeCatalogText(err)
+      end
+      fields[#fields + 1] = {
+        fieldName = fieldName,
+        status = status,
+        valueKind = valueKind,
+        valueSummary = summary
+      }
+      statuses[fieldName] = status
+      valueKinds[fieldName] = valueKind
+      if valueKind == 'object_ref' then objectRefs[fieldName] = summary end
+    end
+    return fields, fieldNames, statuses, valueKinds, objectRefs
+  end
+
+  local function collectPerkDataAssetCatalog(ctx)
+    local candidateCap = clampCatalogLimit((ctx.config or {}).perkDataAssetCatalogMaxCandidates, 64, 128)
+    local fieldCap = clampCatalogLimit((ctx.config or {}).perkDataAssetCatalogMaxFields, 32, #PERK_DA_FIELD_ALLOWLIST)
+    local available, availabilityResult, availabilityErr = findAllAvailability()
+    if availabilityResult == 'lua_error' then
+      return 'lua_error', nil, nil, availabilityErr, perkCatalogSafetyMeta({
+        discoveryAttempted = true,
+        discoveryMethod = 'FindAllOfAvailability',
+        catalogFound = false,
+        catalogEntryCount = 0,
+        catalogCandidateCount = 0,
+        catalogCandidateCap = candidateCap,
+        catalogFieldCap = fieldCap
+      })
+    end
+    if not available then
+      return 'nil', 'perk_da_catalog', 'category=perk-da-catalog-read discoveryAttempted=true found=0 reason=FindAllOf unavailable noWrites=true noRpcs=true noHud=true noDeepArrays=true noInventoryArrays=true noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noDataAssetMutation=true noFunctionCalls=true', nil, perkCatalogSafetyMeta({
+        discoveryAttempted = true,
+        discoveryMethod = 'FindAllOfAvailability',
+        catalogFound = false,
+        catalogEntryCount = 0,
+        catalogCandidateCount = 0,
+        catalogCandidateCap = candidateCap,
+        catalogFieldCap = fieldCap,
+        notFoundClassification = 'perk_da_catalog_not_found'
+      })
+    end
+
+    local entries = {}
+    local seen = {}
+    local attemptedClasses = {}
+    local candidateCount = 0
+    local latestFieldNames = {}
+    local latestStatuses = {}
+    local latestValueKinds = {}
+    local latestObjectRefs = {}
+    for _, className in ipairs(PERK_DA_CLASS_CANDIDATES) do
+      if candidateCount >= candidateCap then break end
+      attemptedClasses[#attemptedClasses + 1] = className
+      local arr, err = safe.findAll(className)
+      if not err and type(arr) == 'table' then
+        safe.forEachArrayLimited(arr, candidateCap - candidateCount, function(_, elem)
+          if candidateCount >= candidateCap then return end
+          candidateCount = candidateCount + 1
+          local obj = elem
+          if safe.isValidObject(obj) then
+            local _, identityErr, identity = safe.summarizeObjectIdentity(obj)
+            local objectClass, classErr = safe.getObjectClassName(obj)
+            if identityErr == nil and isPerkDataAssetIdentity(identity, classErr and '' or objectClass) then
+              local key = tostring(identity.fullName or tostring(obj))
+              if not seen[key] then
+                seen[key] = true
+                local fields, fieldNames, statuses, valueKinds, objectRefs = readPerkDataAssetFields(obj, fieldCap)
+                latestFieldNames = fieldNames
+                latestStatuses = statuses
+                latestValueKinds = valueKinds
+                latestObjectRefs = objectRefs
+                entries[#entries + 1] = {
+                  catalogIndex = #entries + 1,
+                  shortName = identity.shortName or '',
+                  fullName = identity.fullName or '',
+                  className = tostring(objectClass or identity.objectClass or className),
+                  isValid = true,
+                  fields = fields
+                }
+              end
+            end
+          end
+        end)
+      end
+    end
+
+    table.sort(entries, function(a, b)
+      return tostring(a.fullName or a.shortName or '') < tostring(b.fullName or b.shortName or '')
+    end)
+    for index, entry in ipairs(entries) do entry.catalogIndex = index end
+
+    local found = #entries > 0
+    local summary = 'category=perk-da-catalog-read discoveryAttempted=true found=' .. tostring(#entries)
+      .. ' candidateCount=' .. tostring(candidateCount)
+      .. ' candidateCap=' .. tostring(candidateCap)
+      .. ' fieldCap=' .. tostring(fieldCap)
+      .. ' classes=' .. table.concat(attemptedClasses, ',')
+      .. ' noWrites=true noRpcs=true noHud=true noDeepArrays=true noInventoryArrays=true noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noDataAssetMutation=true noFunctionCalls=true'
+    local meta = perkCatalogSafetyMeta({
+      discoveryAttempted = true,
+      discoveryMethod = 'FindAllOfCappedCuratedClasses',
+      candidateClasses = attemptedClasses,
+      catalogFound = found,
+      catalogEntryCount = #entries,
+      catalogCandidateCount = candidateCount,
+      catalogCandidateCap = candidateCap,
+      catalogFieldCap = fieldCap,
+      catalogEntries = entries,
+      catalogFieldNames = latestFieldNames,
+      catalogReadStatuses = latestStatuses,
+      catalogValueKinds = latestValueKinds,
+      catalogObjectReferenceSummaries = latestObjectRefs,
+      notFoundClassification = found and '' or 'perk_da_catalog_not_found'
+    })
+    return found and 'ok' or 'nil', 'perk_da_catalog', summary, nil, meta
+  end
+
   local function classifyCrabHCSource(fullName)
     local text = tostring(fullName or '')
     if text:find('Destructible') or text:find('Barrel') or text:find('ChaoticBarrel') then
@@ -2552,6 +2811,17 @@ function registry.build(safe)
     accessMethod = 'SafeScalarWatchSample',
     accessKind = 'safeScalarWatch',
     sourceScope = 'local_safe_scalar_watch'
+  })
+
+  probes[#probes + 1] = mk('DataAsset.Perks.CatalogRead', 'perk-da-catalog-read', 'perk-da-catalog-read', 'catalogRead', function(ctx)
+    return collectPerkDataAssetCatalog(ctx)
+  end, {
+    symbol = 'CrabPerkDA',
+    owner = 'DataAsset',
+    member = 'Perk DataAsset curated fields',
+    accessMethod = 'FindAllOfCappedCuratedClasses',
+    accessKind = 'perkDataAssetCatalogRead',
+    sourceScope = 'perk_data_asset_catalog'
   })
 
   probes[#probes + 1] = mk('FindAllOf.CrabHC.Availability', 'health', 'health-hc-discovery-read', 'findAllAvailability', function()

@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-06T00:30:35.519Z",
+  "updatedAt": "2026-05-06T01:38:47.248Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -172,12 +172,117 @@
       "phaseId": "enhancements-read",
       "status": "blocked",
       "reason": "Probe set is not implemented yet."
+    },
+    {
+      "phaseId": "weaponmod-da-catalog-read",
+      "status": "blocked",
+      "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."
+    },
+    {
+      "phaseId": "abilitymod-da-catalog-read",
+      "status": "blocked",
+      "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."
+    },
+    {
+      "phaseId": "meleemod-da-catalog-read",
+      "status": "blocked",
+      "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."
+    },
+    {
+      "phaseId": "weapon-da-catalog-read",
+      "status": "blocked",
+      "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."
+    },
+    {
+      "phaseId": "ability-da-catalog-read",
+      "status": "blocked",
+      "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."
+    },
+    {
+      "phaseId": "melee-da-catalog-read",
+      "status": "blocked",
+      "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."
+    },
+    {
+      "phaseId": "event-watch-smoke",
+      "status": "blocked",
+      "reason": "Future passive watcher track; observe naturally called events only."
+    },
+    {
+      "phaseId": "event-watch-equipment",
+      "status": "blocked",
+      "reason": "Future passive watcher track for naturally called OnRep_WeaponDA, OnRep_AbilityDA, and OnRep_MeleeDA."
+    },
+    {
+      "phaseId": "event-watch-crystals",
+      "status": "blocked",
+      "reason": "Future passive watcher track for naturally called OnRep_Crystals."
+    },
+    {
+      "phaseId": "event-watch-slots",
+      "status": "blocked",
+      "reason": "Future passive watcher track for observing natural slot changes, including ServerIncrementNumInventorySlots only when the game calls it."
+    },
+    {
+      "phaseId": "event-watch-pickups",
+      "status": "blocked",
+      "reason": "Future passive watcher track for naturally called ClientOnPickedUpPickup."
+    },
+    {
+      "phaseId": "event-watch-inventory-replication",
+      "status": "blocked",
+      "reason": "Future passive watcher track for naturally called OnRep_Inventory."
+    },
+    {
+      "phaseId": "framework-skeleton",
+      "status": "blocked",
+      "reason": "Future CrabModFramework work; framework sits on UE4SS and is not implemented in RuntimeProbe."
+    },
+    {
+      "phaseId": "safe-context-api",
+      "status": "blocked",
+      "reason": "Future CrabModFramework API work."
+    },
+    {
+      "phaseId": "safe-playerstate-api",
+      "status": "blocked",
+      "reason": "Future CrabModFramework API work."
+    },
+    {
+      "phaseId": "safe-dataasset-catalog-api",
+      "status": "blocked",
+      "reason": "Future CrabModFramework API work."
+    },
+    {
+      "phaseId": "safe-property-read-wrappers",
+      "status": "blocked",
+      "reason": "Future CrabModFramework API work."
+    },
+    {
+      "phaseId": "safe-event-watcher-wrappers",
+      "status": "blocked",
+      "reason": "Future CrabModFramework API work."
+    },
+    {
+      "phaseId": "capability-declarations",
+      "status": "blocked",
+      "reason": "Future CrabModFramework API work."
+    },
+    {
+      "phaseId": "direct-ue4ss-call-linting",
+      "status": "blocked",
+      "reason": "Future CrabModFramework validation work."
+    },
+    {
+      "phaseId": "experimental-write-api",
+      "status": "blocked",
+      "reason": "Future CrabModFramework-only work; never a RuntimeProbe write phase."
     }
   ],
   "currentPhase": "safe-scalar-watch",
   "nextRecommendedPhase": "safe-scalar-watch",
   "latestSessionId": "20260505T235245Z",
-  "latestCommit": "fb7d44918018f26513030a4254b4af567b2301f5",
+  "latestCommit": "6eb552a6ebf40f4a2a215b7598e35061fc4d2c3d",
   "latestSummaryPath": "evidence/runtime/20260505T235245Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {
@@ -287,6 +392,13 @@
       "tickDriver": "executeDelay",
       "mode": "active"
     },
+    "perk-da-catalog-read": {
+      "status": "pending",
+      "riskTier": "cautious-read",
+      "probeSet": "perk-da-catalog-read",
+      "tickDriver": "executeDelay",
+      "mode": "active"
+    },
     "inventory-array-shallow-read": {
       "status": "blocked",
       "riskTier": "cautious-read",
@@ -326,6 +438,174 @@
       "tickDriver": "executeDelay",
       "mode": "active",
       "reason": "Probe set is not implemented yet."
+    },
+    "weaponmod-da-catalog-read": {
+      "status": "blocked",
+      "riskTier": "cautious-read",
+      "probeSet": "weaponmod-da-catalog-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."
+    },
+    "abilitymod-da-catalog-read": {
+      "status": "blocked",
+      "riskTier": "cautious-read",
+      "probeSet": "abilitymod-da-catalog-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."
+    },
+    "meleemod-da-catalog-read": {
+      "status": "blocked",
+      "riskTier": "cautious-read",
+      "probeSet": "meleemod-da-catalog-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."
+    },
+    "weapon-da-catalog-read": {
+      "status": "blocked",
+      "riskTier": "cautious-read",
+      "probeSet": "weapon-da-catalog-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."
+    },
+    "ability-da-catalog-read": {
+      "status": "blocked",
+      "riskTier": "cautious-read",
+      "probeSet": "ability-da-catalog-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."
+    },
+    "melee-da-catalog-read": {
+      "status": "blocked",
+      "riskTier": "cautious-read",
+      "probeSet": "melee-da-catalog-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."
+    },
+    "event-watch-smoke": {
+      "status": "blocked",
+      "riskTier": "cautious-read",
+      "probeSet": "event-watch-smoke",
+      "tickDriver": "executeDelay",
+      "mode": "observe",
+      "reason": "Future passive watcher track; observe naturally called events only."
+    },
+    "event-watch-equipment": {
+      "status": "blocked",
+      "riskTier": "cautious-read",
+      "probeSet": "event-watch-equipment",
+      "tickDriver": "executeDelay",
+      "mode": "observe",
+      "reason": "Future passive watcher track for naturally called OnRep_WeaponDA, OnRep_AbilityDA, and OnRep_MeleeDA."
+    },
+    "event-watch-crystals": {
+      "status": "blocked",
+      "riskTier": "cautious-read",
+      "probeSet": "event-watch-crystals",
+      "tickDriver": "executeDelay",
+      "mode": "observe",
+      "reason": "Future passive watcher track for naturally called OnRep_Crystals."
+    },
+    "event-watch-slots": {
+      "status": "blocked",
+      "riskTier": "cautious-read",
+      "probeSet": "event-watch-slots",
+      "tickDriver": "executeDelay",
+      "mode": "observe",
+      "reason": "Future passive watcher track for observing natural slot changes, including ServerIncrementNumInventorySlots only when the game calls it."
+    },
+    "event-watch-pickups": {
+      "status": "blocked",
+      "riskTier": "cautious-read",
+      "probeSet": "event-watch-pickups",
+      "tickDriver": "executeDelay",
+      "mode": "observe",
+      "reason": "Future passive watcher track for naturally called ClientOnPickedUpPickup."
+    },
+    "event-watch-inventory-replication": {
+      "status": "blocked",
+      "riskTier": "cautious-read",
+      "probeSet": "event-watch-inventory-replication",
+      "tickDriver": "executeDelay",
+      "mode": "observe",
+      "reason": "Future passive watcher track for naturally called OnRep_Inventory."
+    },
+    "framework-skeleton": {
+      "status": "blocked",
+      "riskTier": "baseline",
+      "probeSet": "framework-skeleton",
+      "tickDriver": "none",
+      "mode": "observe",
+      "reason": "Future CrabModFramework work; framework sits on UE4SS and is not implemented in RuntimeProbe."
+    },
+    "safe-context-api": {
+      "status": "blocked",
+      "riskTier": "baseline",
+      "probeSet": "safe-context-api",
+      "tickDriver": "none",
+      "mode": "observe",
+      "reason": "Future CrabModFramework API work."
+    },
+    "safe-playerstate-api": {
+      "status": "blocked",
+      "riskTier": "baseline",
+      "probeSet": "safe-playerstate-api",
+      "tickDriver": "none",
+      "mode": "observe",
+      "reason": "Future CrabModFramework API work."
+    },
+    "safe-dataasset-catalog-api": {
+      "status": "blocked",
+      "riskTier": "baseline",
+      "probeSet": "safe-dataasset-catalog-api",
+      "tickDriver": "none",
+      "mode": "observe",
+      "reason": "Future CrabModFramework API work."
+    },
+    "safe-property-read-wrappers": {
+      "status": "blocked",
+      "riskTier": "baseline",
+      "probeSet": "safe-property-read-wrappers",
+      "tickDriver": "none",
+      "mode": "observe",
+      "reason": "Future CrabModFramework API work."
+    },
+    "safe-event-watcher-wrappers": {
+      "status": "blocked",
+      "riskTier": "baseline",
+      "probeSet": "safe-event-watcher-wrappers",
+      "tickDriver": "none",
+      "mode": "observe",
+      "reason": "Future CrabModFramework API work."
+    },
+    "capability-declarations": {
+      "status": "blocked",
+      "riskTier": "baseline",
+      "probeSet": "capability-declarations",
+      "tickDriver": "none",
+      "mode": "observe",
+      "reason": "Future CrabModFramework API work."
+    },
+    "direct-ue4ss-call-linting": {
+      "status": "blocked",
+      "riskTier": "baseline",
+      "probeSet": "direct-ue4ss-call-linting",
+      "tickDriver": "none",
+      "mode": "observe",
+      "reason": "Future CrabModFramework validation work."
+    },
+    "experimental-write-api": {
+      "status": "blocked",
+      "riskTier": "write-research-placeholder",
+      "probeSet": "experimental-write-api",
+      "tickDriver": "none",
+      "mode": "observe",
+      "reason": "Future CrabModFramework-only work; never a RuntimeProbe write phase."
     }
   }
 }

@@ -227,6 +227,10 @@ function Invoke-CampaignCollect {
     & $cycle -GameBin $GameBinFull -CollectSafeScalarWatch
     return $LASTEXITCODE
   }
+  if ($PhaseId -eq "perk-da-catalog-read") {
+    & $cycle -GameBin $GameBinFull -CollectPerkDataAssetCatalog
+    return $LASTEXITCODE
+  }
   if ($PhaseId -eq "local-inventory-array-shallow-read") {
     & $cycle -GameBin $GameBinFull -CollectLocalInventoryArrayShallow
     return $LASTEXITCODE
@@ -826,6 +830,74 @@ if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "sa
   }
 }
 
+if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "perk-da-catalog-read") {
+  $rows = Read-JsonLines -Paths @(
+    $(if ($null -ne $latestProbeFile) { $latestProbeFile.FullName } else { "" }),
+    $(if ($null -ne $latestAccessFile) { $latestAccessFile.FullName } else { "" })
+  )
+  $catalogRows = @($rows | Where-Object {
+    $name = ""
+    foreach ($field in @("probeName", "probeId", "event")) {
+      if ($_.PSObject.Properties.Name -contains $field) {
+        $name = [string]$_.$field
+        if (-not [string]::IsNullOrWhiteSpace($name)) { break }
+      }
+    }
+    $name -eq "DataAsset.Perks.CatalogRead"
+  })
+
+  $discoveryAttempted = $false
+  $catalogFound = $false
+  $catalogEntryCount = 0
+  $safetyViolation = $false
+  foreach ($row in $catalogRows) {
+    if (($row.PSObject.Properties.Name -contains "discoveryAttempted") -and $row.discoveryAttempted -eq $true) {
+      $discoveryAttempted = $true
+    }
+    if (($row.PSObject.Properties.Name -contains "catalogFound") -and $row.catalogFound -eq $true) {
+      $catalogFound = $true
+    }
+    if (($row.PSObject.Properties.Name -contains "catalogEntryCount")) {
+      $n = 0
+      if ([int]::TryParse([string]$row.catalogEntryCount, [ref]$n) -and $n -gt $catalogEntryCount) { $catalogEntryCount = $n }
+    }
+    foreach ($flag in @("noWrites", "noRpcs", "noHud", "noDeepArrays", "noInventoryArrays", "noArrayCount", "noArrayTraversal", "noElementDereference", "noInventoryInfo", "noEnhancements", "noDataAssetMutation", "noFunctionCalls")) {
+      if (-not ($row.PSObject.Properties.Name -contains $flag) -or $row.$flag -ne $true) {
+        $safetyViolation = $true
+      }
+    }
+    if (($row.PSObject.Properties.Name -contains "safetyGates") -and $null -ne $row.safetyGates) {
+      if (-not ($row.safetyGates.PSObject.Properties.Name -contains "allowPerkDataAssetCatalogProbes") -or $row.safetyGates.allowPerkDataAssetCatalogProbes -ne $true) {
+        $safetyViolation = $true
+      }
+      foreach ($gate in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+        if (($row.safetyGates.PSObject.Properties.Name -contains $gate) -and $row.safetyGates.$gate -eq $true) {
+          $safetyViolation = $true
+        }
+      }
+    }
+  }
+
+  if ($catalogRows.Count -eq 0) {
+    $status = "no_evidence"
+    $reason = "No perk DataAsset catalog evidence was found."
+  } elseif ($safetyViolation) {
+    $status = "failed"
+    $reason = "Perk DataAsset catalog evidence violated safety gates or touched writes, RPCs, HUD, deep arrays, inventory arrays, InventoryInfo, Enhancements, DataAsset mutation, or function calls."
+  } elseif (-not $discoveryAttempted) {
+    $status = "no_evidence"
+    $reason = "Perk DataAsset catalog evidence did not attempt curated discovery."
+  } elseif ($crashAfterPrepare) {
+    $status = "crash_suspect_perk_da_catalog_read"
+    $reason = "Perk DataAsset catalog discovery ran read-only, but a crash dump/folder was updated after campaign prepare/run."
+  } elseif ($catalogFound -or $catalogEntryCount -gt 0) {
+    $status = "perk_da_catalog_confirmed"
+  } else {
+    $status = "perk_da_catalog_not_found"
+    $reason = "Perk DataAsset catalog discovery ran safely but found no matching perk DataAssets."
+  }
+}
+
 if ($null -ne $latestManifestFile) {
   try {
     & (Join-Path $PSScriptRoot "import-latest-runtime-evidence.ps1") -From $ResultsRoot
@@ -857,6 +929,6 @@ Write-Host "phaseResult = $status"
 Write-Host "phaseId = $($phase.phaseId)"
 Write-Host "nextRecommendedPhase = $($updatedState.nextRecommendedPhase)"
 
-if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved" -and $status -ne "crash_suspect_local_inventory_shape_visible" -and $status -ne "local_inventory_shape_confirmed" -and $status -ne "crash_suspect_local_inventory_shape_confirmed" -and $status -ne "local_inventory_userdata_introspection_confirmed" -and $status -ne "crash_suspect_local_inventory_userdata_introspection" -and $status -ne "crystals_read_confirmed" -and $status -ne "crash_suspect_crystals_read" -and $status -ne "slots_read_confirmed" -and $status -ne "crash_suspect_slots_read" -and $status -ne "safe_scalar_watch_confirmed_no_change" -and $status -ne "safe_scalar_watch_observed_change" -and $status -ne "crash_suspect_safe_scalar_watch" -and -not ($phase.phaseId -eq "local-inventory-array-shape-confirm" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "local-inventory-userdata-introspection" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "crystals-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "slots-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "safe-scalar-watch" -and $status -eq "no_evidence")) {
+if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved" -and $status -ne "crash_suspect_local_inventory_shape_visible" -and $status -ne "local_inventory_shape_confirmed" -and $status -ne "crash_suspect_local_inventory_shape_confirmed" -and $status -ne "local_inventory_userdata_introspection_confirmed" -and $status -ne "crash_suspect_local_inventory_userdata_introspection" -and $status -ne "crystals_read_confirmed" -and $status -ne "crash_suspect_crystals_read" -and $status -ne "slots_read_confirmed" -and $status -ne "crash_suspect_slots_read" -and $status -ne "safe_scalar_watch_confirmed_no_change" -and $status -ne "safe_scalar_watch_observed_change" -and $status -ne "crash_suspect_safe_scalar_watch" -and $status -ne "perk_da_catalog_confirmed" -and $status -ne "perk_da_catalog_not_found" -and $status -ne "crash_suspect_perk_da_catalog_read" -and -not ($phase.phaseId -eq "local-inventory-array-shape-confirm" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "local-inventory-userdata-introspection" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "crystals-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "slots-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "safe-scalar-watch" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "perk-da-catalog-read" -and $status -eq "no_evidence")) {
   exit 1
 }

@@ -1,11 +1,11 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-06T00:30:35.519Z
+- Updated: 2026-05-06T01:38:47.248Z
 - Current phase: `safe-scalar-watch`
 - Next recommended phase: `safe-scalar-watch`
 - Latest session: 20260505T235245Z
-- Latest commit: fb7d44918018f26513030a4254b4af567b2301f5
+- Latest commit: 6eb552a6ebf40f4a2a215b7598e35061fc4d2c3d
 - Latest summary: evidence/runtime/20260505T235245Z/diagnostic_summary.txt
 
 ## Completed Phases
@@ -39,10 +39,31 @@
 - `inventory-element-da-read` - Inventory element data asset read placeholder: Probe set is not implemented yet and would require explicit deep-read review.
 - `inventoryinfo-scalar-read` - InventoryInfo scalar read placeholder: Probe set is not implemented yet and InventoryInfo remains disabled until this explicit phase.
 - `enhancements-read` - Enhancements read placeholder: Probe set is not implemented yet.
+- `weaponmod-da-catalog-read` - Weapon mod DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
+- `abilitymod-da-catalog-read` - Ability mod DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
+- `meleemod-da-catalog-read` - Melee mod DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
+- `weapon-da-catalog-read` - Weapon DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
+- `ability-da-catalog-read` - Ability DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
+- `melee-da-catalog-read` - Melee DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
+- `event-watch-smoke` - Passive event watcher smoke placeholder: Future passive watcher track; observe naturally called events only.
+- `event-watch-equipment` - Passive equipment event watcher placeholder: Future passive watcher track for naturally called OnRep_WeaponDA, OnRep_AbilityDA, and OnRep_MeleeDA.
+- `event-watch-crystals` - Passive crystals event watcher placeholder: Future passive watcher track for naturally called OnRep_Crystals.
+- `event-watch-slots` - Passive slots event watcher placeholder: Future passive watcher track for observing natural slot changes, including ServerIncrementNumInventorySlots only when the game calls it.
+- `event-watch-pickups` - Passive pickup event watcher placeholder: Future passive watcher track for naturally called ClientOnPickedUpPickup.
+- `event-watch-inventory-replication` - Passive inventory replication watcher placeholder: Future passive watcher track for naturally called OnRep_Inventory.
+- `framework-skeleton` - CrabModFramework skeleton placeholder: Future CrabModFramework work; framework sits on UE4SS and is not implemented in RuntimeProbe.
+- `safe-context-api` - Safe context API placeholder: Future CrabModFramework API work.
+- `safe-playerstate-api` - Safe PlayerState API placeholder: Future CrabModFramework API work.
+- `safe-dataasset-catalog-api` - Safe DataAsset catalog API placeholder: Future CrabModFramework API work.
+- `safe-property-read-wrappers` - Safe property read wrappers placeholder: Future CrabModFramework API work.
+- `safe-event-watcher-wrappers` - Safe event watcher wrappers placeholder: Future CrabModFramework API work.
+- `capability-declarations` - Capability declarations placeholder: Future CrabModFramework API work.
+- `direct-ue4ss-call-linting` - Direct UE4SS call linting placeholder: Future CrabModFramework validation work.
+- `experimental-write-api` - Experimental write API placeholder: Future CrabModFramework-only work; never a RuntimeProbe write phase.
 
 ## Pending Phases
 
-- None.
+- `perk-da-catalog-read` - Perk DataAsset catalog read
 
 ## Confirmed Safe Paths
 
@@ -57,6 +78,7 @@
 - local PlayerState inventory userdata wrapper metadata without traversal or element dereference
 - local PlayerState Crystals scalar read through CrabPC -> PlayerState -> CrabPS
 - local PlayerState candidate slot scalar reads through CrabPC -> PlayerState -> CrabPS
+- safe scalar watch over proven local scalar/property paths
 
 ## Identity And Roster Notes
 
@@ -174,8 +196,31 @@
 
 ## Safe Scalar Watch
 
-- Summary: unresolved; no `safe-scalar-watch` evidence has been imported yet.
-- Purpose: recurring watch of already proven local scalar/property paths only: context/role/lifecycle, `WeaponDA`, `AbilityDA`, `MeleeDA`, `Crystals`, observed scalar slot counters, and PlayerState health fields.
+- Summary: safe_scalar_watch_observed_change
+- Safe scalar watch status: safe_scalar_watch_observed_change
+- Sample count: 119
+- Logged row count: 87
+- First values: AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=DA_Weapon_Minigun nameSource=fullNameFallback, context=solo, lifecycleState=stable, playerStatePresent=true, role=solo-or-host
+- Latest values: AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=288, Crystals=1481, CurrentHealth=270.08383178711, CurrentMaxHealth=345.60000610352, MaxHealthMultiplier=1, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=8, NumMeleeModSlots=8, NumPerkSlots=8, NumWeaponModSlots=8, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=DA_Weapon_Minigun nameSource=fullNameFallback, context=solo, lifecycleState=stable, playerStatePresent=true, role=solo-or-host
+- Min numeric values: BaseMaxHealth=250, Crystals=0, CurrentHealth=18.423839569092, CurrentMaxHealth=250, MaxHealthMultiplier=1, NumAbilityModSlots=8, NumMeleeModSlots=8, NumPerkSlots=8, NumWeaponModSlots=8
+- Max numeric values: BaseMaxHealth=288, Crystals=2962, CurrentHealth=344.40002441406, CurrentMaxHealth=345.60000610352, MaxHealthMultiplier=1, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
+- Changed fields: AbilityDA, BaseMaxHealth, Crystals, CurrentHealth, CurrentMaxHealth, MeleeDA, NumAbilityModSlots, NumMeleeModSlots, NumPerkSlots, NumWeaponModSlots, WeaponDA
+- Change counts: AbilityDA=2, BaseMaxHealth=5, Crystals=40, CurrentHealth=56, CurrentMaxHealth=6, MeleeDA=2, NumAbilityModSlots=1, NumMeleeModSlots=1, NumPerkSlots=1, NumWeaponModSlots=1, WeaponDA=2
+- First/last context: solo / solo
+- First/last role: solo-or-host / solo-or-host
+- Slot model status: observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total slot model unresolved
+- Writes/RPCs/HUD/deep arrays: no
+- Inventory arrays/count/traversal/elements, InventoryInfo, Enhancements: no
+- No crash dump is associated with the imported safe-scalar-watch evidence.
+
+## Perk DataAsset Catalog
+
+- Summary: unresolved; no `perk-da-catalog-read` evidence has been imported yet.
+- Purpose: read-only catalog of safely discoverable perk DataAssets through curated class/name discovery and curated field allowlists.
+- TastyOrange and Collector are not special-cased; if they are safely discoverable, they should appear as normal catalog entries.
+- RuntimeProbe proves read paths only; future CrabModFramework / CrabTastyMod write or edit APIs must be designed and gated separately.
+- TastyOrange is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.
+- Collector is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.
 
 ## Confirmed Unsafe Paths
 
@@ -193,6 +238,7 @@
 - `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, and `NumPerkSlots` are only observed scalar slot counters / candidate unlocked slot counters. They are not proven total capacity or locked-slot state.
 - Local inventory array shallow/count visibility is covered by `local-inventory-array-shallow-read`; property-shape confirmation is covered by `local-inventory-array-shape-confirm`; userdata wrapper metadata is covered by `local-inventory-userdata-introspection`.
 - Item contents are still not proven; userdata metadata does not read item data asset fields or element contents.
+- Perk DataAsset catalog evidence, when present, proves only curated read paths for future CrabModFramework / CrabTastyMod design; controlled write/edit APIs must be built separately.
 - `InventoryInfo` and enhancements remain placeholders until explicit probe sets are implemented.
 - Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.
 
@@ -206,6 +252,7 @@
 - `allowCrystalsReadProbes` is enabled only for `crystals-read`.
 - `allowSlotsReadProbes` is enabled only for `slots-read`.
 - `allowSafeScalarWatchProbes` is enabled only for `safe-scalar-watch`.
+- `allowPerkDataAssetCatalogProbes` is enabled only for `perk-da-catalog-read`.
 - `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.
 - `allowInventoryArrayShapeConfirmProbes` is enabled only for `local-inventory-array-shape-confirm`.
 - `allowInventoryUserdataIntrospectionProbes` is enabled only for `local-inventory-userdata-introspection`.

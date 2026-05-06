@@ -63,7 +63,7 @@ if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "tickDri
 if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "probeSet") -ne "shallow-core") {
   throw "default config probeSet must remain shallow-core."
 }
-foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowPerkDataAssetCatalogProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
   if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key $key) -ne "false") {
     throw "default config expected $key = false."
   }
@@ -145,6 +145,9 @@ for (const phase of plan.phases) {
   }
   if (phase.phaseId !== 'safe-scalar-watch') {
     assert(gates.allowSafeScalarWatchProbes === false, `${phase.phaseId} enabled safe scalar watch outside safe scalar watch phase`);
+  }
+  if (phase.phaseId !== 'perk-da-catalog-read') {
+    assert(gates.allowPerkDataAssetCatalogProbes === false, `${phase.phaseId} enabled perk DataAsset catalog outside catalog phase`);
   }
 }
 
@@ -356,7 +359,33 @@ const safeScalarWatchCompleteState = helpers.markCollected(plan, slotsCompleteSt
   latestCommit: '591389d5f71e99e2c19f7c287290cbf853a8e496',
   latestSummaryPath: 'evidence/runtime/20260505T212000Z/diagnostic_summary.txt'
 });
-assert(safeScalarWatchCompleteState.nextRecommendedPhase === null || safeScalarWatchCompleteState.nextRecommendedPhase === 'inventory-array-shallow-read', `safe scalar watch completion should move to inventory-array-shallow-read placeholder, got ${safeScalarWatchCompleteState.nextRecommendedPhase}`);
+assert(safeScalarWatchCompleteState.nextRecommendedPhase === 'perk-da-catalog-read', `safe scalar watch completion should move to perk-da-catalog-read, got ${safeScalarWatchCompleteState.nextRecommendedPhase}`);
+
+let perkCatalog = helpers.classifyPerkDataAssetCatalogEvidence([
+  { probeName: 'DataAsset.Perks.CatalogRead', result: 'ok', discoveryAttempted: true, catalogFound: true, catalogEntryCount: 2, catalogEntries: [{ shortName: 'DA_Perk_TastyOrange' }, { shortName: 'DA_Perk_Collector' }], noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, noInventoryArrays: true, noArrayCount: true, noArrayTraversal: true, noElementDereference: true, noInventoryInfo: true, noEnhancements: true, noDataAssetMutation: true, noFunctionCalls: true, safetyGates: { allowPerkDataAssetCatalogProbes: true, allowSafeScalarWatchProbes: false, allowCrystalsReadProbes: false, allowSlotsReadProbes: false, allowInventoryArrayShallowProbes: false, allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false, allowRawIdentityEvidence: false, allowHealthProbes: false, allowIdentityProbes: false, allowResourceVisibilityProbes: false } }
+]);
+assert(perkCatalog.status === 'perk_da_catalog_confirmed', `perk catalog should confirm found/read evidence, got ${perkCatalog.status}`);
+perkCatalog = helpers.classifyPerkDataAssetCatalogEvidence([
+  { probeName: 'DataAsset.Perks.CatalogRead', result: 'nil', discoveryAttempted: true, catalogFound: false, catalogEntryCount: 0, notFoundClassification: 'perk_da_catalog_not_found', noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, noInventoryArrays: true, noArrayCount: true, noArrayTraversal: true, noElementDereference: true, noInventoryInfo: true, noEnhancements: true, noDataAssetMutation: true, noFunctionCalls: true, safetyGates: { allowPerkDataAssetCatalogProbes: true, allowSafeScalarWatchProbes: false, allowInventoryArrayShallowProbes: false, allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false } }
+]);
+assert(perkCatalog.status === 'perk_da_catalog_not_found', `safe not-found catalog evidence should classify not-found, got ${perkCatalog.status}`);
+perkCatalog = helpers.classifyPerkDataAssetCatalogEvidence([
+  { probeName: 'DataAsset.Perks.CatalogRead', result: 'ok', discoveryAttempted: true, catalogFound: true, catalogEntryCount: 1, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, noInventoryArrays: true, noArrayCount: true, noArrayTraversal: false, noElementDereference: true, noInventoryInfo: true, noEnhancements: true, noDataAssetMutation: true, noFunctionCalls: true, safetyGates: { allowPerkDataAssetCatalogProbes: true } }
+]);
+assert(perkCatalog.status === 'failed', 'perk catalog must fail if safety markers are missing or false');
+perkCatalog = helpers.classifyPerkDataAssetCatalogEvidence([
+  { probeName: 'DataAsset.Perks.CatalogRead', result: 'ok', discoveryAttempted: true, catalogFound: true, catalogEntryCount: 1, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, noInventoryArrays: true, noArrayCount: true, noArrayTraversal: true, noElementDereference: true, noInventoryInfo: true, noEnhancements: true, noDataAssetMutation: true, noFunctionCalls: true, safetyGates: { allowPerkDataAssetCatalogProbes: true, allowWriteProbes: true } }
+]);
+assert(perkCatalog.status === 'failed', 'perk catalog must fail when forbidden gates are enabled');
+
+const perkCatalogCompleteState = helpers.markCollected(plan, safeScalarWatchCompleteState, 'perk-da-catalog-read', {
+  status: 'perk_da_catalog_confirmed',
+  reason: 'Perk DataAsset catalog read safely.',
+  latestSessionId: '20260505T213000Z',
+  latestCommit: '7b9c773f133d5464a1f5d6046bdf4ebdd565c75f',
+  latestSummaryPath: 'evidence/runtime/20260505T213000Z/diagnostic_summary.txt'
+});
+assert(perkCatalogCompleteState.nextRecommendedPhase === 'inventory-array-shallow-read', `perk catalog completion should advance to inventory-array-shallow-read placeholder, got ${perkCatalogCompleteState.nextRecommendedPhase}`);
 '@
 node $NodeTestPath (Join-Path $RepoRoot "tools\campaign_helpers.js") $RepoRoot
 if ($LASTEXITCODE -ne 0) { throw "campaign helper tests failed." }
@@ -452,7 +481,7 @@ if ($prepareRan) {
     if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowSlotsReadProbes") -ne "true") {
       throw "slots campaign phase expected allowSlotsReadProbes = true."
     }
-    foreach ($key in @("allowCrystalsReadProbes", "allowSafeScalarWatchProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
+    foreach ($key in @("allowCrystalsReadProbes", "allowSafeScalarWatchProbes", "allowPerkDataAssetCatalogProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
       if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
         throw "slots campaign phase expected $key = false."
       }
@@ -464,9 +493,21 @@ if ($prepareRan) {
     if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "repeatProbeSet") -ne "true") {
       throw "safe scalar watch campaign phase expected repeatProbeSet = true."
     }
-    foreach ($key in @("allowCrystalsReadProbes", "allowSlotsReadProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes", "allowUnknownRoleProbes")) {
+    foreach ($key in @("allowCrystalsReadProbes", "allowSlotsReadProbes", "allowPerkDataAssetCatalogProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes", "allowUnknownRoleProbes")) {
       if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
         throw "safe scalar watch campaign phase expected $key = false."
+      }
+    }
+  } elseif ($preparedPhase -eq "perk-da-catalog-read") {
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowPerkDataAssetCatalogProbes") -ne "true") {
+      throw "perk DataAsset catalog campaign phase expected allowPerkDataAssetCatalogProbes = true."
+    }
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "repeatProbeSet") -ne "false") {
+      throw "perk DataAsset catalog campaign phase expected repeatProbeSet = false."
+    }
+    foreach ($key in @("allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowInventoryUserdataIntrospectionProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes", "allowUnknownRoleProbes")) {
+      if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+        throw "perk DataAsset catalog campaign phase expected $key = false."
       }
     }
   }

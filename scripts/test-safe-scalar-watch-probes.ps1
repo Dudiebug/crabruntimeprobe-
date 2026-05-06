@@ -37,10 +37,10 @@ if ($phase.requiredGates.allowSafeScalarWatchProbes -ne $true) { throw "safe-sca
 if (($plan.phases | Where-Object { $_.phaseId -eq "slots-read" }).nextPhase -ne "safe-scalar-watch") {
   throw "slots-read must advance to safe-scalar-watch."
 }
-if ($phase.nextPhase -ne "inventory-array-shallow-read") {
-  throw "safe-scalar-watch must advance to inventory-array-shallow-read."
+if ($phase.nextPhase -ne "perk-da-catalog-read") {
+  throw "safe-scalar-watch must advance to perk-da-catalog-read."
 }
-foreach ($gate in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+foreach ($gate in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowPerkDataAssetCatalogProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
   if (@($phase.forbiddenGates) -notcontains $gate) {
     throw "safe-scalar-watch phase must forbid $gate."
   }
@@ -74,7 +74,7 @@ foreach ($expected in @(
 
 $registry = Get-Content -Raw -LiteralPath $ProbeRegistryPath
 $helperStart = $registry.IndexOf("local function safeScalarWatchReadProperty")
-$helperEnd = $registry.IndexOf("local function classifyCrabHCSource")
+$helperEnd = $registry.IndexOf("local PERK_DA_CLASS_CANDIDATES")
 $probeStart = $registry.IndexOf("SafeWatch.Scalar.Sample")
 $probeEnd = $registry.IndexOf("FindAllOf.CrabHC.Availability")
 if ($helperStart -lt 0 -or $helperEnd -le $helperStart -or $probeStart -lt 0 -or $probeEnd -le $probeStart) { throw "could not isolate safe scalar watch probe block." }
@@ -118,7 +118,7 @@ if (Test-Path -LiteralPath $WorkRoot) {
 New-Item -ItemType Directory -Force -Path (Join-Path $WorkRoot "evidence\runtime\safewatch") | Out-Null
 Copy-Item -LiteralPath (Join-Path $RepoRoot "campaign") -Destination (Join-Path $WorkRoot "campaign") -Recurse
 
-$safeGates = '"allowHudTickHook":false,"allowUnknownRoleProbes":false,"allowJoinedClientDeepProbes":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":false,"allowIdentityProbes":false,"allowRawIdentityEvidence":false,"allowResourceVisibilityProbes":false,"allowCrystalsReadProbes":false,"allowSlotsReadProbes":false,"allowSafeScalarWatchProbes":true,"allowInventoryArrayShallowProbes":false,"allowInventoryArrayShapeConfirmProbes":false,"allowInventoryUserdataIntrospectionProbes":false,"allowWriteProbes":false,"allowRpcProbes":false'
+$safeGates = '"allowHudTickHook":false,"allowUnknownRoleProbes":false,"allowJoinedClientDeepProbes":false,"allowDeepArrayProbes":false,"allowInventoryInfoProbes":false,"allowHealthProbes":false,"allowIdentityProbes":false,"allowRawIdentityEvidence":false,"allowResourceVisibilityProbes":false,"allowCrystalsReadProbes":false,"allowSlotsReadProbes":false,"allowSafeScalarWatchProbes":true,"allowPerkDataAssetCatalogProbes":false,"allowInventoryArrayShallowProbes":false,"allowInventoryArrayShapeConfirmProbes":false,"allowInventoryUserdataIntrospectionProbes":false,"allowWriteProbes":false,"allowRpcProbes":false'
 $SessionDir = Join-Path $WorkRoot "evidence\runtime\safewatch"
 $watchRow = ('{"timestamp":"2026-05-05T10:20:01Z","sessionId":"safewatch","probeId":"SafeWatch.Scalar.Sample","probeName":"SafeWatch.Scalar.Sample","probeSet":"safe-scalar-watch","category":"safe-scalar-watch","symbol":"CrabPS.SafeScalarWatch","owner":"CrabPS","member":"WeaponDA AbilityDA MeleeDA Crystals Num*Slots HealthInfo","accessMethod":"SafeScalarWatchSample","accessKind":"safeScalarWatch","mode":"active","tickDriver":"executeDelay","tick":500,"context":"solo","role":"solo-or-host","lifecycleState":"stable","result":"ok","runtimeStatus":"SAFE","valueKind":"safe_scalar_watch","valueSummary":"category=safe-scalar-watch sampleCount=2 loggedCount=1 reason=heartbeat playerStatePresent=true changed=false changedFields=none slotModel=observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total unresolved noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=safe-scalar-watch","sourceScope":"local_safe_scalar_watch","sourcePath":"CrabPC.PlayerState","sourceClass":"CrabPS","playerStatePresent":true,"localPlayerStatePresent":true,"sampleReason":"heartbeat","sampleChanged":false,"safeWatchSampleCount":2,"safeWatchLoggedCount":1,"safeWatchFirstValues":{"Crystals":100,"NumWeaponModSlots":24,"CurrentHealth":250},"safeWatchLatestValues":{"Crystals":100,"NumWeaponModSlots":24,"CurrentHealth":250},"safeWatchMinValues":{"Crystals":100,"NumWeaponModSlots":24,"CurrentHealth":250},"safeWatchMaxValues":{"Crystals":100,"NumWeaponModSlots":24,"CurrentHealth":250},"safeWatchChangedFields":[],"safeWatchChangeCounts":{},"firstContext":"solo","lastContext":"solo","firstRole":"solo-or-host","lastRole":"solo-or-host","lockedSlotModel":"observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total slot model unresolved","noElementDereference":true,"noArrayCount":true,"noArrayTraversal":true,"noInventoryInfo":true,"noEnhancements":true,"noWrites":true,"noRpcs":true,"noHud":true,"noDeepArrays":true,"crashAttributionMarker":"safe-scalar-watch","safetyGates":{' + $safeGates + '}}')
 Set-Content -LiteralPath (Join-Path $SessionDir "access_evidence.jsonl") -Encoding ASCII -Value @($watchRow)

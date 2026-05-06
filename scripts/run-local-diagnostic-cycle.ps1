@@ -12,6 +12,7 @@ param(
   [switch]$PrepareHealthPlayerState,
   [switch]$PrepareHealthPlayerStateWatch,
   [switch]$PrepareSafeScalarWatch,
+  [switch]$PreparePerkDataAssetCatalog,
   [switch]$Collect,
   [switch]$CollectEquipmentProperty,
   [switch]$CollectHealthBaseline,
@@ -21,6 +22,7 @@ param(
   [switch]$CollectCrystalsRead,
   [switch]$CollectSlotsRead,
   [switch]$CollectSafeScalarWatch,
+  [switch]$CollectPerkDataAssetCatalog,
   [switch]$CollectLocalInventoryArrayShallow,
   [switch]$CollectLocalInventoryArrayShapeConfirm,
   [switch]$CollectLocalInventoryUserdataIntrospection,
@@ -45,6 +47,7 @@ function Get-CycleMode {
   if ($PrepareHealthPlayerState) { $modes += "PrepareHealthPlayerState" }
   if ($PrepareHealthPlayerStateWatch) { $modes += "PrepareHealthPlayerStateWatch" }
   if ($PrepareSafeScalarWatch) { $modes += "PrepareSafeScalarWatch" }
+  if ($PreparePerkDataAssetCatalog) { $modes += "PreparePerkDataAssetCatalog" }
   if ($Collect) { $modes += "Collect" }
   if ($CollectEquipmentProperty) { $modes += "CollectEquipmentProperty" }
   if ($CollectHealthBaseline) { $modes += "CollectHealthBaseline" }
@@ -54,13 +57,14 @@ function Get-CycleMode {
   if ($CollectCrystalsRead) { $modes += "CollectCrystalsRead" }
   if ($CollectSlotsRead) { $modes += "CollectSlotsRead" }
   if ($CollectSafeScalarWatch) { $modes += "CollectSafeScalarWatch" }
+  if ($CollectPerkDataAssetCatalog) { $modes += "CollectPerkDataAssetCatalog" }
   if ($CollectLocalInventoryArrayShallow) { $modes += "CollectLocalInventoryArrayShallow" }
   if ($CollectLocalInventoryArrayShapeConfirm) { $modes += "CollectLocalInventoryArrayShapeConfirm" }
   if ($CollectLocalInventoryUserdataIntrospection) { $modes += "CollectLocalInventoryUserdataIntrospection" }
 
   $unique = @($modes | Sort-Object -Unique)
   if ($unique.Count -ne 1) {
-    throw "Choose exactly one mode: -PrepareSmoke, -CollectSmoke, -PrepareTickDriver <driver>, -PrepareEquipmentProperty, -PrepareHealthBaseline, -PrepareHealthPlayerState, -PrepareHealthPlayerStateWatch, -PrepareSafeScalarWatch, -Collect, -CollectEquipmentProperty, -CollectHealthBaseline, -CollectHealthPlayerState, -CollectHealthPlayerStateWatch, -CollectResourceVisibility, -CollectCrystalsRead, -CollectSlotsRead, -CollectSafeScalarWatch, -CollectLocalInventoryArrayShallow, -CollectLocalInventoryArrayShapeConfirm, or -CollectLocalInventoryUserdataIntrospection."
+    throw "Choose exactly one mode: -PrepareSmoke, -CollectSmoke, -PrepareTickDriver <driver>, -PrepareEquipmentProperty, -PrepareHealthBaseline, -PrepareHealthPlayerState, -PrepareHealthPlayerStateWatch, -PrepareSafeScalarWatch, -PreparePerkDataAssetCatalog, -Collect, -CollectEquipmentProperty, -CollectHealthBaseline, -CollectHealthPlayerState, -CollectHealthPlayerStateWatch, -CollectResourceVisibility, -CollectCrystalsRead, -CollectSlotsRead, -CollectSafeScalarWatch, -CollectPerkDataAssetCatalog, -CollectLocalInventoryArrayShallow, -CollectLocalInventoryArrayShapeConfirm, or -CollectLocalInventoryUserdataIntrospection."
   }
 
   return $unique[0]
@@ -133,6 +137,7 @@ function Test-CrabRuntimeProbeInstalledSafety {
     [switch]$AllowCrystalsReadProbes,
     [switch]$AllowSlotsReadProbes,
     [switch]$AllowSafeScalarWatchProbes,
+    [switch]$AllowPerkDataAssetCatalogProbes,
     [switch]$AllowInventoryArrayShallowProbes,
     [switch]$AllowInventoryArrayShapeConfirmProbes,
     [switch]$AllowInventoryUserdataIntrospectionProbes
@@ -164,6 +169,7 @@ function Test-CrabRuntimeProbeInstalledSafety {
     "allowCrystalsReadProbes",
     "allowSlotsReadProbes",
     "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -196,6 +202,9 @@ function Test-CrabRuntimeProbeInstalledSafety {
       if ($AllowSafeScalarWatchProbes -and $key -eq "allowSafeScalarWatchProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
         continue
       }
+      if ($AllowPerkDataAssetCatalogProbes -and $key -eq "allowPerkDataAssetCatalogProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
+        continue
+      }
       if ($AllowInventoryArrayShallowProbes -and $key -eq "allowInventoryArrayShallowProbes" -and [string]::Equals($value, "true", [System.StringComparison]::OrdinalIgnoreCase)) {
         continue
       }
@@ -223,12 +232,13 @@ function Assert-CrabRuntimeProbeInstalledSafety {
     [switch]$AllowCrystalsReadProbes,
     [switch]$AllowSlotsReadProbes,
     [switch]$AllowSafeScalarWatchProbes,
+    [switch]$AllowPerkDataAssetCatalogProbes,
     [switch]$AllowInventoryArrayShallowProbes,
     [switch]$AllowInventoryArrayShapeConfirmProbes,
     [switch]$AllowInventoryUserdataIntrospectionProbes
   )
 
-  $errors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $ConfigPath -AllowHealthProbes:$AllowHealthProbes -AllowIdentityProbes:$AllowIdentityProbes -AllowResourceVisibilityProbes:$AllowResourceVisibilityProbes -AllowCrystalsReadProbes:$AllowCrystalsReadProbes -AllowSlotsReadProbes:$AllowSlotsReadProbes -AllowSafeScalarWatchProbes:$AllowSafeScalarWatchProbes -AllowInventoryArrayShallowProbes:$AllowInventoryArrayShallowProbes -AllowInventoryArrayShapeConfirmProbes:$AllowInventoryArrayShapeConfirmProbes -AllowInventoryUserdataIntrospectionProbes:$AllowInventoryUserdataIntrospectionProbes
+  $errors = Test-CrabRuntimeProbeInstalledSafety -ConfigPath $ConfigPath -AllowHealthProbes:$AllowHealthProbes -AllowIdentityProbes:$AllowIdentityProbes -AllowResourceVisibilityProbes:$AllowResourceVisibilityProbes -AllowCrystalsReadProbes:$AllowCrystalsReadProbes -AllowSlotsReadProbes:$AllowSlotsReadProbes -AllowSafeScalarWatchProbes:$AllowSafeScalarWatchProbes -AllowPerkDataAssetCatalogProbes:$AllowPerkDataAssetCatalogProbes -AllowInventoryArrayShallowProbes:$AllowInventoryArrayShallowProbes -AllowInventoryArrayShapeConfirmProbes:$AllowInventoryArrayShapeConfirmProbes -AllowInventoryUserdataIntrospectionProbes:$AllowInventoryUserdataIntrospectionProbes
   if ($errors.Count -gt 0) {
     throw "Installed config safety validation failed at $ConfigPath`n$((($errors | ForEach-Object { " - $_" }) -join "`n"))"
   }
@@ -649,6 +659,7 @@ function Set-InstalledSmokeConfig {
     "allowCrystalsReadProbes",
     "allowSlotsReadProbes",
     "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -689,6 +700,7 @@ function Set-InstalledTickDriverConfig {
     "allowCrystalsReadProbes",
     "allowSlotsReadProbes",
     "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -721,6 +733,7 @@ function Set-InstalledEquipmentPropertyConfig {
     "allowCrystalsReadProbes",
     "allowSlotsReadProbes",
     "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -753,6 +766,7 @@ function Set-InstalledHealthBaselineConfig {
     "allowCrystalsReadProbes",
     "allowSlotsReadProbes",
     "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -785,6 +799,7 @@ function Set-InstalledHealthPlayerStateConfig {
     "allowCrystalsReadProbes",
     "allowSlotsReadProbes",
     "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -818,6 +833,7 @@ function Set-InstalledHealthPlayerStateWatchConfig {
     "allowCrystalsReadProbes",
     "allowSlotsReadProbes",
     "allowSafeScalarWatchProbes",
+    "allowPerkDataAssetCatalogProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -854,6 +870,41 @@ function Set-InstalledSafeScalarWatchConfig {
     "allowResourceVisibilityProbes",
     "allowCrystalsReadProbes",
     "allowSlotsReadProbes",
+    "allowPerkDataAssetCatalogProbes",
+    "allowInventoryArrayShallowProbes",
+    "allowInventoryArrayShapeConfirmProbes",
+    "allowInventoryUserdataIntrospectionProbes",
+    "allowWriteProbes",
+    "allowRpcProbes"
+  )) {
+    Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key $key -Value "false"
+  }
+}
+
+function Set-InstalledPerkDataAssetCatalogConfig {
+  param([string]$ConfigPath)
+
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "tickDriver" -Value "executeDelay"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "mode" -Value "active"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "probeSet" -Value "perk-da-catalog-read"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugTickHeartbeat" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "debugWriterSelfTest" -Value "true"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "repeatProbeSet" -Value "false"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "maxProbesPerSession" -Value "1"
+  Set-CrabRuntimeProbeConfigValue -ConfigPath $ConfigPath -Key "allowPerkDataAssetCatalogProbes" -Value "true"
+  foreach ($key in @(
+    "allowHudTickHook",
+    "allowUnknownRoleProbes",
+    "allowJoinedClientDeepProbes",
+    "allowDeepArrayProbes",
+    "allowInventoryInfoProbes",
+    "allowHealthProbes",
+    "allowIdentityProbes",
+    "allowRawIdentityEvidence",
+    "allowResourceVisibilityProbes",
+    "allowCrystalsReadProbes",
+    "allowSlotsReadProbes",
+    "allowSafeScalarWatchProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -884,7 +935,7 @@ if (-not (Test-Path -LiteralPath $GameBinFull -PathType Container)) {
   throw "Game bin path does not exist: $GameBinFull"
 }
 
-if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "PrepareEquipmentProperty" -or $Mode -eq "PrepareHealthBaseline" -or $Mode -eq "PrepareHealthPlayerState" -or $Mode -eq "PrepareHealthPlayerStateWatch" -or $Mode -eq "PrepareSafeScalarWatch") {
+if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "PrepareEquipmentProperty" -or $Mode -eq "PrepareHealthBaseline" -or $Mode -eq "PrepareHealthPlayerState" -or $Mode -eq "PrepareHealthPlayerStateWatch" -or $Mode -eq "PrepareSafeScalarWatch" -or $Mode -eq "PreparePerkDataAssetCatalog") {
   & (Join-Path $PSScriptRoot "install-client-to-game.ps1") $GameBinFull
   & (Join-Path $PSScriptRoot "verify-installed-client.ps1") $GameBinFull
 
@@ -900,11 +951,13 @@ if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "Pr
     Set-InstalledHealthPlayerStateWatchConfig -ConfigPath $InstalledConfigPath
   } elseif ($Mode -eq "PrepareSafeScalarWatch") {
     Set-InstalledSafeScalarWatchConfig -ConfigPath $InstalledConfigPath
+  } elseif ($Mode -eq "PreparePerkDataAssetCatalog") {
+    Set-InstalledPerkDataAssetCatalogConfig -ConfigPath $InstalledConfigPath
   } else {
     Set-InstalledTickDriverConfig -ConfigPath $InstalledConfigPath -TickDriver $PrepareTickDriver -NoDebug:$NoDiagnosticDebug
   }
 
-  Assert-CrabRuntimeProbeInstalledSafety -ConfigPath $InstalledConfigPath -AllowHealthProbes:($Mode -eq "PrepareHealthBaseline" -or $Mode -eq "PrepareHealthPlayerState" -or $Mode -eq "PrepareHealthPlayerStateWatch") -AllowSafeScalarWatchProbes:($Mode -eq "PrepareSafeScalarWatch")
+  Assert-CrabRuntimeProbeInstalledSafety -ConfigPath $InstalledConfigPath -AllowHealthProbes:($Mode -eq "PrepareHealthBaseline" -or $Mode -eq "PrepareHealthPlayerState" -or $Mode -eq "PrepareHealthPlayerStateWatch") -AllowSafeScalarWatchProbes:($Mode -eq "PrepareSafeScalarWatch") -AllowPerkDataAssetCatalogProbes:($Mode -eq "PreparePerkDataAssetCatalog")
   $removed = Clear-CrabRuntimeProbeRuntimeFiles -GameBinFull $GameBinFull -ScriptsRoot $InstallScriptsRoot
   $buildInfoText = Read-TextFileOrEmpty -Path $BuildInfoPath
   $prepareMarkerPath = Write-CrabRuntimeProbePrepareMarker `
@@ -956,6 +1009,11 @@ if ($Mode -eq "PrepareSmoke" -or $Mode -eq "PrepareTickDriver" -or $Mode -eq "Pr
     Write-Host " 3. This records only proven-safe scalar values every ~5 seconds or when changed. Do not use this for testing unproven inventory internals."
     Write-Host " 4. Quit the game."
     Write-Host " 5. Run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-safe-watch-collect.ps1"
+  } elseif ($Mode -eq "PreparePerkDataAssetCatalog") {
+    Write-Host " 2. Launch Crab Champions and reach any stable menu or in-run state."
+    Write-Host " 3. This records only a capped, curated read-only perk DataAsset catalog. Do not use this for writes or inventory testing."
+    Write-Host " 4. Quit the game."
+    Write-Host " 5. Run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\quick-campaign-collect.ps1"
   } else {
     Write-Host " 2. Sit at the menu for 20 to 30 seconds."
     Write-Host " 3. Quit the game."
@@ -972,6 +1030,7 @@ $safetyErrors = Test-CrabRuntimeProbeInstalledSafety `
   -AllowCrystalsReadProbes:($Mode -eq "CollectCrystalsRead") `
   -AllowSlotsReadProbes:($Mode -eq "CollectSlotsRead") `
   -AllowSafeScalarWatchProbes:($Mode -eq "CollectSafeScalarWatch") `
+  -AllowPerkDataAssetCatalogProbes:($Mode -eq "CollectPerkDataAssetCatalog") `
   -AllowInventoryArrayShallowProbes:($Mode -eq "CollectLocalInventoryArrayShallow") `
   -AllowInventoryArrayShapeConfirmProbes:($Mode -eq "CollectLocalInventoryArrayShapeConfirm") `
   -AllowInventoryUserdataIntrospectionProbes:($Mode -eq "CollectLocalInventoryUserdataIntrospection")
@@ -1178,6 +1237,49 @@ if ($safeScalarWatchSafetyViolation) {
   $safeScalarWatchClassification = "safe_scalar_watch_observed_change"
 } elseif ($parsedSafeScalarWatchSampleCount -gt 1) {
   $safeScalarWatchClassification = "safe_scalar_watch_confirmed_no_change"
+}
+$perkCatalogProbeNames = @("DataAsset.Perks.CatalogRead")
+$perkCatalogRecords = @($jsonlRecords | Where-Object { $perkCatalogProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) })
+$perkCatalogAllRecords = @($perkCatalogRecords + @($accessEvidenceRecords | Where-Object { $perkCatalogProbeNames -contains (Get-RecordValue -Record $_ -Names @("probeName", "probeId", "event")) }))
+$latestPerkCatalogRecord = if ($perkCatalogAllRecords.Count -gt 0) { $perkCatalogAllRecords[-1] } else { $null }
+$perkCatalogEntryCount = 0
+$perkCatalogCandidateCount = 0
+if ($null -ne $latestPerkCatalogRecord) {
+  [void][int]::TryParse([string](Get-RecordValue -Record $latestPerkCatalogRecord -Names @("catalogEntryCount")), [ref]$perkCatalogEntryCount)
+  [void][int]::TryParse([string](Get-RecordValue -Record $latestPerkCatalogRecord -Names @("catalogCandidateCount")), [ref]$perkCatalogCandidateCount)
+}
+$perkCatalogDiscoveryAttempted = @($perkCatalogAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "discoveryAttempted") -and $_.discoveryAttempted -eq $true }).Count -gt 0
+$perkCatalogFound = @($perkCatalogAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "catalogFound") -and $_.catalogFound -eq $true }).Count -gt 0
+$perkCatalogSafetyViolation = @($perkCatalogAllRecords | Where-Object {
+  $bad = $false
+  foreach ($flag in @("noWrites", "noRpcs", "noHud", "noDeepArrays", "noInventoryArrays", "noArrayCount", "noArrayTraversal", "noElementDereference", "noInventoryInfo", "noEnhancements", "noDataAssetMutation", "noFunctionCalls")) {
+    if (-not ($_.PSObject.Properties.Name -contains $flag) -or $_.$flag -ne $true) { $bad = $true }
+  }
+  $bad
+}).Count -gt 0
+foreach ($row in $perkCatalogAllRecords) {
+  if (($row.PSObject.Properties.Name -contains "safetyGates") -and $null -ne $row.safetyGates) {
+    if (-not ($row.safetyGates.PSObject.Properties.Name -contains "allowPerkDataAssetCatalogProbes") -or $row.safetyGates.allowPerkDataAssetCatalogProbes -ne $true) {
+      $perkCatalogSafetyViolation = $true
+    }
+    foreach ($gate in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+      if (($row.safetyGates.PSObject.Properties.Name -contains $gate) -and $row.safetyGates.$gate -eq $true) {
+        $perkCatalogSafetyViolation = $true
+      }
+    }
+  }
+}
+$perkCatalogClassification = "no_evidence"
+if ($perkCatalogSafetyViolation) {
+  $perkCatalogClassification = "failed"
+} elseif ($perkCatalogAllRecords.Count -gt 0 -and -not $perkCatalogDiscoveryAttempted) {
+  $perkCatalogClassification = "no_evidence"
+} elseif ($crashAfterPrepare -and $perkCatalogAllRecords.Count -gt 0) {
+  $perkCatalogClassification = "crash_suspect_perk_da_catalog_read"
+} elseif ($perkCatalogFound -or $perkCatalogEntryCount -gt 0) {
+  $perkCatalogClassification = "perk_da_catalog_confirmed"
+} elseif ($perkCatalogAllRecords.Count -gt 0) {
+  $perkCatalogClassification = "perk_da_catalog_not_found"
 }
 $localInventoryProbeNames = @(
   "Inventory.LocalSlots.Sample",
@@ -1594,6 +1696,30 @@ if ($Mode -eq "CollectSafeScalarWatch") {
   }
 }
 
+if ($Mode -eq "CollectPerkDataAssetCatalog") {
+  if ($installedMode -ne "active") { $failures.Add("Perk DataAsset catalog collect expected mode = active, got '$installedMode'.") | Out-Null }
+  if ($tickDriver -ne "executeDelay") { $failures.Add("Perk DataAsset catalog collect expected tickDriver = executeDelay, got '$tickDriver'.") | Out-Null }
+  if ($probeSet -ne "perk-da-catalog-read") { $failures.Add("Perk DataAsset catalog collect expected probeSet = perk-da-catalog-read, got '$probeSet'.") | Out-Null }
+  if (-not $prepareMarkerFound) { $failures.Add("Perk DataAsset catalog collect expected prepare_marker.json from quick-campaign-prepare.ps1.") | Out-Null }
+  if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowPerkDataAssetCatalogProbes") -ne "true") {
+    $failures.Add("Perk DataAsset catalog collect expected allowPerkDataAssetCatalogProbes = true.") | Out-Null
+  }
+  foreach ($key in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+    if ((Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+      $failures.Add("Perk DataAsset catalog collect expected $key = false.") | Out-Null
+    }
+  }
+  if ($perkCatalogRecords.Count -eq 0) {
+    $failures.Add("Expected DataAsset.Perks.CatalogRead during perk DataAsset catalog collection, but it did not run.") | Out-Null
+  }
+  if (-not $perkCatalogDiscoveryAttempted) {
+    $failures.Add("Perk DataAsset catalog evidence did not mark discoveryAttempted = true.") | Out-Null
+  }
+  if ($perkCatalogSafetyViolation) {
+    $failures.Add("Perk DataAsset catalog evidence touched or omitted forbidden safety markers.") | Out-Null
+  }
+}
+
 if ($Mode -eq "CollectLocalInventoryArrayShallow") {
   if ($installedMode -ne "active") { $failures.Add("Local inventory array shallow collect expected mode = active, got '$installedMode'.") | Out-Null }
   if ($tickDriver -ne "executeDelay") { $failures.Add("Local inventory array shallow collect expected tickDriver = executeDelay, got '$tickDriver'.") | Out-Null }
@@ -1819,6 +1945,12 @@ $summaryLines = @(
   "safe_scalar_watch_last_role = $safeScalarWatchLastRole",
   "safe_scalar_watch_slot_model_status = observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total slot model unresolved",
   "safe_scalar_watch_safety_violation = $safeScalarWatchSafetyViolation",
+  "perk_da_catalog_probe_ran = $($perkCatalogRecords.Count -gt 0)",
+  "perk_da_catalog_classification = $perkCatalogClassification",
+  "perk_da_catalog_discovery_attempted = $perkCatalogDiscoveryAttempted",
+  "perk_da_catalog_entry_count = $perkCatalogEntryCount",
+  "perk_da_catalog_candidate_count = $perkCatalogCandidateCount",
+  "perk_da_catalog_safety_violation = $perkCatalogSafetyViolation",
   "local_inventory_array_shallow_probe_ran = $($localInventoryRecords.Count -gt 0)",
   "local_inventory_array_shallow_sample_count = $($localInventoryRecords.Count)",
   "local_inventory_array_element_dereference = $localInventoryElementDereference",
@@ -1869,6 +2001,7 @@ $summaryLines = @(
   "allowCrystalsReadProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowCrystalsReadProbes")",
   "allowSlotsReadProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowSlotsReadProbes")",
   "allowSafeScalarWatchProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowSafeScalarWatchProbes")",
+  "allowPerkDataAssetCatalogProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowPerkDataAssetCatalogProbes")",
   "allowInventoryArrayShallowProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryArrayShallowProbes")",
   "allowInventoryArrayShapeConfirmProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryArrayShapeConfirmProbes")",
   "allowInventoryUserdataIntrospectionProbes = $(Get-CrabRuntimeProbeConfigValueOrMissing -ConfigPath $InstalledConfigPath -Key "allowInventoryUserdataIntrospectionProbes")",
@@ -1979,7 +2112,7 @@ if ($errorLines.Count -eq 0) {
   }
 }
 
-if ($Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch" -or $Mode -eq "CollectResourceVisibility" -or $Mode -eq "CollectCrystalsRead" -or $Mode -eq "CollectSlotsRead" -or $Mode -eq "CollectSafeScalarWatch" -or $Mode -eq "CollectLocalInventoryArrayShallow" -or $Mode -eq "CollectLocalInventoryArrayShapeConfirm" -or $Mode -eq "CollectLocalInventoryUserdataIntrospection") {
+if ($Mode -eq "CollectHealthPlayerState" -or $Mode -eq "CollectHealthPlayerStateWatch" -or $Mode -eq "CollectResourceVisibility" -or $Mode -eq "CollectCrystalsRead" -or $Mode -eq "CollectSlotsRead" -or $Mode -eq "CollectSafeScalarWatch" -or $Mode -eq "CollectPerkDataAssetCatalog" -or $Mode -eq "CollectLocalInventoryArrayShallow" -or $Mode -eq "CollectLocalInventoryArrayShapeConfirm" -or $Mode -eq "CollectLocalInventoryUserdataIntrospection") {
   $summaryLines += ""
   $summaryLines += "files_to_upload:"
   $summaryLines += " - $SummaryPath"

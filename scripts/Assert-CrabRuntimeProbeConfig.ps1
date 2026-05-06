@@ -39,6 +39,7 @@ $script:CrabRuntimeProbeRequiredConfigDefaults = [ordered]@{
   allowCrystalsReadProbes = "false"
   allowSlotsReadProbes = "false"
   allowSafeScalarWatchProbes = "false"
+  allowPerkDataAssetCatalogProbes = "false"
   allowInventoryArrayShallowProbes = "false"
   allowInventoryArrayShapeConfirmProbes = "false"
   allowInventoryUserdataIntrospectionProbes = "false"
@@ -47,6 +48,8 @@ $script:CrabRuntimeProbeRequiredConfigDefaults = [ordered]@{
   safeScalarWatchIntervalSeconds = "5"
   safeScalarWatchHeartbeatSeconds = "60"
   safeScalarWatchMaxSamples = "240"
+  perkDataAssetCatalogMaxCandidates = "64"
+  perkDataAssetCatalogMaxFields = "32"
   probeSet = "shallow-core"
 }
 
