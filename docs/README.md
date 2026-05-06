@@ -33,6 +33,8 @@
 - [CrabSyncV2 Open Questions](CRABSYNCV2_OPEN_QUESTIONS.md)
 - [CrabSyncV2 Crash Safety](CRABSYNCV2_CRASH_SAFETY.md)
 - [CrabSyncV2 Implementation Blueprint](CRABSYNCV2_IMPLEMENTATION_BLUEPRINT.md)
+- [CrabSyncV2 P2P Architecture](CRABSYNCV2_P2P_ARCHITECTURE.md)
+- [CrabSyncV2 v1 Migration Doctrine](CRABSYNCV2_V1_MIGRATION_DOCTRINE.md)
 - [CrabSyncV2 Research Roadmap](CRABSYNCV2_RESEARCH_ROADMAP.md)
 - [CrabSyncV2 Glossary](CRABSYNCV2_GLOSSARY.md)
 

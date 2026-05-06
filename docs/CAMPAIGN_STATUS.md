@@ -106,7 +106,7 @@
 - Supports future P2P resource merge design: partial
 - CrabInvSync v2 implication: P2P-style merge is plausible for crystals, slots, equipment, and possibly health inputs.
 - Inventory item sync still needs separate research; current shallow count-only inventory array visibility is unresolved and does not expose item metadata.
-- An external relay/server may still be needed for inventory until array/item metadata visibility or another safe carrier is proven.
+- Inventory may remain unsupported unless array/item metadata visibility or a safe game-native carrier is proven; external relay/server fallback is out of scope for CrabSyncV2 unless explicitly re-approved.
 - Raw IDs/names emitted: no, redacted/fingerprinted by default
 - No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.
 

@@ -83,3 +83,5 @@ Each snapshot row should include:
 ## Migration Policy
 
 CrabInvSync v1 behavior should not be copied blindly. Every v1 behavior must be mapped to proven RuntimeProbe evidence, objectdump facts plus a marked assumption, or a legacy risky bucket that stays disabled until research catches up.
+
+Use [CrabSyncV2 v1 Migration Doctrine](CRABSYNCV2_V1_MIGRATION_DOCTRINE.md) before reusing any v1 behavior. v1 is archival/prototype reference only; bridge/server/relay/JSON IPC behavior is not a v2 foundation.

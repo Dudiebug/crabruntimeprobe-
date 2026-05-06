@@ -17,6 +17,8 @@ The intended model is to derive what can be synchronized from the game's own rep
 
 CrabInvSync v1 proved useful as a prototype, but its transport model is intentionally not carried forward as the CrabSyncV2 baseline.
 
+For the detailed v1-to-v2 decision record, see [CrabSyncV2 v1 Migration Doctrine](CRABSYNCV2_V1_MIGRATION_DOCTRINE.md).
+
 v1 bridge/server architecture introduced:
 
 - Added end-to-end latency beyond game-native replication.
