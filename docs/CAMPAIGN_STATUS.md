@@ -1,11 +1,11 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-06T05:52:58.652Z
+- Updated: 2026-05-06T23:54:20.276Z
 - Current phase: `inventory-element-da-read`
 - Next recommended phase: `inventory-element-da-read`
 - Latest session: 20260506T052733Z
-- Latest commit: 75dcf3d82dd83677f0489158261de351c9770216
+- Latest commit: af05ec49eb578b7ce64180fc61eb713155ad9326
 - Latest summary: evidence/runtime/20260506T052733Z/diagnostic_summary.txt
 
 ## Completed Phases
@@ -42,6 +42,7 @@
 - `weaponmod-da-catalog-read` - Weapon mod DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
 - `abilitymod-da-catalog-read` - Ability mod DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
 - `meleemod-da-catalog-read` - Melee mod DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
+- `relic-da-catalog-read` - Relic DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
 - `weapon-da-catalog-read` - Weapon DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
 - `ability-da-catalog-read` - Ability DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
 - `melee-da-catalog-read` - Melee DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
@@ -80,6 +81,7 @@
 - local PlayerState Crystals scalar read through CrabPC -> PlayerState -> CrabPS
 - local PlayerState candidate slot scalar reads through CrabPC -> PlayerState -> CrabPS
 - safe scalar watch over proven local scalar/property paths
+- read-only perk DataAsset catalog discovery and curated field reads
 - direct max-safe play recorder over proven scalars plus capped perk DataAsset snapshots
 
 ## Identity And Roster Notes
@@ -106,7 +108,7 @@
 - Supports future P2P resource merge design: partial
 - CrabInvSync v2 implication: P2P-style merge is plausible for crystals, slots, equipment, and possibly health inputs.
 - Inventory item sync still needs separate research; current shallow count-only inventory array visibility is unresolved and does not expose item metadata.
-- Inventory may remain unsupported unless array/item metadata visibility or a safe game-native carrier is proven; external relay/server fallback is out of scope for CrabSyncV2 unless explicitly re-approved.
+- An external relay/server may still be needed for inventory until array/item metadata visibility or another safe carrier is proven.
 - Raw IDs/names emitted: no, redacted/fingerprinted by default
 - No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.
 
@@ -243,9 +245,20 @@
 
 ## Perk DataAsset Catalog
 
-- Summary: unresolved; no `perk-da-catalog-read` evidence has been imported yet.
-- Purpose: read-only catalog of safely discoverable perk DataAssets through curated class/name discovery and curated field allowlists.
-- TastyOrange and Collector are not special-cased; if they are safely discoverable, they should appear as normal catalog entries.
+- Summary: perk_da_catalog_confirmed
+- Perk DataAsset catalog status: perk_da_catalog_confirmed
+- Discovery attempted: yes
+- Catalog entries: 64
+- Candidate count/cap: 64/64
+- Rejected candidate count/cap: 0/16
+- Top rejection reasons: none
+- Perk-like class/name patterns: identity:PerkDataAsset, name:path-or-da-perk
+- Field cap: 32
+- Writes/RPCs/HUD/deep arrays: no
+- Inventory arrays/count/traversal/elements, InventoryInfo, Enhancements: no
+- DataAsset mutation/function calls/passive-only violation: no
+- No crash dump is associated with the imported perk catalog evidence.
+- Catalog evidence is read-path evidence only. It is not permission to mutate DataAssets.
 - RuntimeProbe proves read paths only; future CrabModFramework / CrabTastyMod write or edit APIs must be designed and gated separately.
 - TastyOrange is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.
 - Collector is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.
