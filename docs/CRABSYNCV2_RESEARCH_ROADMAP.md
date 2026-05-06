@@ -36,6 +36,8 @@ These are planning contracts only. RuntimeProbe remains read-only and must not c
 
 Future write sandbox work also requires the write-path template/status docs: [Write Path Ledger](WRITE_PATH_LEDGER.md), [Write Path Unsafe Paths](WRITE_PATH_UNSAFE_PATHS.md), [Write Path Observed Natural Calls](WRITE_PATH_OBSERVED_NATURAL_CALLS.md), and [Write Path Sandbox Smoke Plan](WRITE_PATH_SANDBOX_SMOKE_PLAN.md). They are templates, not current proof.
 
+[Write Path Evidence Mapping](WRITE_PATH_EVIDENCE_MAPPING.md) is a prerequisite for future write-path import/status tooling. It defines passive evidence mapping rules only; it does not implement import tooling, RuntimeProbe phases, write probes, mutating RPC calls, or sandbox smoke.
+
 ## Inventory Proof Track
 
 | Phase | Goal | Required config gates | Allowed | Forbidden | Expected evidence file | Success criteria | Crash stop condition | CrabSyncV2 decision unlocked |

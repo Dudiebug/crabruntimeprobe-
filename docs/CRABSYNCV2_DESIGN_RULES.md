@@ -60,6 +60,7 @@ These are future CrabSyncV2 constraints. They do not authorize RuntimeProbe writ
 
 - RuntimeProbe must not call mutating RPCs.
 - Safe write/apply planning must follow [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md): passive observation first, manual CrabSyncV2-only sandbox later, and no RuntimeProbe write behavior.
+- [Write Path Evidence Mapping](WRITE_PATH_EVIDENCE_MAPPING.md) defines future passive evidence mapping rules. Mapping function presence, natural observation, or read evidence into status docs does not approve writes.
 - [Write Path Ledger](WRITE_PATH_LEDGER.md) and [Write Path Unsafe Paths](WRITE_PATH_UNSAFE_PATHS.md) must be reviewed before any future apply/write path advances.
 - CrabSyncV2 may test official RPCs separately only behind explicit safety gates and with manual test phases.
 - Raw writes should be fallback only after official paths are proven unusable.

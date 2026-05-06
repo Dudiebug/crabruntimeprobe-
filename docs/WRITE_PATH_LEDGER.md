@@ -4,6 +4,8 @@ This is a future status ledger for CrabSyncV2 write/apply candidate paths. No pa
 
 RuntimeProbe remains read-only.
 
+[Write Path Evidence Mapping](WRITE_PATH_EVIDENCE_MAPPING.md) defines how future passive evidence rows may create or update ledger rows. Mapping evidence into this ledger does not approve a write.
+
 ## 1. Purpose
 
 The ledger records candidate write/apply paths after passive observation and later CrabSyncV2-only sandbox evidence. It separates static symbol presence, passive natural observation, sandbox smoke, and production readiness.

@@ -4,6 +4,8 @@ This is a future-only manual sandbox plan for the smallest possible CrabSyncV2 w
 
 Passing smoke only creates an experimental candidate, not production safety.
 
+[Write Path Evidence Mapping](WRITE_PATH_EVIDENCE_MAPPING.md) defines the passive evidence prerequisites for future human-reviewed write-smoke proposals. Mapping must not automatically authorize sandbox smoke.
+
 ## 1. Purpose
 
 The purpose of this template is to define what must be documented before a future CrabSyncV2-only write-smoke can be proposed and how the result should be recorded.

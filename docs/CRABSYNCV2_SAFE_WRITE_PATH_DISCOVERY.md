@@ -214,3 +214,5 @@ Future planning/status outputs may include:
 - `docs/WRITE_PATH_SANDBOX_SMOKE_PLAN.md`: future CrabSyncV2-only sandbox smoke proposals after explicit approval criteria are met. Future plan, not current authorization.
 
 Template/status docs now exist for [Write Path Ledger](WRITE_PATH_LEDGER.md), [Write Path Unsafe Paths](WRITE_PATH_UNSAFE_PATHS.md), [Write Path Observed Natural Calls](WRITE_PATH_OBSERVED_NATURAL_CALLS.md), and [Write Path Sandbox Smoke Plan](WRITE_PATH_SANDBOX_SMOKE_PLAN.md). These docs should not be filled as proof until passive observation and sandbox evidence exist.
+
+[Write Path Evidence Mapping](WRITE_PATH_EVIDENCE_MAPPING.md) defines how future passive evidence rows should map into those docs. It is a mapping specification only and does not implement collectors, imports, write probes, RPC calls, or sandbox smoke.

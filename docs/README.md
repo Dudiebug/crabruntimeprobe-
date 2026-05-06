@@ -42,6 +42,7 @@
 
 ## Write Path Research Templates
 
+- [Write Path Evidence Mapping](WRITE_PATH_EVIDENCE_MAPPING.md)
 - [Write Path Ledger](WRITE_PATH_LEDGER.md)
 - [Write Path Unsafe Paths](WRITE_PATH_UNSAFE_PATHS.md)
 - [Write Path Observed Natural Calls](WRITE_PATH_OBSERVED_NATURAL_CALLS.md)
