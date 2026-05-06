@@ -72,6 +72,8 @@ Future layers that may graduate into `max-safe-play-recorder` only after dedicat
 
 `Num*Slots` changed from startup/run defaults to effective in-run values. The locked/max/total slot model remains conservatively unresolved.
 
+Imported max-safe-play session `20260506T032658Z` also produced a 64-entry perk DataAsset catalog snapshot with `candidateCount = 64`, `entryCount = 64`, `rejectedCount = 0`, `knownEntryCount = 64`, `tastyOrangeFound = true`, and `collectorFound = false`. Canonical exports now live in `docs/data/perk_dataasset_catalog.latest.json`, `docs/data/perk_dataasset_catalog.latest.csv`, and `docs/PERK_DATAASSET_CATALOG.md`.
+
 No writes, RPCs, HUD hook, deep arrays, inventory traversal, InventoryInfo, or Enhancements were used. Crash suspicion was none.
 
 A later `safe-scalar-watch` collect produced only `Debug.StartupSmoke` and `Debug.WriterSelfTest`, did not run `SafeWatch.Scalar.Sample`, collected zero PlayerState-present samples, and ended failed. Treat that session as failed/no-sample diagnostic evidence only, not useful confirmed evidence.

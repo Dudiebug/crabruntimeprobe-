@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { parseIdentityFromFullName, extractFullNameFromSummary } = require('./identity_helpers');
 const { classifyCrystalsReadEvidence, classifySafeScalarWatchEvidence, classifyPerkDataAssetCatalogEvidence, classifySlotsReadEvidence, classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
+const { generatePerkDataAssetCatalogOutputs } = require('./extract_perk_dataasset_catalog');
 
 function walk(dir, name) {
   if (!fs.existsSync(dir)) return [];
@@ -576,5 +577,6 @@ fs.writeFileSync(path.join(docsDir, 'SAFE_ACCESS_MATRIX.md'), matrix);
 fs.writeFileSync(path.join(docsDir, 'SYMBOL_ACCESS_REFERENCE.md'), reference);
 fs.writeFileSync(path.join(docsDir, 'KNOWN_UNSAFE_PATHS.md'), unsafe);
 fs.writeFileSync(path.join(docsDir, 'UNTESTED_ACCESS_PATHS.md'), untested);
+generatePerkDataAssetCatalogOutputs({ repoRoot: process.cwd(), quiet: true });
 
-console.log('generated access docs = docs/RUNTIME_EVIDENCE_INDEX.md, docs/SAFE_ACCESS_MATRIX.md, docs/SYMBOL_ACCESS_REFERENCE.md, docs/KNOWN_UNSAFE_PATHS.md, docs/UNTESTED_ACCESS_PATHS.md');
+console.log('generated access docs = docs/RUNTIME_EVIDENCE_INDEX.md, docs/SAFE_ACCESS_MATRIX.md, docs/SYMBOL_ACCESS_REFERENCE.md, docs/KNOWN_UNSAFE_PATHS.md, docs/UNTESTED_ACCESS_PATHS.md, docs/PERK_DATAASSET_CATALOG.md, docs/data/perk_dataasset_catalog.latest.json, docs/data/perk_dataasset_catalog.latest.csv');
