@@ -2,10 +2,10 @@
 
 Generated from imported runtime evidence under `evidence/runtime/`.
 
-- Access evidence files: 22
-- Probe result files: 22
-- Diagnostic summaries: 21
-- Evidence rows: 628
+- Access evidence files: 21
+- Probe result files: 21
+- Diagnostic summaries: 20
+- Evidence rows: 627
 - Health playerstate watch samples: 200
 - Identity/roster samples: 15
 - Resource visibility samples: 6
@@ -70,8 +70,8 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 
 ## Local Inventory Array Shallow/Count Visibility Summary
 
-- Summary: unresolved
-- Local inventory array status: failed
+- Summary: local_inventory_shape_visible_crash_suspect
+- Local inventory array status: crash_suspect_local_inventory_shape_visible
 - Local PlayerState present: yes
 - Fields readable by shallow shape/count: AbilityMods, MeleeMods, Perks, Relics, WeaponMods
 - Fields nil or unsupported: none
@@ -79,7 +79,7 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 - Array counts available: no; current helper only counts Lua tables and these values were userdata shapes
 - Slot scalar values: NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
 - Array elements dereferenced: no
-- No crash dump is associated with the imported local inventory evidence.
+- A crash dump exists after this run, so this path remains crash-suspect pending another safer confirmation pass.
 - Local inventory array visibility is separate from remote PlayerState inventory array visibility.
 - InventoryInfo and Enhancements were not read; writes/RPCs/HUD hooks/deep arrays were disabled.
 - Remote inventory array visibility remains unresolved separately.
@@ -121,24 +121,6 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 - Enhancements read: no
 - Writes/RPCs: no
 - Length operator results, if present, are metadata-only and do not prove count traversal, element traversal, or item sync.
-
-## Inventory Array Count Read Summary
-
-- Summary: inventory_array_count_confirmed
-- Inventory array count status: inventory_array_count_confirmed
-- Local PlayerState present: yes
-- Properties classified: all five
-- Value kinds: AbilityMods=userdata, MeleeMods=userdata, Perks=userdata, Relics=userdata, WeaponMods=userdata
-- Count attempted: AbilityMods=true, MeleeMods=true, Perks=true, Relics=true, WeaponMods=true
-- Count methods: AbilityMods=lua_len_operator_pcall, MeleeMods=lua_len_operator_pcall, Perks=lua_len_operator_pcall, Relics=lua_len_operator_pcall, WeaponMods=lua_len_operator_pcall
-- Count results: AbilityMods=0, MeleeMods=0, Perks=0, Relics=0, WeaponMods=1
-- Count errors: none
-- Array traversal attempted: no
-- Array elements dereferenced: no
-- Item DataAsset fields read: no
-- InventoryInfo read: no
-- Enhancements read: no
-- Count results, if present, are metadata-only and do not authorize traversal, element dereference, item DataAsset reads, InventoryInfo reads, Enhancements reads, or item sync.
 
 ## Local Crystals Read Summary
 
@@ -214,7 +196,6 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 | `CrabPS.SafeScalarWatch` | SafeScalarWatchSample | solo | solo-or-host | SAFE | ok | 20260506T003518Z, 20260506T004503Z | Read-only watch of already confirmed local scalar/property paths; no inventory arrays, array count/traversal, InventoryInfo, Enhancements, writes, RPCs, HUD, or deep arrays |
 | `CrabPS.WeaponDA` | GetPropertyValue | solo | solo-or-host | SAFE | ok | 20260504T235201Z, 20260505T063937Z | Read-only WeaponDA/AbilityDA/MeleeDA property visibility checks; object identities are not dereferenced or summarized in this phase |
 | `CrabPS.WeaponMods` | GetPropertyValueCountOnly | solo | solo-or-host | SAFE | ok | 20260505T063937Z, 20260505T072250Z | Count-only local inventory array check; table counts are capped and elements are never dereferenced; Read-only count-only checks for WeaponMods/AbilityMods/MeleeMods/Perks/Relics; no element dereference, InventoryInfo, or Enhancements |
-| `CrabPS.WeaponMods` | GetPropertyValueLuaLenPcall | solo | solo-or-host | SAFE | ok | 20260506T045856Z | Read-only local CrabPC -> PlayerState -> CrabPS array wrapper count metadata using only pcall(#value); no traversal, element dereference, item DataAsset reads, InventoryInfo, Enhancements, writes, RPCs, HUD, or deep arrays |
 | `CrabPS.WeaponMods` | GetPropertyValueShapeConfirm | solo | solo-or-host | SAFE | ok | 20260505T204615Z | Read-only local CrabPC -> PlayerState -> CrabPS property shape confirm; no count, traversal, element dereference, InventoryInfo, Enhancements, writes, or RPCs |
 | `CrabPS.WeaponMods` | GetPropertyValueShapeOnly | solo | solo-or-host | SAFE | ok | 20260505T072250Z | Read-only local CrabPC -> PlayerState -> CrabPS array shape check; no element dereference, InventoryInfo, Enhancements, writes, or RPCs |
 | `CrabPS.WeaponMods` | GetPropertyValueUserdataMetadata | solo | solo-or-host | SAFE | ok | 20260505T225501Z | Read-only local CrabPC -> PlayerState -> CrabPS userdata wrapper metadata; no traversal, element dereference, InventoryInfo, Enhancements, writes, RPCs, HUD, or deep arrays |

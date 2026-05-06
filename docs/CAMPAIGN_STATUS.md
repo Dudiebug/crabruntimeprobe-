@@ -1,12 +1,12 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-06T05:00:26.636Z
-- Current phase: none
-- Next recommended phase: none
-- Latest session: 20260506T045856Z
-- Latest commit: 7e1d67af8a2d48ad38b085bbf839a4e214bf5853
-- Latest summary: evidence/runtime/20260506T045856Z/diagnostic_summary.txt
+- Updated: 2026-05-06T04:03:58.733Z
+- Current phase: `inventory-array-count-read`
+- Next recommended phase: `inventory-array-count-read`
+- Latest session: 20260506T032658Z
+- Latest commit: 5e7a2bc0d2dae5db8a93f51f5c14604720c8e2ec
+- Latest summary: evidence/runtime/20260506T032658Z/diagnostic_summary.txt
 
 ## Completed Phases
 
@@ -23,7 +23,6 @@
 - `crystals-read` - Local PlayerState crystals read
 - `slots-read` - Local PlayerState slots read
 - `perk-da-catalog-read` - Perk DataAsset catalog read
-- `inventory-array-count-read` - Inventory array count read
 
 ## Partial Phases
 
@@ -77,7 +76,6 @@
 - partial remote multiplayer PlayerState resource reads for crystals, slots, equipment, and health scalars
 - local PlayerState inventory array property shape confirmation without count, traversal, or element dereference
 - local PlayerState inventory userdata wrapper metadata without traversal or element dereference
-- local PlayerState inventory array wrapper count metadata without traversal or element dereference
 - local PlayerState Crystals scalar read through CrabPC -> PlayerState -> CrabPS
 - local PlayerState candidate slot scalar reads through CrabPC -> PlayerState -> CrabPS
 - safe scalar watch over proven local scalar/property paths
@@ -113,8 +111,8 @@
 
 ## Local Inventory Array Shallow/Count Visibility
 
-- Summary: unresolved
-- Local inventory array status: failed
+- Summary: local_inventory_shape_visible_crash_suspect
+- Local inventory array status: crash_suspect_local_inventory_shape_visible
 - Local PlayerState present: yes
 - Fields readable by shallow shape/count: AbilityMods, MeleeMods, Perks, Relics, WeaponMods
 - Fields nil or unsupported: none
@@ -123,7 +121,7 @@
 - Slot scalar values: NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
 - Array elements dereferenced: no
 - InventoryInfo and Enhancements were not read; writes/RPCs/HUD hooks/deep arrays were disabled.
-- No crash dump is associated with the imported local inventory evidence.
+- A crash dump exists after this run, so this path remains crash-suspect pending another safer confirmation pass.
 - Remote inventory array visibility remains unresolved separately.
 
 ## Local Inventory Array Shape Confirm
@@ -170,23 +168,9 @@
 
 ## Inventory Array Count Read
 
-- Summary: inventory_array_count_confirmed
-- Inventory array count status: inventory_array_count_confirmed
-- Local PlayerState present: yes
-- Properties classified: all five
-- Value kinds: AbilityMods=userdata, MeleeMods=userdata, Perks=userdata, Relics=userdata, WeaponMods=userdata
-- Count attempted: AbilityMods=true, MeleeMods=true, Perks=true, Relics=true, WeaponMods=true
-- Count methods: AbilityMods=lua_len_operator_pcall, MeleeMods=lua_len_operator_pcall, Perks=lua_len_operator_pcall, Relics=lua_len_operator_pcall, WeaponMods=lua_len_operator_pcall
-- Count results: AbilityMods=0, MeleeMods=0, Perks=0, Relics=0, WeaponMods=1
-- Count errors: none
-- Array traversal attempted: no
-- Array elements dereferenced: no
-- Item DataAsset fields read: no
-- InventoryInfo read: no
-- Enhancements read: no
-- Writes/RPCs/HUD/deep arrays: no
-- No crash dump is associated with the imported count-read evidence.
-- Any count result is wrapper metadata only. It does not authorize traversal, element dereference, item DataAsset reads, InventoryInfo reads, Enhancements reads, or item sync.
+- Summary: unresolved; no `inventory-array-count-read` evidence has been imported yet.
+- Purpose: prove whether the five local inventory userdata wrappers expose safe count metadata.
+- Count evidence is not traversal evidence, item sync evidence, item DataAsset evidence, InventoryInfo evidence, or Enhancements evidence.
 
 ## Local Crystals Read
 
