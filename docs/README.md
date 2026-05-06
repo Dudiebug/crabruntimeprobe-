@@ -40,6 +40,13 @@
 - [CrabSyncV2 Research Roadmap](CRABSYNCV2_RESEARCH_ROADMAP.md)
 - [CrabSyncV2 Glossary](CRABSYNCV2_GLOSSARY.md)
 
+## Write Path Research Templates
+
+- [Write Path Ledger](WRITE_PATH_LEDGER.md)
+- [Write Path Unsafe Paths](WRITE_PATH_UNSAFE_PATHS.md)
+- [Write Path Observed Natural Calls](WRITE_PATH_OBSERVED_NATURAL_CALLS.md)
+- [Write Path Sandbox Smoke Plan](WRITE_PATH_SANDBOX_SMOKE_PLAN.md)
+
 ## P2P Carrier Research Templates
 
 - [P2P Carrier Discovery Phase Contracts](P2P_CARRIER_DISCOVERY_PHASE_CONTRACTS.md)

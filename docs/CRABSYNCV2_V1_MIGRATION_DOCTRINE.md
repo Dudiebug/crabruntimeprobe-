@@ -78,6 +78,8 @@ RuntimeProbe proof means read-only evidence for reads. Write/apply behavior is n
 
 Future write/apply behavior must follow [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md): passive observation first, official paths preferred, raw writes last-resort only, and no RuntimeProbe mutation.
 
+[Write Path Unsafe Paths](WRITE_PATH_UNSAFE_PATHS.md) records write/apply paths that remain blocked or unsafe even when v1 prototype behavior suggests a possible approach.
+
 ## 6. v2 Doctrine
 
 CrabSyncV2 follows these rules:

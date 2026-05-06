@@ -15,7 +15,7 @@ This is a future architecture plan, not an implementation request. RuntimeProbe 
 - Deterministic convergence planner: computes category-specific reconciliation math where peer visibility is sufficient.
 - P2P carrier layer (provisional, disabled): future module that may read/write `CrabSyncBlock` only through a proven safe replicated carrier.
 - Apply planner: computes a plan before any write and marks skips with reasons.
-- Apply executor: future gated write/RPC layer, separate from RuntimeProbe, and blocked until [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md) evidence and sandbox criteria exist.
+- Apply executor: future gated write/RPC layer, separate from RuntimeProbe, and blocked until [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md) evidence, [Write Path Ledger](WRITE_PATH_LEDGER.md) status, and sandbox criteria exist.
 - Rollback/skip safety layer: aborts applies on instability and keeps local state safe.
 - Diagnostics/evidence logger: records reads, planned writes, skipped applies, and safety gate reasons.
 

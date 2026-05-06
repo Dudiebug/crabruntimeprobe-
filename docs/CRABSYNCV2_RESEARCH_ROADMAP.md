@@ -34,6 +34,8 @@ These are planning contracts only. RuntimeProbe remains read-only and must not c
 
 [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md) defines the methodology for this track. It does not prove any write path is safe today.
 
+Future write sandbox work also requires the write-path template/status docs: [Write Path Ledger](WRITE_PATH_LEDGER.md), [Write Path Unsafe Paths](WRITE_PATH_UNSAFE_PATHS.md), [Write Path Observed Natural Calls](WRITE_PATH_OBSERVED_NATURAL_CALLS.md), and [Write Path Sandbox Smoke Plan](WRITE_PATH_SANDBOX_SMOKE_PLAN.md). They are templates, not current proof.
+
 ## Inventory Proof Track
 
 | Phase | Goal | Required config gates | Allowed | Forbidden | Expected evidence file | Success criteria | Crash stop condition | CrabSyncV2 decision unlocked |

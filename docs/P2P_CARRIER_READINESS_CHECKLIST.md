@@ -12,6 +12,8 @@ RuntimeProbe remains read-only. Read evidence never equals write evidence.
 
 Carrier readiness does not satisfy write/apply readiness; future write behavior must separately follow [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md).
 
+Use [Write Path Ledger](WRITE_PATH_LEDGER.md), [Write Path Unsafe Paths](WRITE_PATH_UNSAFE_PATHS.md), [Write Path Observed Natural Calls](WRITE_PATH_OBSERVED_NATURAL_CALLS.md), and [Write Path Sandbox Smoke Plan](WRITE_PATH_SANDBOX_SMOKE_PLAN.md) to keep carrier transport readiness separate from write/apply readiness.
+
 ## 2. Readiness Levels
 
 | Level | Name | Meaning | What it can unblock |

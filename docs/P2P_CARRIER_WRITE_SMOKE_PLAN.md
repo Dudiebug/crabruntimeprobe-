@@ -12,6 +12,8 @@ Future approval requests must also satisfy [P2P Carrier Safety Gates](P2P_CARRIE
 
 Carrier write-smoke is a specific case of the broader [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md) sandbox doctrine, while still controlled by stricter carrier readiness rules.
 
+[Write Path Sandbox Smoke Plan](WRITE_PATH_SANDBOX_SMOKE_PLAN.md) defines the general write-smoke template; this carrier-specific plan remains stricter and does not authorize any carrier write today.
+
 ## Minimum Prerequisites
 
 Before a write-smoke can even be considered:
