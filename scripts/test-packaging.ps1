@@ -34,6 +34,7 @@ function Assert-UnsafeGatesFalse {
     "allowResourceVisibilityProbes",
     "allowCrystalsReadProbes",
     "allowSlotsReadProbes",
+    "allowSafeScalarWatchProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -59,6 +60,7 @@ function Assert-HealthBaselineGates {
     "allowResourceVisibilityProbes",
     "allowCrystalsReadProbes",
     "allowSlotsReadProbes",
+    "allowSafeScalarWatchProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -135,6 +137,7 @@ function Write-TestSessionManifest {
       allowResourceVisibilityProbes = $false
       allowCrystalsReadProbes = $false
       allowSlotsReadProbes = $false
+      allowSafeScalarWatchProbes = $false
       allowInventoryArrayShallowProbes = $false
       allowInventoryArrayShapeConfirmProbes = $false
       allowInventoryUserdataIntrospectionProbes = $false
@@ -229,6 +232,35 @@ foreach ($key in @(
   "allowInventoryUserdataIntrospectionProbes",
   "allowCrystalsReadProbes",
   "allowSlotsReadProbes",
+  "allowSafeScalarWatchProbes",
+  "allowWriteProbes",
+  "allowRpcProbes"
+)) {
+  Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key $key -Expected "false"
+}
+
+& (Join-Path $PSScriptRoot "run-local-diagnostic-cycle.ps1") -GameBin $TestGameBin -PrepareSafeScalarWatch
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "tickDriver" -Expected "executeDelay"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "mode" -Expected "active"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "probeSet" -Expected "safe-scalar-watch"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "repeatProbeSet" -Expected "true"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxProbesPerSession" -Expected "240"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "allowSafeScalarWatchProbes" -Expected "true"
+foreach ($key in @(
+  "allowHudTickHook",
+  "allowUnknownRoleProbes",
+  "allowJoinedClientDeepProbes",
+  "allowDeepArrayProbes",
+  "allowInventoryInfoProbes",
+  "allowHealthProbes",
+  "allowIdentityProbes",
+  "allowRawIdentityEvidence",
+  "allowResourceVisibilityProbes",
+  "allowCrystalsReadProbes",
+  "allowSlotsReadProbes",
+  "allowInventoryArrayShallowProbes",
+  "allowInventoryArrayShapeConfirmProbes",
+  "allowInventoryUserdataIntrospectionProbes",
   "allowWriteProbes",
   "allowRpcProbes"
 )) {
@@ -269,6 +301,14 @@ $healthPlayerStateWatchCollectScript = Get-Content -Raw -LiteralPath (Join-Path 
 if ($healthPlayerStateWatchCollectScript -notmatch 'validate-latest-crash-bundle\.ps1' -or $healthPlayerStateWatchCollectScript -notmatch 'health-playerstate-watch') {
   throw "quick-health-playerstate-watch-collect.ps1 must run the stale bundle validator for health-playerstate-watch."
 }
+$safeWatchPrepareScript = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "quick-safe-watch-prepare.ps1")
+if ($safeWatchPrepareScript -notmatch 'PrepareSafeScalarWatch' -or $safeWatchPrepareScript -notmatch 'proven-safe scalar values') {
+  throw "quick-safe-watch-prepare.ps1 must prepare safe-scalar-watch and print the safe scalar human action."
+}
+$safeWatchCollectScript = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "quick-safe-watch-collect.ps1")
+if ($safeWatchCollectScript -notmatch 'validate-latest-crash-bundle\.ps1' -or $safeWatchCollectScript -notmatch 'safe-scalar-watch' -or $safeWatchCollectScript -notmatch 'import-latest-runtime-evidence\.ps1') {
+  throw "quick-safe-watch-collect.ps1 must validate, collect, and import safe-scalar-watch evidence."
+}
 
 $probeRegistry = Get-Content -Raw -LiteralPath (Join-Path $SourceModRoot "Scripts\probe_registry.lua")
 foreach ($required in @(
@@ -286,6 +326,8 @@ foreach ($required in @(
   "Identity.FindAll.PlayerStateCandidates",
   "Identity.PlayerControllerCandidates",
   "Identity.VisiblePlayers.SourceCandidate",
+  "SafeWatch.Scalar.Sample",
+  "safe-scalar-watch",
   "health-hc-discovery-read"
 )) {
   if ($probeRegistry -notmatch [regex]::Escape($required)) {
@@ -303,6 +345,9 @@ if ($healthPlayerStatePrepareScript -match "FindFirstOf.CrabHC") {
 }
 if ($healthPlayerStateWatchPrepareScript -match "FindFirstOf.CrabHC|FindAllOf.CrabHC|InventoryInfo|allowWriteProbes\s*=\s*true|allowRpcProbes\s*=\s*true|allowHudTickHook\s*=\s*true") {
   throw "quick-health-playerstate-watch-prepare.ps1 must stay on the safe playerstate-only watch path."
+}
+if ($safeWatchPrepareScript -match "FindFirstOf.CrabHC|FindAllOf.CrabHC|allowWriteProbes\s*=\s*true|allowRpcProbes\s*=\s*true|allowHudTickHook\s*=\s*true|allowInventoryArrayShallowProbes\s*=\s*true|allowDeepArrayProbes\s*=\s*true") {
+  throw "quick-safe-watch-prepare.ps1 must stay on the proven scalar watch path."
 }
 
 $hudFailed = $false

@@ -35,7 +35,7 @@ if ($null -eq $phase) { throw "campaign plan missing crystals-read." }
 if ($phase.implemented -ne $true) { throw "crystals-read must be implemented." }
 if ($phase.probeSet -ne "crystals-read") { throw "crystals-read phase has wrong probeSet." }
 if ($phase.requiredGates.allowCrystalsReadProbes -ne $true) { throw "crystals-read phase must enable allowCrystalsReadProbes." }
-foreach ($gate in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowSlotsReadProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+foreach ($gate in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
   if (@($phase.forbiddenGates) -notcontains $gate) {
     throw "crystals-read phase must forbid $gate."
   }

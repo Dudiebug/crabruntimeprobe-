@@ -18,6 +18,7 @@ const ALL_GATES = [
   'allowResourceVisibilityProbes',
   'allowCrystalsReadProbes',
   'allowSlotsReadProbes',
+  'allowSafeScalarWatchProbes',
   'allowInventoryArrayShallowProbes',
   'allowInventoryArrayShapeConfirmProbes',
   'allowInventoryUserdataIntrospectionProbes',
@@ -273,6 +274,7 @@ function classifyCrystalsReadEvidence(rows, options = {}) {
     'allowRawIdentityEvidence',
     'allowResourceVisibilityProbes',
     'allowSlotsReadProbes',
+    'allowSafeScalarWatchProbes',
     'allowInventoryArrayShallowProbes',
     'allowInventoryArrayShapeConfirmProbes',
     'allowInventoryUserdataIntrospectionProbes',
@@ -362,6 +364,7 @@ function classifySlotsReadEvidence(rows, options = {}) {
     'allowRawIdentityEvidence',
     'allowResourceVisibilityProbes',
     'allowCrystalsReadProbes',
+    'allowSafeScalarWatchProbes',
     'allowInventoryArrayShallowProbes',
     'allowInventoryArrayShapeConfirmProbes',
     'allowInventoryUserdataIntrospectionProbes',
@@ -413,6 +416,102 @@ function classifySlotsReadEvidence(rows, options = {}) {
     noRpcs: slotRows.length > 0 && slotRows.every((row) => row.noRpcs === true),
     noHud: slotRows.length > 0 && slotRows.every((row) => row.noHud === true),
     noDeepArrays: slotRows.length > 0 && slotRows.every((row) => row.noDeepArrays === true),
+    safetyViolation,
+    crashSuspect: options.crashSuspect === true,
+    classification,
+    status
+  };
+}
+
+function isSafeScalarWatchRow(row) {
+  const id = row.probeName || row.probeId || row.event || '';
+  return id === 'SafeWatch.Scalar.Sample' || id === 'Runtime.SafeScalarWatch.Sample';
+}
+
+function arrayFromValue(value) {
+  if (Array.isArray(value)) return value;
+  if (value === null || value === undefined) return [];
+  return [value];
+}
+
+function classifySafeScalarWatchEvidence(rows, options = {}) {
+  const watchRows = rows.filter(isSafeScalarWatchRow);
+  const latest = watchRows.length ? watchRows[watchRows.length - 1] : {};
+  const sampleCount = Number(latest.safeWatchSampleCount || watchRows.length || 0);
+  const loggedCount = Number(latest.safeWatchLoggedCount || watchRows.length || 0);
+  const usableSampleCount = watchRows.filter((row) => row.playerStatePresent === true || row.localPlayerStatePresent === true).length;
+  const changedFields = arrayFromValue(latest.safeWatchChangedFields).filter((item) => String(item || '').trim() !== '');
+  const forbiddenGateNames = [
+    'allowHudTickHook',
+    'allowUnknownRoleProbes',
+    'allowJoinedClientDeepProbes',
+    'allowDeepArrayProbes',
+    'allowInventoryInfoProbes',
+    'allowHealthProbes',
+    'allowIdentityProbes',
+    'allowRawIdentityEvidence',
+    'allowResourceVisibilityProbes',
+    'allowCrystalsReadProbes',
+    'allowSlotsReadProbes',
+    'allowInventoryArrayShallowProbes',
+    'allowInventoryArrayShapeConfirmProbes',
+    'allowInventoryUserdataIntrospectionProbes',
+    'allowWriteProbes',
+    'allowRpcProbes'
+  ];
+  const safetyViolation = watchRows.some((row) => {
+    const gates = row && row.safetyGates ? row.safetyGates : {};
+    return forbiddenGateNames.some((gate) => gates[gate] === true) ||
+      row.noElementDereference !== true ||
+      row.noArrayCount !== true ||
+      row.noArrayTraversal !== true ||
+      row.noInventoryInfo !== true ||
+      row.noEnhancements !== true ||
+      row.noWrites !== true ||
+      row.noRpcs !== true ||
+      row.noHud !== true ||
+      row.noDeepArrays !== true;
+  });
+  let status = 'no_evidence';
+  let classification = 'unresolved';
+  if (safetyViolation) {
+    status = 'failed';
+    classification = 'failed';
+  } else if (watchRows.length > 0 && usableSampleCount > 0 && options.crashSuspect) {
+    status = 'crash_suspect_safe_scalar_watch';
+    classification = 'crash-suspect';
+  } else if (watchRows.length > 0 && usableSampleCount > 0 && changedFields.length > 0) {
+    status = 'safe_scalar_watch_observed_change';
+    classification = 'safe_scalar_watch_observed_change';
+  } else if (watchRows.length > 0 && usableSampleCount > 0 && sampleCount > 1) {
+    status = 'safe_scalar_watch_confirmed_no_change';
+    classification = 'safe_scalar_watch_confirmed_no_change';
+  }
+  return {
+    safeScalarWatchEvidenceFound: watchRows.length > 0,
+    sampleCount,
+    loggedCount,
+    usableSampleCount,
+    firstValues: latest.safeWatchFirstValues || {},
+    latestValues: latest.safeWatchLatestValues || {},
+    minValues: latest.safeWatchMinValues || {},
+    maxValues: latest.safeWatchMaxValues || {},
+    changedFields,
+    changeCounts: latest.safeWatchChangeCounts || {},
+    firstContext: latest.firstContext || '',
+    lastContext: latest.lastContext || '',
+    firstRole: latest.firstRole || '',
+    lastRole: latest.lastRole || '',
+    slotModelStatus: 'observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total slot model unresolved',
+    noElementDereference: watchRows.length > 0 && watchRows.every((row) => row.noElementDereference === true),
+    noArrayCount: watchRows.length > 0 && watchRows.every((row) => row.noArrayCount === true),
+    noArrayTraversal: watchRows.length > 0 && watchRows.every((row) => row.noArrayTraversal === true),
+    noInventoryInfo: watchRows.length > 0 && watchRows.every((row) => row.noInventoryInfo === true),
+    noEnhancements: watchRows.length > 0 && watchRows.every((row) => row.noEnhancements === true),
+    noWrites: watchRows.length > 0 && watchRows.every((row) => row.noWrites === true),
+    noRpcs: watchRows.length > 0 && watchRows.every((row) => row.noRpcs === true),
+    noHud: watchRows.length > 0 && watchRows.every((row) => row.noHud === true),
+    noDeepArrays: watchRows.length > 0 && watchRows.every((row) => row.noDeepArrays === true),
     safetyViolation,
     crashSuspect: options.crashSuspect === true,
     classification,
@@ -781,6 +880,9 @@ function validatePhaseSafety(phase, gates = gateConfigForPhaseUnchecked(phase)) 
   if (gates.allowSlotsReadProbes && phase.phaseId !== 'slots-read') {
     throw new Error(`${phase.phaseId} may not enable allowSlotsReadProbes.`);
   }
+  if (gates.allowSafeScalarWatchProbes && phase.phaseId !== 'safe-scalar-watch') {
+    throw new Error(`${phase.phaseId} may not enable allowSafeScalarWatchProbes.`);
+  }
   if (gates.allowInventoryArrayShallowProbes && phase.phaseId !== 'local-inventory-array-shallow-read') {
     throw new Error(`${phase.phaseId} may not enable allowInventoryArrayShallowProbes.`);
   }
@@ -1055,6 +1157,26 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
       latestSummaryPath: facts.latestSummaryPath || ''
     });
   }
+  const safeScalarWatchSessionId = latestSessionIdForRows(facts.rows, isSafeScalarWatchRow);
+  const safeScalarWatch = classifySafeScalarWatchEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, safeScalarWatchSessionId)
+  });
+  if (safeScalarWatch.status === 'safe_scalar_watch_confirmed_no_change' || safeScalarWatch.status === 'safe_scalar_watch_observed_change') {
+    add('safe-scalar-watch', 'Imported evidence contains safe scalar watch samples over already proven local scalar/property paths with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays.');
+  } else if (safeScalarWatch.safeScalarWatchEvidenceFound && safeScalarWatch.status !== 'failed') {
+    partial.push({
+      phaseId: 'safe-scalar-watch',
+      status: safeScalarWatch.status,
+      updatedAt: nowIso(),
+      source: 'imported-evidence',
+      reason: safeScalarWatch.status === 'crash_suspect_safe_scalar_watch'
+        ? 'Safe scalar watch collected samples, but a crash dump exists after this run.'
+        : 'Safe scalar watch did not produce usable multi-sample or changed-value evidence.',
+      latestSessionId: safeScalarWatchSessionId || facts.latestSessionId || '',
+      latestCommit: facts.latestCommit || '',
+      latestSummaryPath: facts.latestSummaryPath || ''
+    });
+  }
 
   return { completed, partial, facts };
 }
@@ -1266,6 +1388,17 @@ function markCollected(plan, state, phaseId, result) {
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
     });
+  } else if (phaseId === 'safe-scalar-watch' && (result.status === 'safe_scalar_watch_confirmed_no_change' || result.status === 'safe_scalar_watch_observed_change')) {
+    out.completedPhases.push({
+      phaseId,
+      status: 'complete',
+      completedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || 'Safe scalar watch sampled already proven local scalar/property paths with no writes, RPCs, HUD, inventory arrays, InventoryInfo, Enhancements, or deep arrays.',
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
   } else if (phaseId === 'multiplayer-roster-read' && (result.status === 'local_identity_confirmed' || result.status === 'roster_source_unresolved')) {
     out.partialPhases.push({
       phaseId,
@@ -1373,6 +1506,22 @@ function markCollected(plan, state, phaseId, result) {
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
     });
+  } else if (phaseId === 'safe-scalar-watch' && (
+    result.status === 'crash_suspect_safe_scalar_watch' ||
+    result.status === 'no_evidence'
+  )) {
+    out.partialPhases.push({
+      phaseId,
+      status: result.status,
+      updatedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || (result.status === 'crash_suspect_safe_scalar_watch'
+        ? 'Safe scalar watch collected samples, but crash evidence exists after this run.'
+        : 'No usable safe scalar watch evidence was found.'),
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
   } else {
     out.failedPhases.push({
       phaseId,
@@ -1420,7 +1569,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '## Completed Phases\n\n';
   out += renderList(listByStatus(plan, state, 'complete'));
   out += '\n## Partial Phases\n\n';
-  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$|^local_inventory_unresolved$|^crash_suspect_local_inventory_shape_visible$|^crash_suspect_local_inventory_shape_confirmed$|^crash_suspect_crystals_read$|^no_evidence$/.test(phaseStatus(state, phase.phaseId)));
+  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$|^local_inventory_unresolved$|^crash_suspect_local_inventory_shape_visible$|^crash_suspect_local_inventory_shape_confirmed$|^crash_suspect_crystals_read$|^crash_suspect_safe_scalar_watch$|^no_evidence$/.test(phaseStatus(state, phase.phaseId)));
   if (!partial.length) {
     out += '- None.\n';
   } else {
@@ -1481,6 +1630,11 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     crashSuspect: hasCrashSuspectEvidenceForSession(facts, slotsReadSessionId || state.latestSessionId || facts.latestSessionId)
   });
   if (slotsRead.status === 'slots_read_confirmed') safeSignals.push('local PlayerState candidate slot scalar reads through CrabPC -> PlayerState -> CrabPS');
+  const safeScalarWatchSessionId = latestSessionIdForRows(facts.rows, isSafeScalarWatchRow);
+  const safeScalarWatch = classifySafeScalarWatchEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, safeScalarWatchSessionId || state.latestSessionId || facts.latestSessionId)
+  });
+  if (safeScalarWatch.status === 'safe_scalar_watch_confirmed_no_change' || safeScalarWatch.status === 'safe_scalar_watch_observed_change') safeSignals.push('safe scalar watch over proven local scalar/property paths');
   if (!safeSignals.length) out += '- None imported yet.\n';
   else out += safeSignals.map((item) => `- ${item}\n`).join('');
 
@@ -1669,6 +1823,31 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     out += '- These are observed scalar slot counters / candidate unlocked slot counters only; they are not proven total capacity or locked-slot state.\n';
   }
 
+  out += '\n## Safe Scalar Watch\n\n';
+  if (!safeScalarWatch.safeScalarWatchEvidenceFound) {
+    out += '- Summary: unresolved; no `safe-scalar-watch` evidence has been imported yet.\n';
+    out += '- Purpose: recurring watch of already proven local scalar/property paths only: context/role/lifecycle, `WeaponDA`, `AbilityDA`, `MeleeDA`, `Crystals`, observed scalar slot counters, and PlayerState health fields.\n';
+  } else {
+    out += `- Summary: ${safeScalarWatch.classification}\n`;
+    out += `- Safe scalar watch status: ${safeScalarWatch.status}\n`;
+    out += `- Sample count: ${safeScalarWatch.sampleCount}\n`;
+    out += `- Logged row count: ${safeScalarWatch.loggedCount}\n`;
+    out += `- First values: ${Object.keys(safeScalarWatch.firstValues).length ? Object.entries(safeScalarWatch.firstValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Latest values: ${Object.keys(safeScalarWatch.latestValues).length ? Object.entries(safeScalarWatch.latestValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Min numeric values: ${Object.keys(safeScalarWatch.minValues).length ? Object.entries(safeScalarWatch.minValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Max numeric values: ${Object.keys(safeScalarWatch.maxValues).length ? Object.entries(safeScalarWatch.maxValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Changed fields: ${safeScalarWatch.changedFields.length ? safeScalarWatch.changedFields.join(', ') : 'none'}\n`;
+    out += `- Change counts: ${Object.keys(safeScalarWatch.changeCounts).length ? Object.entries(safeScalarWatch.changeCounts).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- First/last context: ${safeScalarWatch.firstContext || 'not found'} / ${safeScalarWatch.lastContext || 'not found'}\n`;
+    out += `- First/last role: ${safeScalarWatch.firstRole || 'not found'} / ${safeScalarWatch.lastRole || 'not found'}\n`;
+    out += `- Slot model status: ${safeScalarWatch.slotModelStatus}\n`;
+    out += `- Writes/RPCs/HUD/deep arrays: ${safeScalarWatch.noWrites && safeScalarWatch.noRpcs && safeScalarWatch.noHud && safeScalarWatch.noDeepArrays ? 'no' : 'yes'}\n`;
+    out += `- Inventory arrays/count/traversal/elements, InventoryInfo, Enhancements: ${safeScalarWatch.noArrayCount && safeScalarWatch.noArrayTraversal && safeScalarWatch.noElementDereference && safeScalarWatch.noInventoryInfo && safeScalarWatch.noEnhancements ? 'no' : 'yes'}\n`;
+    out += safeScalarWatch.crashSuspect
+      ? '- A crash dump exists after this run, so this watch remains crash-suspect pending a repeat.\n'
+      : '- No crash dump is associated with the imported safe-scalar-watch evidence.\n';
+  }
+
   out += '\n## Confirmed Unsafe Paths\n\n';
   out += '- HUD ReceiveDrawHUD tick hook remains blocked by default.\n';
   out += '- `FindFirstOf.CrabHC` is not confirmed as a player-health source; imported evidence has seen an unscoped destructible/barrel candidate.\n';
@@ -1694,6 +1873,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- `allowResourceVisibilityProbes` is enabled only for `multiplayer-resource-visibility-read`.\n';
   out += '- `allowCrystalsReadProbes` is enabled only for `crystals-read`.\n';
   out += '- `allowSlotsReadProbes` is enabled only for `slots-read`.\n';
+  out += '- `allowSafeScalarWatchProbes` is enabled only for `safe-scalar-watch`.\n';
   out += '- `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.\n';
   out += '- `allowInventoryArrayShapeConfirmProbes` is enabled only for `local-inventory-array-shape-confirm`.\n';
   out += '- `allowInventoryUserdataIntrospectionProbes` is enabled only for `local-inventory-userdata-introspection`.\n';
@@ -1708,6 +1888,7 @@ module.exports = {
   PLAN_PATH,
   STATE_PATH,
   classifyCrystalsReadEvidence,
+  classifySafeScalarWatchEvidence,
   classifySlotsReadEvidence,
   classifyLocalInventoryArrayEvidence,
   classifyLocalInventoryArrayShapeConfirmEvidence,

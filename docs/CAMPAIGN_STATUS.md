@@ -1,11 +1,11 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-05T23:53:54.090Z
-- Current phase: none
-- Next recommended phase: `inventory-array-shallow-read`
+- Updated: 2026-05-06T00:30:35.519Z
+- Current phase: `safe-scalar-watch`
+- Next recommended phase: `safe-scalar-watch`
 - Latest session: 20260505T235245Z
-- Latest commit: 83361ef851e990891e63856148bd99177ad4058b
+- Latest commit: fb7d44918018f26513030a4254b4af567b2301f5
 - Latest summary: evidence/runtime/20260505T235245Z/diagnostic_summary.txt
 
 ## Completed Phases
@@ -172,6 +172,11 @@
 - No crash dump is associated with the imported slots-read evidence.
 - These are observed scalar slot counters / candidate unlocked slot counters only; they are not proven total capacity or locked-slot state.
 
+## Safe Scalar Watch
+
+- Summary: unresolved; no `safe-scalar-watch` evidence has been imported yet.
+- Purpose: recurring watch of already proven local scalar/property paths only: context/role/lifecycle, `WeaponDA`, `AbilityDA`, `MeleeDA`, `Crystals`, observed scalar slot counters, and PlayerState health fields.
+
 ## Confirmed Unsafe Paths
 
 - HUD ReceiveDrawHUD tick hook remains blocked by default.
@@ -200,6 +205,7 @@
 - `allowResourceVisibilityProbes` is enabled only for `multiplayer-resource-visibility-read`.
 - `allowCrystalsReadProbes` is enabled only for `crystals-read`.
 - `allowSlotsReadProbes` is enabled only for `slots-read`.
+- `allowSafeScalarWatchProbes` is enabled only for `safe-scalar-watch`.
 - `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.
 - `allowInventoryArrayShapeConfirmProbes` is enabled only for `local-inventory-array-shape-confirm`.
 - `allowInventoryUserdataIntrospectionProbes` is enabled only for `local-inventory-userdata-introspection`.

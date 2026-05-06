@@ -168,6 +168,23 @@ function runner.new(config, safe, writer, evidenceWriter)
       record.noHud = meta.noHud
       record.noDeepArrays = meta.noDeepArrays
       record.crashAttributionMarker = meta.crashAttributionMarker
+      record.playerStatePresent = meta.playerStatePresent
+      record.sampleReason = meta.sampleReason
+      record.sampleChanged = meta.sampleChanged
+      record.safeWatchSampleCount = meta.safeWatchSampleCount
+      record.safeWatchLoggedCount = meta.safeWatchLoggedCount
+      record.safeWatchFirstValues = meta.safeWatchFirstValues
+      record.safeWatchLatestValues = meta.safeWatchLatestValues
+      record.safeWatchMinValues = meta.safeWatchMinValues
+      record.safeWatchMaxValues = meta.safeWatchMaxValues
+      record.safeWatchChangedFields = meta.safeWatchChangedFields
+      record.safeWatchChangeCounts = meta.safeWatchChangeCounts
+      record.safeWatchNoChangeSamples = meta.safeWatchNoChangeSamples
+      record.safeWatchChangedSamples = meta.safeWatchChangedSamples
+      record.firstContext = meta.firstContext
+      record.lastContext = meta.lastContext
+      record.firstRole = meta.firstRole
+      record.lastRole = meta.lastRole
     end
     evidenceWriter:writeEvidence(record)
   end
@@ -273,6 +290,23 @@ function runner.new(config, safe, writer, evidenceWriter)
       row.noHud = meta.noHud
       row.noDeepArrays = meta.noDeepArrays
       row.crashAttributionMarker = meta.crashAttributionMarker
+      row.playerStatePresent = meta.playerStatePresent
+      row.sampleReason = meta.sampleReason
+      row.sampleChanged = meta.sampleChanged
+      row.safeWatchSampleCount = meta.safeWatchSampleCount
+      row.safeWatchLoggedCount = meta.safeWatchLoggedCount
+      row.safeWatchFirstValues = meta.safeWatchFirstValues
+      row.safeWatchLatestValues = meta.safeWatchLatestValues
+      row.safeWatchMinValues = meta.safeWatchMinValues
+      row.safeWatchMaxValues = meta.safeWatchMaxValues
+      row.safeWatchChangedFields = meta.safeWatchChangedFields
+      row.safeWatchChangeCounts = meta.safeWatchChangeCounts
+      row.safeWatchNoChangeSamples = meta.safeWatchNoChangeSamples
+      row.safeWatchChangedSamples = meta.safeWatchChangedSamples
+      row.firstContext = meta.firstContext
+      row.lastContext = meta.lastContext
+      row.firstRole = meta.firstRole
+      row.lastRole = meta.lastRole
     end
     writer:write(row)
     writeEvidence(probe, result, kind, summary, err, meta)
@@ -286,13 +320,14 @@ function runner.new(config, safe, writer, evidenceWriter)
     if probe.set == 'multiplayer-resource-visibility-read' and not (config.allowIdentityProbes and config.allowHealthProbes and config.allowResourceVisibilityProbes) then return false, 'unsafe_disabled' end
     if probe.set == 'crystals-read' and not config.allowCrystalsReadProbes then return false, 'unsafe_disabled' end
     if probe.set == 'slots-read' and not config.allowSlotsReadProbes then return false, 'unsafe_disabled' end
+    if probe.set == 'safe-scalar-watch' and not config.allowSafeScalarWatchProbes then return false, 'unsafe_disabled' end
     if probe.set == 'local-inventory-array-shallow-read' and not config.allowInventoryArrayShallowProbes then return false, 'unsafe_disabled' end
     if probe.set == 'local-inventory-array-shape-confirm' and not config.allowInventoryArrayShapeConfirmProbes then return false, 'unsafe_disabled' end
     if probe.set == 'local-inventory-userdata-introspection' and not config.allowInventoryUserdataIntrospectionProbes then return false, 'unsafe_disabled' end
     if probe.set == 'rpc-dryrun' and not config.allowRpcProbes then return false, 'unsafe_disabled' end
     if probe.set == 'write' and not config.allowWriteProbes then return false, 'unsafe_disabled' end
-    if state.role == 'unknown' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
-    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
+    if state.role == 'unknown' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'safe-scalar-watch' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
+    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'safe-scalar-watch' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
     if probe.set ~= config.probeSet and config.probeSet ~= 'all-readonly' then return false, 'skipped_by_config' end
     return true
   end
@@ -422,6 +457,9 @@ function runner.new(config, safe, writer, evidenceWriter)
       summary = nil
     end
     breadcrumb(probe.id .. ' exit')
+    if type(meta) == 'table' and meta.suppressEmit == true then
+      return
+    end
     emit(probe, result, kind, summary, err, meta)
     self.probesRun = self.probesRun + 1
   end

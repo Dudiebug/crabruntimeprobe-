@@ -31,11 +31,15 @@ local DEFAULT_CONFIG = {
   allowResourceVisibilityProbes = false,
   allowCrystalsReadProbes = false,
   allowSlotsReadProbes = false,
+  allowSafeScalarWatchProbes = false,
   allowInventoryArrayShallowProbes = false,
   allowInventoryArrayShapeConfirmProbes = false,
   allowInventoryUserdataIntrospectionProbes = false,
   allowWriteProbes = false,
   allowRpcProbes = false,
+  safeScalarWatchIntervalSeconds = 5,
+  safeScalarWatchHeartbeatSeconds = 60,
+  safeScalarWatchMaxSamples = 240,
   probeSet = 'shallow-core'
 }
 
@@ -149,6 +153,7 @@ log('[CrabRuntimeProbe] safety allowHudTickHook=' .. tostring(cfg.allowHudTickHo
   .. ' allowResourceVisibilityProbes=' .. tostring(cfg.allowResourceVisibilityProbes)
   .. ' allowCrystalsReadProbes=' .. tostring(cfg.allowCrystalsReadProbes)
   .. ' allowSlotsReadProbes=' .. tostring(cfg.allowSlotsReadProbes)
+  .. ' allowSafeScalarWatchProbes=' .. tostring(cfg.allowSafeScalarWatchProbes)
   .. ' allowInventoryArrayShallowProbes=' .. tostring(cfg.allowInventoryArrayShallowProbes)
   .. ' allowInventoryArrayShapeConfirmProbes=' .. tostring(cfg.allowInventoryArrayShapeConfirmProbes)
   .. ' allowInventoryUserdataIntrospectionProbes=' .. tostring(cfg.allowInventoryUserdataIntrospectionProbes)

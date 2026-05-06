@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { parseIdentityFromFullName, extractFullNameFromSummary } = require('./identity_helpers');
-const { classifyCrystalsReadEvidence, classifySlotsReadEvidence, classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
+const { classifyCrystalsReadEvidence, classifySafeScalarWatchEvidence, classifySlotsReadEvidence, classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
 
 function walk(dir, name) {
   if (!fs.existsSync(dir)) return [];
@@ -340,6 +340,15 @@ const latestSlotsReadSessionId = evidenceRows
 const slotsRead = classifySlotsReadEvidence(evidenceRows, {
   crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestSlotsReadSessionId)
 });
+const latestSafeScalarWatchSessionId = evidenceRows
+  .filter((row) => ['SafeWatch.Scalar.Sample', 'Runtime.SafeScalarWatch.Sample'].includes(row.probeId || row.probeName || row.event || ''))
+  .map((row) => row.sessionId)
+  .filter(Boolean)
+  .sort()
+  .pop();
+const safeScalarWatch = classifySafeScalarWatchEvidence(evidenceRows, {
+  crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestSafeScalarWatchSessionId)
+});
 index += '\n## Local Inventory Array Shallow/Count Visibility Summary\n\n';
 if (!localInventory.localInventoryArrayEvidenceFound) {
   index += '- Summary: unresolved; no `local-inventory-array-shallow-read` evidence has been imported yet.\n';
@@ -444,6 +453,24 @@ if (!slotsRead.slotsReadEvidenceFound) {
   index += `- HUD/deep arrays: ${slotsRead.noHud && slotsRead.noDeepArrays ? 'no' : 'yes'}\n`;
   index += `- Inventory arrays/InventoryInfo/Enhancements: ${slotsRead.noArrayCount && slotsRead.noArrayTraversal && slotsRead.noElementDereference && slotsRead.noInventoryInfo && slotsRead.noEnhancements ? 'no' : 'yes'}\n`;
   index += '- These are observed scalar slot counters / candidate unlocked slot counters only; they are not proven total capacity or locked-slot state.\n';
+}
+index += '\n## Safe Scalar Watch Summary\n\n';
+if (!safeScalarWatch.safeScalarWatchEvidenceFound) {
+  index += '- Summary: unresolved; no `safe-scalar-watch` evidence has been imported yet.\n';
+  index += '- Safe scalar watch will sample only proven-safe local scalar/property paths about every 5 seconds, with first/changed rows and 60-second heartbeats.\n';
+} else {
+  index += `- Summary: ${safeScalarWatch.classification}\n`;
+  index += `- Safe scalar watch status: ${safeScalarWatch.status}\n`;
+  index += `- Sample count: ${safeScalarWatch.sampleCount}\n`;
+  index += `- First values: ${Object.keys(safeScalarWatch.firstValues).length ? Object.entries(safeScalarWatch.firstValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Latest values: ${Object.keys(safeScalarWatch.latestValues).length ? Object.entries(safeScalarWatch.latestValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Min/max numeric values: ${Object.keys(safeScalarWatch.minValues).length ? Object.keys(safeScalarWatch.minValues).sort().map((key) => `${key}=${safeScalarWatch.minValues[key]}/${safeScalarWatch.maxValues[key]}`).join(', ') : 'none'}\n`;
+  index += `- Changed fields: ${safeScalarWatch.changedFields.length ? safeScalarWatch.changedFields.join(', ') : 'none'}\n`;
+  index += `- Change counts: ${Object.keys(safeScalarWatch.changeCounts).length ? Object.entries(safeScalarWatch.changeCounts).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- First/last context: ${safeScalarWatch.firstContext || 'not found'} / ${safeScalarWatch.lastContext || 'not found'}\n`;
+  index += `- First/last role: ${safeScalarWatch.firstRole || 'not found'} / ${safeScalarWatch.lastRole || 'not found'}\n`;
+  index += `- Slot model status: ${safeScalarWatch.slotModelStatus}\n`;
+  index += `- No writes/RPCs/HUD/deep arrays/inventory traversal/InventoryInfo/Enhancements: ${safeScalarWatch.noWrites && safeScalarWatch.noRpcs && safeScalarWatch.noHud && safeScalarWatch.noDeepArrays && safeScalarWatch.noArrayCount && safeScalarWatch.noArrayTraversal && safeScalarWatch.noElementDereference && safeScalarWatch.noInventoryInfo && safeScalarWatch.noEnhancements ? 'yes' : 'no'}\n`;
 }
 index += '\n## Confirmed SAFE Access Rows\n\n';
 const safeRows = rows.filter((row) => bestStatus(row.statuses) === 'SAFE');

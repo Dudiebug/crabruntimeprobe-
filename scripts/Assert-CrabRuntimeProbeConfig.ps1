@@ -38,11 +38,15 @@ $script:CrabRuntimeProbeRequiredConfigDefaults = [ordered]@{
   allowResourceVisibilityProbes = "false"
   allowCrystalsReadProbes = "false"
   allowSlotsReadProbes = "false"
+  allowSafeScalarWatchProbes = "false"
   allowInventoryArrayShallowProbes = "false"
   allowInventoryArrayShapeConfirmProbes = "false"
   allowInventoryUserdataIntrospectionProbes = "false"
   allowWriteProbes = "false"
   allowRpcProbes = "false"
+  safeScalarWatchIntervalSeconds = "5"
+  safeScalarWatchHeartbeatSeconds = "60"
+  safeScalarWatchMaxSamples = "240"
   probeSet = "shallow-core"
 }
 

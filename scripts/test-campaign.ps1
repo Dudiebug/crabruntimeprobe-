@@ -63,7 +63,7 @@ if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "tickDri
 if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "probeSet") -ne "shallow-core") {
   throw "default config probeSet must remain shallow-core."
 }
-foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
   if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key $key) -ne "false") {
     throw "default config expected $key = false."
   }
@@ -142,6 +142,9 @@ for (const phase of plan.phases) {
   }
   if (phase.phaseId !== 'slots-read') {
     assert(gates.allowSlotsReadProbes === false, `${phase.phaseId} enabled slots read outside slots phase`);
+  }
+  if (phase.phaseId !== 'safe-scalar-watch') {
+    assert(gates.allowSafeScalarWatchProbes === false, `${phase.phaseId} enabled safe scalar watch outside safe scalar watch phase`);
   }
 }
 
@@ -335,7 +338,25 @@ const slotsCompleteState = helpers.markCollected(plan, crystalsCompleteState, 's
   latestCommit: '591389d5f71e99e2c19f7c287290cbf853a8e496',
   latestSummaryPath: 'evidence/runtime/20260505T211000Z/diagnostic_summary.txt'
 });
-assert(slotsCompleteState.nextRecommendedPhase === null || slotsCompleteState.nextRecommendedPhase === 'inventory-array-shallow-read', `slots completion should not loop back to scalar reads, got ${slotsCompleteState.nextRecommendedPhase}`);
+assert(slotsCompleteState.nextRecommendedPhase === 'safe-scalar-watch', `slots completion should advance to safe-scalar-watch, got ${slotsCompleteState.nextRecommendedPhase}`);
+
+let safeScalarWatch = helpers.classifySafeScalarWatchEvidence([
+  { probeName: 'SafeWatch.Scalar.Sample', result: 'ok', playerStatePresent: true, safeWatchSampleCount: 2, safeWatchChangedFields: [], safeWatchFirstValues: { Crystals: 100 }, safeWatchLatestValues: { Crystals: 100 }, safeWatchMinValues: { Crystals: 100 }, safeWatchMaxValues: { Crystals: 100 }, safeWatchChangeCounts: {}, firstContext: 'solo', lastContext: 'solo', firstRole: 'solo-or-host', lastRole: 'solo-or-host', noElementDereference: true, noArrayCount: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, safetyGates: { allowSafeScalarWatchProbes: true, allowCrystalsReadProbes: false, allowSlotsReadProbes: false, allowInventoryArrayShallowProbes: false, allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false, allowRawIdentityEvidence: false, allowHealthProbes: false, allowIdentityProbes: false, allowResourceVisibilityProbes: false } }
+]);
+assert(safeScalarWatch.status === 'safe_scalar_watch_confirmed_no_change', `safe scalar watch should confirm no-change multi-sample evidence, got ${safeScalarWatch.status}`);
+safeScalarWatch = helpers.classifySafeScalarWatchEvidence([
+  { probeName: 'SafeWatch.Scalar.Sample', result: 'ok', playerStatePresent: true, safeWatchSampleCount: 3, safeWatchChangedFields: ['Crystals'], safeWatchChangeCounts: { Crystals: 1 }, noElementDereference: true, noArrayCount: true, noArrayTraversal: true, noInventoryInfo: true, noEnhancements: true, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, safetyGates: { allowSafeScalarWatchProbes: true } }
+]);
+assert(safeScalarWatch.status === 'safe_scalar_watch_observed_change', `safe scalar watch should classify changed fields, got ${safeScalarWatch.status}`);
+
+const safeScalarWatchCompleteState = helpers.markCollected(plan, slotsCompleteState, 'safe-scalar-watch', {
+  status: 'safe_scalar_watch_confirmed_no_change',
+  reason: 'Safe scalar watch collected stable scalar values safely.',
+  latestSessionId: '20260505T212000Z',
+  latestCommit: '591389d5f71e99e2c19f7c287290cbf853a8e496',
+  latestSummaryPath: 'evidence/runtime/20260505T212000Z/diagnostic_summary.txt'
+});
+assert(safeScalarWatchCompleteState.nextRecommendedPhase === null || safeScalarWatchCompleteState.nextRecommendedPhase === 'inventory-array-shallow-read', `safe scalar watch completion should move to inventory-array-shallow-read placeholder, got ${safeScalarWatchCompleteState.nextRecommendedPhase}`);
 '@
 node $NodeTestPath (Join-Path $RepoRoot "tools\campaign_helpers.js") $RepoRoot
 if ($LASTEXITCODE -ne 0) { throw "campaign helper tests failed." }
@@ -431,9 +452,21 @@ if ($prepareRan) {
     if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowSlotsReadProbes") -ne "true") {
       throw "slots campaign phase expected allowSlotsReadProbes = true."
     }
-    foreach ($key in @("allowCrystalsReadProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
+    foreach ($key in @("allowCrystalsReadProbes", "allowSafeScalarWatchProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
       if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
         throw "slots campaign phase expected $key = false."
+      }
+    }
+  } elseif ($preparedPhase -eq "safe-scalar-watch") {
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowSafeScalarWatchProbes") -ne "true") {
+      throw "safe scalar watch campaign phase expected allowSafeScalarWatchProbes = true."
+    }
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "repeatProbeSet") -ne "true") {
+      throw "safe scalar watch campaign phase expected repeatProbeSet = true."
+    }
+    foreach ($key in @("allowCrystalsReadProbes", "allowSlotsReadProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes", "allowUnknownRoleProbes")) {
+      if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+        throw "safe scalar watch campaign phase expected $key = false."
       }
     }
   }

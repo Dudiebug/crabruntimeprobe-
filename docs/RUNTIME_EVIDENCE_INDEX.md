@@ -149,6 +149,11 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 - Inventory arrays/InventoryInfo/Enhancements: no
 - These are observed scalar slot counters / candidate unlocked slot counters only; they are not proven total capacity or locked-slot state.
 
+## Safe Scalar Watch Summary
+
+- Summary: unresolved; no `safe-scalar-watch` evidence has been imported yet.
+- Safe scalar watch will sample only proven-safe local scalar/property paths about every 5 seconds, with first/changed rows and 60-second heartbeats.
+
 ## Confirmed SAFE Access Rows
 
 | Symbol | Access method | Contexts confirmed | Roles confirmed | Runtime status | Last result | Evidence sessions | Notes |

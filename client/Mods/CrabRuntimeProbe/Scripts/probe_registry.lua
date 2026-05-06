@@ -1206,6 +1206,357 @@ function registry.build(safe)
       .. ' noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=slots-read'
   end
 
+  local SAFE_SCALAR_WATCH_EQUIPMENT_FIELDS = { 'WeaponDA', 'AbilityDA', 'MeleeDA' }
+  local SAFE_SCALAR_WATCH_HEALTH_FIELDS = { 'CurrentHealth', 'CurrentMaxHealth', 'BaseMaxHealth', 'MaxHealthMultiplier' }
+
+  local function copyTable(input)
+    local output = {}
+    for key, value in pairs(input or {}) do
+      if type(value) == 'table' then
+        output[key] = copyTable(value)
+      else
+        output[key] = value
+      end
+    end
+    return output
+  end
+
+  local function sortedKeys(map)
+    local keys = {}
+    for key, _ in pairs(map or {}) do
+      keys[#keys + 1] = tostring(key)
+    end
+    table.sort(keys)
+    return keys
+  end
+
+  local function valueKey(value)
+    if value == nil then return '<nil>' end
+    return type(value) .. ':' .. tostring(value)
+  end
+
+  local function tableContains(list, value)
+    for _, item in ipairs(list or {}) do
+      if item == value then return true end
+    end
+    return false
+  end
+
+  local function positiveConfigNumber(value, fallback)
+    if type(value) == 'number' and value > 0 then return value end
+    return fallback
+  end
+
+  local function safeScalarWatchReadProperty(stats, playerState, fieldName)
+    local value, err = safe.getProperty(playerState, fieldName)
+    if err then
+      stats.values[fieldName] = nil
+      stats.valueKinds[fieldName] = 'error'
+      stats.fieldResults[fieldName] = 'error: ' .. tostring(err)
+      return
+    end
+    stats.values[fieldName] = value
+    stats.valueKinds[fieldName] = type(value)
+    stats.fieldResults[fieldName] = value == nil and 'nil' or 'read'
+  end
+
+  local function safeScalarWatchReadEquipment(stats, playerState, fieldName)
+    local value, err = safe.getProperty(playerState, fieldName)
+    if err then
+      stats.values[fieldName] = nil
+      stats.valueKinds[fieldName] = 'error'
+      stats.fieldResults[fieldName] = 'error: ' .. tostring(err)
+      return
+    end
+    stats.valueKinds[fieldName] = type(value)
+    if value == nil then
+      stats.values[fieldName] = nil
+      stats.fieldResults[fieldName] = 'nil'
+      return
+    end
+    local summary, summaryErr = summarizeIdentityOrDefault(value, fieldName .. ' via property')
+    stats.values[fieldName] = summary
+    stats.fieldResults[fieldName] = summaryErr and ('identity_error: ' .. tostring(summaryErr)) or 'read'
+  end
+
+  local function safeScalarWatchReadHealth(stats, playerState)
+    local healthInfo, healthInfoErr = safe.getProperty(playerState, 'HealthInfo')
+    stats.valueKinds.HealthInfo = type(healthInfo)
+    if healthInfoErr then
+      stats.fieldResults.HealthInfo = 'error: ' .. tostring(healthInfoErr)
+      for _, fieldName in ipairs({ 'CurrentHealth', 'CurrentMaxHealth' }) do
+        stats.values[fieldName] = nil
+        stats.valueKinds[fieldName] = 'error'
+        stats.fieldResults[fieldName] = 'HealthInfo error'
+      end
+    elseif healthInfo == nil then
+      stats.fieldResults.HealthInfo = 'nil'
+      for _, fieldName in ipairs({ 'CurrentHealth', 'CurrentMaxHealth' }) do
+        stats.values[fieldName] = nil
+        stats.valueKinds[fieldName] = 'nil'
+        stats.fieldResults[fieldName] = 'HealthInfo nil'
+      end
+    else
+      stats.fieldResults.HealthInfo = 'read'
+      for _, fieldName in ipairs({ 'CurrentHealth', 'CurrentMaxHealth' }) do
+        local value, err = safe.getStructField(healthInfo, fieldName)
+        if err then
+          stats.values[fieldName] = nil
+          stats.valueKinds[fieldName] = 'error'
+          stats.fieldResults[fieldName] = 'error: ' .. tostring(err)
+        else
+          stats.values[fieldName] = value
+          stats.valueKinds[fieldName] = type(value)
+          stats.fieldResults[fieldName] = value == nil and 'nil' or 'read'
+        end
+      end
+    end
+
+    for _, fieldName in ipairs({ 'BaseMaxHealth', 'MaxHealthMultiplier' }) do
+      safeScalarWatchReadProperty(stats, playerState, fieldName)
+    end
+  end
+
+  local function buildSafeScalarWatchSample(ctx)
+    local stats = {
+      sourceScope = 'local_safe_scalar_watch',
+      sourcePath = 'CrabPC.PlayerState',
+      sourceClass = 'CrabPS',
+      playerStatePresent = false,
+      values = {
+        context = tostring(ctx.lastContext or 'unknown'),
+        role = tostring(ctx.role or 'unknown'),
+        lifecycleState = tostring(ctx.lifecycleState or 'unknown')
+      },
+      valueKinds = {
+        context = 'string',
+        role = 'string',
+        lifecycleState = 'string'
+      },
+      fieldResults = {
+        context = 'runtime_context',
+        role = 'runtime_context',
+        lifecycleState = 'runtime_context'
+      },
+      error = nil
+    }
+
+    local playerState, playerStateErr = getCrabPlayerState(ctx)
+    if playerStateErr then
+      stats.error = playerStateErr
+      stats.fieldResults.PlayerState = 'error: ' .. tostring(playerStateErr)
+      return stats
+    end
+
+    stats.playerStatePresent = safe.isValidObject(playerState)
+    stats.values.playerStatePresent = stats.playerStatePresent
+    stats.valueKinds.playerStatePresent = 'boolean'
+    stats.fieldResults.PlayerState = stats.playerStatePresent and 'read' or 'absent'
+    if not stats.playerStatePresent then
+      return stats
+    end
+
+    for _, fieldName in ipairs(SAFE_SCALAR_WATCH_EQUIPMENT_FIELDS) do
+      safeScalarWatchReadEquipment(stats, playerState, fieldName)
+    end
+    safeScalarWatchReadProperty(stats, playerState, 'Crystals')
+    for _, fieldName in ipairs(LOCAL_INVENTORY_SLOT_FIELDS) do
+      safeScalarWatchReadProperty(stats, playerState, fieldName)
+    end
+    safeScalarWatchReadHealth(stats, playerState)
+
+    return stats
+  end
+
+  local function safeScalarWatchChangedFields(previous, current)
+    local changed = {}
+    local seen = {}
+    for key, _ in pairs(previous or {}) do seen[key] = true end
+    for key, _ in pairs(current or {}) do seen[key] = true end
+    for _, key in ipairs(sortedKeys(seen)) do
+      if valueKey(previous and previous[key]) ~= valueKey(current and current[key]) then
+        changed[#changed + 1] = key
+      end
+    end
+    return changed
+  end
+
+  local function updateSafeScalarWatchAggregates(state, sample, changed)
+    state.latestValues = copyTable(sample.values)
+    state.lastContext = sample.values.context
+    state.lastRole = sample.values.role
+    if not state.firstValues then
+      state.firstValues = copyTable(sample.values)
+      state.firstContext = sample.values.context
+      state.firstRole = sample.values.role
+    end
+
+    for fieldName, value in pairs(sample.values or {}) do
+      if type(value) == 'number' then
+        if state.minValues[fieldName] == nil or value < state.minValues[fieldName] then
+          state.minValues[fieldName] = value
+        end
+        if state.maxValues[fieldName] == nil or value > state.maxValues[fieldName] then
+          state.maxValues[fieldName] = value
+        end
+      end
+    end
+
+    if #changed > 0 then
+      state.changedSamples = state.changedSamples + 1
+      for _, fieldName in ipairs(changed) do
+        if state.changeCounts[fieldName] == nil then state.changeCounts[fieldName] = 0 end
+        state.changeCounts[fieldName] = state.changeCounts[fieldName] + 1
+        if not tableContains(state.changedFields, fieldName) then
+          state.changedFields[#state.changedFields + 1] = fieldName
+          table.sort(state.changedFields)
+        end
+      end
+    else
+      state.noChangeSamples = state.noChangeSamples + 1
+    end
+  end
+
+  local function safeScalarWatchMeta(sample, watchState, reason, changed)
+    local slotChanged = false
+    for _, fieldName in ipairs(LOCAL_INVENTORY_SLOT_FIELDS) do
+      if tableContains(watchState.changedFields, fieldName) then
+        slotChanged = true
+      end
+    end
+    local slotStatus = slotChanged
+      and 'Num*Slots changed across lifecycle/gameplay state; locked/max/total slot model unresolved'
+      or 'observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total slot model unresolved'
+    return {
+      sourceScope = sample.sourceScope,
+      sourcePath = sample.sourcePath,
+      sourceClass = sample.sourceClass,
+      candidateClasses = { 'CrabPC', 'CrabPS' },
+      playerStatePresent = sample.playerStatePresent == true,
+      localPlayerStatePresent = sample.playerStatePresent == true,
+      sampleReason = reason,
+      sampleChanged = #changed > 0,
+      safeWatchSampleCount = watchState.sampleCount,
+      safeWatchLoggedCount = watchState.loggedCount,
+      safeWatchFirstValues = watchState.firstValues or {},
+      safeWatchLatestValues = watchState.latestValues or {},
+      safeWatchMinValues = watchState.minValues or {},
+      safeWatchMaxValues = watchState.maxValues or {},
+      safeWatchChangedFields = watchState.changedFields or {},
+      safeWatchChangeCounts = watchState.changeCounts or {},
+      safeWatchNoChangeSamples = watchState.noChangeSamples,
+      safeWatchChangedSamples = watchState.changedSamples,
+      firstContext = watchState.firstContext or '',
+      lastContext = watchState.lastContext or '',
+      firstRole = watchState.firstRole or '',
+      lastRole = watchState.lastRole or '',
+      fieldResults = sample.fieldResults or {},
+      valueKinds = sample.valueKinds or {},
+      slotScalarValues = {
+        NumWeaponModSlots = sample.values.NumWeaponModSlots,
+        NumAbilityModSlots = sample.values.NumAbilityModSlots,
+        NumMeleeModSlots = sample.values.NumMeleeModSlots,
+        NumPerkSlots = sample.values.NumPerkSlots
+      },
+      lockedSlotModel = slotStatus,
+      noElementDereference = true,
+      noArrayCount = true,
+      noArrayTraversal = true,
+      noInventoryInfo = true,
+      noEnhancements = true,
+      noWrites = true,
+      noRpcs = true,
+      noHud = true,
+      noDeepArrays = true,
+      crashAttributionMarker = 'safe-scalar-watch',
+      localNotes = 'Read-only watch of already confirmed local scalar/property paths; no inventory arrays, array count/traversal, InventoryInfo, Enhancements, writes, RPCs, HUD, or deep arrays'
+    }
+  end
+
+  local function safeScalarWatchSummary(sample, watchState, reason, changed)
+    local changedText = #changed > 0 and table.concat(changed, ',') or 'none'
+    return 'category=safe-scalar-watch'
+      .. ' sampleCount=' .. tostring(watchState.sampleCount)
+      .. ' loggedCount=' .. tostring(watchState.loggedCount)
+      .. ' reason=' .. tostring(reason)
+      .. ' playerStatePresent=' .. tostring(sample.playerStatePresent == true)
+      .. ' changed=' .. tostring(#changed > 0)
+      .. ' changedFields=' .. changedText
+      .. ' slotModel=observed scalar slot counters / candidate unlocked or usable slot counters; locked/max/total unresolved'
+      .. ' noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true'
+      .. ' noWrites=true noRpcs=true noHud=true noDeepArrays=true crashAttributionMarker=safe-scalar-watch'
+  end
+
+  local function readSafeScalarWatchSample(ctx)
+    local cfg = ctx.config or {}
+    local intervalSeconds = positiveConfigNumber(cfg.safeScalarWatchIntervalSeconds, 5)
+    local heartbeatSeconds = positiveConfigNumber(cfg.safeScalarWatchHeartbeatSeconds, 60)
+    local maxSamples = positiveConfigNumber(cfg.safeScalarWatchMaxSamples, 240)
+    local now = os.time()
+    local state = ctx.cache.SafeScalarWatch
+    if not state then
+      state = {
+        sampleCount = 0,
+        loggedCount = 0,
+        noChangeSamples = 0,
+        changedSamples = 0,
+        changedFields = {},
+        changeCounts = {},
+        minValues = {},
+        maxValues = {},
+        firstValues = nil,
+        latestValues = {},
+        lastLoggedValues = nil,
+        lastSampleAt = nil,
+        lastHeartbeatAt = nil,
+        firstContext = '',
+        lastContext = '',
+        firstRole = '',
+        lastRole = ''
+      }
+      ctx.cache.SafeScalarWatch = state
+    end
+
+    if state.sampleCount >= maxSamples then
+      return 'skipped_by_config', 'safe_scalar_watch', 'safe scalar watch maxSamples reached', nil, { suppressEmit = true }
+    end
+    if state.lastSampleAt ~= nil and (now - state.lastSampleAt) < intervalSeconds then
+      return 'skipped_by_config', 'safe_scalar_watch', 'waiting for next safe scalar watch interval', nil, { suppressEmit = true }
+    end
+
+    local sample = buildSafeScalarWatchSample(ctx)
+    state.sampleCount = state.sampleCount + 1
+    state.lastSampleAt = now
+
+    local firstLoggedSample = state.lastLoggedValues == nil
+    local changed = firstLoggedSample and {} or safeScalarWatchChangedFields(state.lastLoggedValues, sample.values)
+    updateSafeScalarWatchAggregates(state, sample, changed)
+
+    local reason = nil
+    if firstLoggedSample then
+      reason = sample.playerStatePresent and 'first_successful_sample' or 'playerstate_absent'
+    elseif #changed > 0 then
+      reason = 'changed'
+    elseif state.lastHeartbeatAt == nil or (now - state.lastHeartbeatAt) >= heartbeatSeconds then
+      reason = 'heartbeat'
+    else
+      return 'ok', 'safe_scalar_watch', 'safe scalar watch sample unchanged', nil, { suppressEmit = true }
+    end
+
+    if reason == 'heartbeat' then
+      state.lastHeartbeatAt = now
+    end
+    state.loggedCount = state.loggedCount + 1
+    state.lastLoggedValues = copyTable(sample.values)
+
+    local meta = safeScalarWatchMeta(sample, state, reason, changed)
+    local summary = safeScalarWatchSummary(sample, state, reason, changed)
+    if sample.error then
+      return 'lua_error', 'safe_scalar_watch', summary, sample.error, meta
+    end
+    return sample.playerStatePresent and 'ok' or 'nil', 'safe_scalar_watch', summary, nil, meta
+  end
+
   local function classifyCrabHCSource(fullName)
     local text = tostring(fullName or '')
     if text:find('Destructible') or text:find('Barrel') or text:find('ChaoticBarrel') then
@@ -2190,6 +2541,17 @@ function registry.build(safe)
     accessMethod = 'GetPropertyValue',
     accessKind = 'localSlotsRead',
     sourceScope = 'local_player_state_slots'
+  })
+
+  probes[#probes + 1] = mk('SafeWatch.Scalar.Sample', 'safe-scalar-watch', 'safe-scalar-watch', 'sample', function(ctx)
+    return readSafeScalarWatchSample(ctx)
+  end, {
+    symbol = 'CrabPS.SafeScalarWatch',
+    owner = 'CrabPS',
+    member = 'WeaponDA AbilityDA MeleeDA Crystals Num*Slots HealthInfo',
+    accessMethod = 'SafeScalarWatchSample',
+    accessKind = 'safeScalarWatch',
+    sourceScope = 'local_safe_scalar_watch'
   })
 
   probes[#probes + 1] = mk('FindAllOf.CrabHC.Availability', 'health', 'health-hc-discovery-read', 'findAllAvailability', function()

@@ -223,6 +223,10 @@ function Invoke-CampaignCollect {
     & $cycle -GameBin $GameBinFull -CollectSlotsRead
     return $LASTEXITCODE
   }
+  if ($PhaseId -eq "safe-scalar-watch") {
+    & $cycle -GameBin $GameBinFull -CollectSafeScalarWatch
+    return $LASTEXITCODE
+  }
   if ($PhaseId -eq "local-inventory-array-shallow-read") {
     & $cycle -GameBin $GameBinFull -CollectLocalInventoryArrayShallow
     return $LASTEXITCODE
@@ -755,6 +759,73 @@ if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "sl
   }
 }
 
+if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "safe-scalar-watch") {
+  $rows = Read-JsonLines -Paths @(
+    $(if ($null -ne $latestProbeFile) { $latestProbeFile.FullName } else { "" }),
+    $(if ($null -ne $latestAccessFile) { $latestAccessFile.FullName } else { "" })
+  )
+  $watchRows = @($rows | Where-Object {
+    $name = ""
+    foreach ($field in @("probeName", "probeId", "event")) {
+      if ($_.PSObject.Properties.Name -contains $field) {
+        $name = [string]$_.$field
+        if (-not [string]::IsNullOrWhiteSpace($name)) { break }
+      }
+    }
+    $name -eq "SafeWatch.Scalar.Sample" -or $name -eq "Runtime.SafeScalarWatch.Sample"
+  })
+
+  $usableSamples = 0
+  $sampleCount = 0
+  $changedFields = 0
+  $safetyViolation = $false
+  foreach ($row in $watchRows) {
+    if (($row.PSObject.Properties.Name -contains "playerStatePresent") -and $row.playerStatePresent -eq $true) {
+      $usableSamples += 1
+    }
+    if (($row.PSObject.Properties.Name -contains "safeWatchSampleCount")) {
+      $n = 0
+      if ([int]::TryParse([string]$row.safeWatchSampleCount, [ref]$n) -and $n -gt $sampleCount) { $sampleCount = $n }
+    }
+    if (($row.PSObject.Properties.Name -contains "safeWatchChangedFields") -and $null -ne $row.safeWatchChangedFields) {
+      $changedFields = [Math]::Max($changedFields, @($row.safeWatchChangedFields | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }).Count)
+    }
+    foreach ($flag in @("noElementDereference", "noArrayCount", "noArrayTraversal", "noInventoryInfo", "noEnhancements", "noWrites", "noRpcs", "noHud", "noDeepArrays")) {
+      if (-not ($row.PSObject.Properties.Name -contains $flag) -or $row.$flag -ne $true) {
+        $safetyViolation = $true
+      }
+    }
+    if (($row.PSObject.Properties.Name -contains "safetyGates") -and $null -ne $row.safetyGates) {
+      foreach ($gate in @("allowHudTickHook", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+        if (($row.safetyGates.PSObject.Properties.Name -contains $gate) -and $row.safetyGates.$gate -eq $true) {
+          $safetyViolation = $true
+        }
+      }
+    }
+  }
+
+  if ($watchRows.Count -eq 0) {
+    $status = "no_evidence"
+    $reason = "No safe scalar watch evidence was found."
+  } elseif ($safetyViolation) {
+    $status = "failed"
+    $reason = "Safe scalar watch evidence violated safety gates or touched arrays, InventoryInfo, Enhancements, writes, RPCs, HUD, or deep arrays."
+  } elseif ($usableSamples -eq 0) {
+    $status = "no_evidence"
+    $reason = "Safe scalar watch ran but did not collect any usable PlayerState-present samples."
+  } elseif ($crashAfterPrepare) {
+    $status = "crash_suspect_safe_scalar_watch"
+    $reason = "Safe scalar watch collected proven-safe scalar values, but a crash dump/folder was updated after campaign prepare/run."
+  } elseif ($changedFields -gt 0) {
+    $status = "safe_scalar_watch_observed_change"
+  } elseif ($sampleCount -gt 1) {
+    $status = "safe_scalar_watch_confirmed_no_change"
+  } else {
+    $status = "no_evidence"
+    $reason = "Safe scalar watch needs multiple samples or a changed-value row to classify."
+  }
+}
+
 if ($null -ne $latestManifestFile) {
   try {
     & (Join-Path $PSScriptRoot "import-latest-runtime-evidence.ps1") -From $ResultsRoot
@@ -786,6 +857,6 @@ Write-Host "phaseResult = $status"
 Write-Host "phaseId = $($phase.phaseId)"
 Write-Host "nextRecommendedPhase = $($updatedState.nextRecommendedPhase)"
 
-if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved" -and $status -ne "crash_suspect_local_inventory_shape_visible" -and $status -ne "local_inventory_shape_confirmed" -and $status -ne "crash_suspect_local_inventory_shape_confirmed" -and $status -ne "local_inventory_userdata_introspection_confirmed" -and $status -ne "crash_suspect_local_inventory_userdata_introspection" -and $status -ne "crystals_read_confirmed" -and $status -ne "crash_suspect_crystals_read" -and $status -ne "slots_read_confirmed" -and $status -ne "crash_suspect_slots_read" -and -not ($phase.phaseId -eq "local-inventory-array-shape-confirm" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "local-inventory-userdata-introspection" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "crystals-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "slots-read" -and $status -eq "no_evidence")) {
+if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved" -and $status -ne "crash_suspect_local_inventory_shape_visible" -and $status -ne "local_inventory_shape_confirmed" -and $status -ne "crash_suspect_local_inventory_shape_confirmed" -and $status -ne "local_inventory_userdata_introspection_confirmed" -and $status -ne "crash_suspect_local_inventory_userdata_introspection" -and $status -ne "crystals_read_confirmed" -and $status -ne "crash_suspect_crystals_read" -and $status -ne "slots_read_confirmed" -and $status -ne "crash_suspect_slots_read" -and $status -ne "safe_scalar_watch_confirmed_no_change" -and $status -ne "safe_scalar_watch_observed_change" -and $status -ne "crash_suspect_safe_scalar_watch" -and -not ($phase.phaseId -eq "local-inventory-array-shape-confirm" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "local-inventory-userdata-introspection" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "crystals-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "slots-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "safe-scalar-watch" -and $status -eq "no_evidence")) {
   exit 1
 }

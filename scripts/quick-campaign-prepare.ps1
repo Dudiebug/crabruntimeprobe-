@@ -94,6 +94,9 @@ function Assert-CampaignPhaseSafety {
   if (($required.ContainsKey("allowSlotsReadProbes") -and $required["allowSlotsReadProbes"]) -and $Phase.phaseId -ne "slots-read") {
     throw "Campaign phase $($Phase.phaseId) may not enable allowSlotsReadProbes."
   }
+  if (($required.ContainsKey("allowSafeScalarWatchProbes") -and $required["allowSafeScalarWatchProbes"]) -and $Phase.phaseId -ne "safe-scalar-watch") {
+    throw "Campaign phase $($Phase.phaseId) may not enable allowSafeScalarWatchProbes."
+  }
   if (($required.ContainsKey("allowInventoryArrayShallowProbes") -and $required["allowInventoryArrayShallowProbes"]) -and $Phase.phaseId -ne "local-inventory-array-shallow-read") {
     throw "Campaign phase $($Phase.phaseId) may not enable allowInventoryArrayShallowProbes."
   }
@@ -129,7 +132,10 @@ function Set-CampaignPhaseConfig {
   Set-CrabRuntimeProbeCampaignConfigValue -ConfigPath $ConfigPath -Key "debugTickHeartbeat" -Value ($(if ($Phase.tickDriver -eq "none") { "false" } else { "true" }))
   Set-CrabRuntimeProbeCampaignConfigValue -ConfigPath $ConfigPath -Key "debugWriterSelfTest" -Value "true"
   Set-CrabRuntimeProbeCampaignConfigValue -ConfigPath $ConfigPath -Key "repeatProbeSet" -Value ($(if ($Phase.phaseId -match 'watch') { "true" } else { "false" }))
-  Set-CrabRuntimeProbeCampaignConfigValue -ConfigPath $ConfigPath -Key "maxProbesPerSession" -Value ($(if ($Phase.phaseId -match 'watch') { "180" } else { "100" }))
+  Set-CrabRuntimeProbeCampaignConfigValue -ConfigPath $ConfigPath -Key "maxProbesPerSession" -Value ($(if ($Phase.phaseId -eq "safe-scalar-watch") { "240" } elseif ($Phase.phaseId -match 'watch') { "180" } else { "100" }))
+  Set-CrabRuntimeProbeCampaignConfigValue -ConfigPath $ConfigPath -Key "safeScalarWatchIntervalSeconds" -Value "5"
+  Set-CrabRuntimeProbeCampaignConfigValue -ConfigPath $ConfigPath -Key "safeScalarWatchHeartbeatSeconds" -Value "60"
+  Set-CrabRuntimeProbeCampaignConfigValue -ConfigPath $ConfigPath -Key "safeScalarWatchMaxSamples" -Value "240"
 
   foreach ($key in @(
     "allowHudTickHook",
@@ -143,6 +149,7 @@ function Set-CampaignPhaseConfig {
     "allowResourceVisibilityProbes",
     "allowCrystalsReadProbes",
     "allowSlotsReadProbes",
+    "allowSafeScalarWatchProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
@@ -184,6 +191,7 @@ function Assert-CampaignInstalledSafety {
     [switch]$AllowResourceVisibilityProbes,
     [switch]$AllowCrystalsReadProbes,
     [switch]$AllowSlotsReadProbes,
+    [switch]$AllowSafeScalarWatchProbes,
     [switch]$AllowInventoryArrayShallowProbes,
     [switch]$AllowInventoryArrayShapeConfirmProbes,
     [switch]$AllowInventoryUserdataIntrospectionProbes,
@@ -217,6 +225,7 @@ function Assert-CampaignInstalledSafety {
       ($AllowResourceVisibilityProbes -and $key -eq "allowResourceVisibilityProbes") -or
       ($AllowCrystalsReadProbes -and $key -eq "allowCrystalsReadProbes") -or
       ($AllowSlotsReadProbes -and $key -eq "allowSlotsReadProbes") -or
+      ($AllowSafeScalarWatchProbes -and $key -eq "allowSafeScalarWatchProbes") -or
       ($AllowInventoryArrayShallowProbes -and $key -eq "allowInventoryArrayShallowProbes") -or
       ($AllowInventoryArrayShapeConfirmProbes -and $key -eq "allowInventoryArrayShapeConfirmProbes") -or
       ($AllowInventoryUserdataIntrospectionProbes -and $key -eq "allowInventoryUserdataIntrospectionProbes") -or
@@ -296,6 +305,7 @@ Assert-CampaignInstalledSafety `
   -AllowResourceVisibilityProbes:($phase.phaseId -eq "multiplayer-resource-visibility-read") `
   -AllowCrystalsReadProbes:($phase.phaseId -eq "crystals-read") `
   -AllowSlotsReadProbes:($phase.phaseId -eq "slots-read") `
+  -AllowSafeScalarWatchProbes:($phase.phaseId -eq "safe-scalar-watch") `
   -AllowInventoryArrayShallowProbes:($phase.phaseId -eq "local-inventory-array-shallow-read") `
   -AllowInventoryArrayShapeConfirmProbes:($phase.phaseId -eq "local-inventory-array-shape-confirm") `
   -AllowInventoryUserdataIntrospectionProbes:($phase.phaseId -eq "local-inventory-userdata-introspection") `
