@@ -39,6 +39,13 @@
 - [CrabSyncV2 Research Roadmap](CRABSYNCV2_RESEARCH_ROADMAP.md)
 - [CrabSyncV2 Glossary](CRABSYNCV2_GLOSSARY.md)
 
+## P2P Carrier Research Templates
+
+- [P2P Carrier Candidates](P2P_CARRIER_CANDIDATES.md)
+- [P2P Carrier Visibility Matrix](P2P_CARRIER_VISIBILITY_MATRIX.md)
+- [P2P Carrier Unsafe Paths](P2P_CARRIER_UNSAFE_PATHS.md)
+- [P2P Carrier Write-Smoke Plan](P2P_CARRIER_WRITE_SMOKE_PLAN.md)
+
 ## Objectdump/Candidate Docs
 
 - [Objectdump Index](OBJECTDUMP_INDEX.md)

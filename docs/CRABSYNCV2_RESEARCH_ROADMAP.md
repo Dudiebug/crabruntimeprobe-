@@ -14,6 +14,8 @@ These are RuntimeProbe research phases in recommended planning order. Each Runti
 | `p2p-carrier-capacity-read` | Infer observed capacity, type, cadence, and reset behavior from natural values only. | Candidate already classified safe to read; writes/RPC false. | Read-only observation of natural values and length/type/cadence metadata. | Synthetic payloads, writes, mutating RPCs, arbitrary object crawling. | `access_evidence_<session>.jsonl`. | Candidate capacity/cadence is documented or marked insufficient/unresolved. | Crash, privacy leak, or scope expansion beyond candidate path. | Whether a `CrabSyncBlock` strawman can fit. |
 | `p2p-carrier-write-smoke` *(future, not RuntimeProbe default)* | Minimal controlled write smoke only after carrier read proof and explicit approval. | Future CrabSyncV2 sandbox gates only; RuntimeProbe default still read-only. | Manual tiny-scope smoke writes in isolated sandbox. | RuntimeProbe default mutation, broad writes, production usage. | Separate CrabSyncV2 sandbox evidence. | Write path behavior characterized with rollback/abort criteria. | Any crash/save corruption/UI desync signal. | Carrier write policy viability. |
 
+Carrier template/status docs exist for future evidence outputs: [P2P Carrier Candidates](P2P_CARRIER_CANDIDATES.md), [P2P Carrier Visibility Matrix](P2P_CARRIER_VISIBILITY_MATRIX.md), [P2P Carrier Unsafe Paths](P2P_CARRIER_UNSAFE_PATHS.md), and [P2P Carrier Write-Smoke Plan](P2P_CARRIER_WRITE_SMOKE_PLAN.md). They do not prove a carrier exists and do not authorize write-smoke work.
+
 ## Inventory Proof Track
 
 | Phase | Goal | Required config gates | Allowed | Forbidden | Expected evidence file | Success criteria | Crash stop condition | CrabSyncV2 decision unlocked |

@@ -47,6 +47,7 @@ These are future CrabSyncV2 constraints. They do not authorize RuntimeProbe writ
 
 - Do not hijack gameplay-authoritative fields as custom payload channels.
 - Prohibited payload channels include gameplay-critical values such as `Crystals`, keys, `HealthInfo`, slot counts, equipment DA fields, identity fields, inventory arrays, or AutoSave data.
+- [P2P Carrier Unsafe Paths](P2P_CARRIER_UNSAFE_PATHS.md) records forbidden carrier paths and must be checked before any future carrier status can advance.
 - [CrabSyncV2 P2P Carrier Research Plan](CRABSYNCV2_P2P_CARRIER_RESEARCH_PLAN.md) is the only approved planning path toward a future `CrabSyncBlock` carrier; it does not prove or authorize a carrier today.
 - Custom `CrabSyncBlock` carrier work requires:
   1. Dedicated carrier-discovery/read phase.

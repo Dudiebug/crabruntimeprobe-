@@ -188,7 +188,7 @@ Future evidence/status output docs may include:
 - `docs/P2P_CARRIER_UNSAFE_PATHS.md`: rejected candidates and why they are gameplay-critical, identity-sensitive, save-risky, unstable, or too small. Future status output, not current proof.
 - `docs/P2P_CARRIER_WRITE_SMOKE_PLAN.md`: future CrabSyncV2-only sandbox plan for a tiny approved sentinel write, including rollback and abort criteria. Future plan, not current authorization.
 
-These files should not be generated as proof until the corresponding read-only or sandbox evidence exists.
+Template/status docs now exist for [P2P Carrier Candidates](P2P_CARRIER_CANDIDATES.md), [P2P Carrier Visibility Matrix](P2P_CARRIER_VISIBILITY_MATRIX.md), [P2P Carrier Unsafe Paths](P2P_CARRIER_UNSAFE_PATHS.md), and [P2P Carrier Write-Smoke Plan](P2P_CARRIER_WRITE_SMOKE_PLAN.md). They are not current proof and must not be filled as evidence until the corresponding read-only or sandbox evidence exists.
 
 ## 9. Interaction With Inventory Sync
 
