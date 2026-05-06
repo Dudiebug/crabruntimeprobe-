@@ -34,6 +34,7 @@ allowInventoryArrayShallowProbes = false
 allowInventoryArrayShapeConfirmProbes = false
 allowInventoryUserdataIntrospectionProbes = false
 allowInventoryArrayCountProbes = false
+allowInventoryElementDataAssetReadProbes = false
 allowWriteProbes = false
 allowRpcProbes = false
 

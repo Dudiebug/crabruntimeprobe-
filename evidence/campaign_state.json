@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-06T05:28:12.092Z",
+  "updatedAt": "2026-05-06T05:52:58.652Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -184,11 +184,6 @@
       "reason": "Probe set is not implemented yet."
     },
     {
-      "phaseId": "inventory-element-da-read",
-      "status": "blocked",
-      "reason": "Probe set is not implemented yet and would require explicit deep-read review."
-    },
-    {
       "phaseId": "inventoryinfo-scalar-read",
       "status": "blocked",
       "reason": "Probe set is not implemented yet and InventoryInfo remains disabled until this explicit phase."
@@ -304,10 +299,10 @@
       "reason": "Future CrabModFramework-only work; never a RuntimeProbe write phase."
     }
   ],
-  "currentPhase": null,
-  "nextRecommendedPhase": null,
+  "currentPhase": "inventory-element-da-read",
+  "nextRecommendedPhase": "inventory-element-da-read",
   "latestSessionId": "20260506T052733Z",
-  "latestCommit": "abd957926dbdec437153dcba2e573bc9c4756d95",
+  "latestCommit": "75dcf3d82dd83677f0489158261de351c9770216",
   "latestSummaryPath": "evidence/runtime/20260506T052733Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {
@@ -441,12 +436,11 @@
       "reason": "Inventory array count metadata was attempted read-only, but a crash dump/folder was updated after campaign prepare/run."
     },
     "inventory-element-da-read": {
-      "status": "blocked",
-      "riskTier": "deep-read",
+      "status": "current",
+      "riskTier": "cautious-read",
       "probeSet": "inventory-element-da-read",
       "tickDriver": "executeDelay",
-      "mode": "active",
-      "reason": "Probe set is not implemented yet and would require explicit deep-read review."
+      "mode": "active"
     },
     "inventoryinfo-scalar-read": {
       "status": "blocked",

@@ -10,7 +10,7 @@ RuntimeProbe phases must remain read-only unless a future task explicitly change
 - RPC calls.
 - HUD tick hook use.
 - Deep array probes.
-- Live inventory array traversal or element dereference.
+- Live inventory array traversal or element dereference, except the capped first-element identity attempt in the narrow `inventory-element-da-read` phase.
 - Live inventory array counting except the narrow `inventory-array-count-read` wrapper metadata phase.
 - InventoryInfo reads.
 - Enhancements reads.
@@ -26,7 +26,11 @@ Failed/no-sample recorder runs are failures. If no PlayerState-present scalar sa
 
 The `inventory-array-count-read` phase is a narrow read-only proof for local PlayerState inventory wrapper count metadata only. It reads only `WeaponMods`, `AbilityMods`, `MeleeMods`, `Perks`, and `Relics` with `GetPropertyValue`, then attempts only a protected Lua length operation on the returned wrapper. Its required markers include `noInventoryTraversal`, `noArrayTraversal`, `noElementDereference`, `noItemDataAssetRead`, `noInventoryInfo`, `noEnhancements`, `noWrites`, `noRpcs`, `noHud`, `noDeepArrays`, `noDataAssetMutation`, and `passiveOnly`.
 
-Count evidence is not traversal evidence, item sync evidence, item DataAsset evidence, InventoryInfo evidence, or Enhancements evidence. It does not authorize item element reads; `inventory-element-da-read` remains a separate blocked future phase until count evidence is collected and reviewed.
+Count evidence is not traversal evidence, item sync evidence, item DataAsset evidence, InventoryInfo evidence, or Enhancements evidence. It does not authorize item element reads outside the separately gated `inventory-element-da-read` phase.
+
+The `inventory-element-da-read` phase is a narrow read-only proof for capped local inventory element identity only. It may read the same five local array properties, use prior count metadata, and consider at most one first element per non-empty array. If no vetted first-element access helper exists, it must report `inventory_element_da_unsupported` instead of trying multiple risky access methods. Its required markers include `noBroadDeepArrays`, `noArrayTraversal`, `noFullArrayIteration`, `cappedElementAccess`, `maxElementsPerArray = 1`, `noInventoryInfo`, `noEnhancements`, `noLevelRead`, `noAccumulatedBuffRead`, `noDataAssetMutation`, `noFunctionCalls`, and `passiveOnly`.
+
+Element DA evidence is not full inventory sync evidence, InventoryInfo evidence, Enhancement evidence, Level evidence, AccumulatedBuff evidence, or proof that full traversal is safe.
 
 ## Framework Rules
 
@@ -34,7 +38,7 @@ CrabModFramework should prefer high-level Crab Champions APIs backed by RuntimeP
 
 Any future write/edit API must be separate from RuntimeProbe, capability-gated, and documented as experimental until dedicated evidence and review exists. DataAsset catalog evidence is read evidence only; it is not permission to mutate DataAssets.
 
-Future inventory element DataAsset reads, InventoryInfo, Enhancements, event watchers, and additional DataAsset catalog families may enter the max-safe recorder only after their own dedicated campaign phases prove safety. Inventory wrapper count metadata can enter later only after `inventory-array-count-read` produces clean evidence and the recorder is explicitly updated.
+Future InventoryInfo, Enhancements, event watchers, and additional DataAsset catalog families may enter the max-safe recorder only after their own dedicated campaign phases prove safety. Inventory wrapper count metadata and inventory element identity reads can enter later only after their phases produce clean evidence and the recorder is explicitly updated.
 
 ## Passive Watchers
 

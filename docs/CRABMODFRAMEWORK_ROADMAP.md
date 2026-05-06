@@ -30,8 +30,8 @@ Passive event/function watcher track:
 Remaining inventory research track:
 
 - `inventory-array-shallow-read`: archival/cautious earlier local array visibility proof; count-read is the next smallest safe inventory step.
-- `inventory-array-count-read`: implemented next campaign phase. It attempts only local wrapper count metadata on `WeaponMods`, `AbilityMods`, `MeleeMods`, `Perks`, and `Relics`; it does not traverse arrays, dereference elements, read item DataAssets, read `InventoryInfo`, or read `Enhancements`.
-- `inventory-element-da-read`: unresolved.
+- `inventory-array-count-read`: implemented and confirmed. It attempts only local wrapper count metadata on `WeaponMods`, `AbilityMods`, `MeleeMods`, `Perks`, and `Relics`; it does not traverse arrays, dereference elements, read item DataAssets, read `InventoryInfo`, or read `Enhancements`.
+- `inventory-element-da-read`: implemented next campaign phase. It may consider only the first element of each non-empty local inventory array, records unsupported if no safe first-element helper exists, and forbids full traversal, `InventoryInfo`, `Enhancements`, `Level`, `AccumulatedBuff`, writes, RPCs, HUD hooks, gameplay function calls, and broad deep arrays.
 - `inventoryinfo-scalar-read`: blocked pending safety review.
 - `enhancements-read`: blocked pending safety review.
 

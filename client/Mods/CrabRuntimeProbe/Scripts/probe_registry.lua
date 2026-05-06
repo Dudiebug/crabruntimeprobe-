@@ -585,6 +585,13 @@ function registry.build(safe)
   end
 
   local LOCAL_INVENTORY_ARRAY_FIELDS = { 'WeaponMods', 'AbilityMods', 'MeleeMods', 'Perks', 'Relics' }
+  local LOCAL_INVENTORY_ELEMENT_DA_FIELDS = {
+    WeaponMods = 'WeaponModDA',
+    AbilityMods = 'AbilityModDA',
+    MeleeMods = 'MeleeModDA',
+    Perks = 'PerkDA',
+    Relics = 'RelicDA'
+  }
   local LOCAL_INVENTORY_SLOT_FIELDS = { 'NumWeaponModSlots', 'NumAbilityModSlots', 'NumMeleeModSlots', 'NumPerkSlots' }
   local LOCAL_INVENTORY_ARRAY_COUNT_CAP = 64
 
@@ -1129,6 +1136,238 @@ function registry.build(safe)
       .. ' noInventoryTraversal=true noArrayTraversal=true noElementDereference=true noItemDataAssetRead=true noInventoryInfo=true noEnhancements=true'
       .. ' noWrites=true noRpcs=true noHud=true noDeepArrays=true noDataAssetMutation=true passiveOnly=true'
       .. ' crashAttributionMarker=inventory-array-count-read'
+  end
+
+  local function buildInventoryElementDAReadCache(ctx)
+    if ctx.cache.InventoryElementDARead then return ctx.cache.InventoryElementDARead end
+
+    local playerState, playerStateErr = getCrabPlayerState(ctx)
+    if playerStateErr then
+      ctx.cache.InventoryElementDARead = { error = playerStateErr }
+      return ctx.cache.InventoryElementDARead
+    end
+
+    local stats = {
+      sourceScope = 'local_player_state_inventory_element_da_read',
+      sourcePath = 'CrabPC.PlayerState',
+      sourceClass = 'CrabPS',
+      localPlayerStatePresent = safe.isValidObject(playerState),
+      arrayFieldNames = LOCAL_INVENTORY_ARRAY_FIELDS,
+      curatedDataAssetFieldNames = LOCAL_INVENTORY_ELEMENT_DA_FIELDS,
+      arrayPropertiesPresent = {},
+      valueKinds = {},
+      tostringPrefixes = {},
+      countAttempted = {},
+      countMethods = {},
+      countResults = {},
+      countErrors = {},
+      nonEmptyArrayFields = {},
+      elementAccessAttempted = {},
+      elementAccessMethods = {},
+      elementAccessErrors = {},
+      elementPresent = {},
+      elementValueKinds = {},
+      elementTostringPrefixes = {},
+      elementIsValid = {},
+      elementIdentities = {},
+      dataAssetFieldNames = {},
+      dataAssetFieldResults = {},
+      dataAssetIdentities = {},
+      fieldResults = {},
+      fieldsReadable = {},
+      fieldsNilOrUnsupported = {},
+      elementAccessSupported = false,
+      maxElementsPerArray = 1,
+      noWrites = true,
+      noRpcs = true,
+      noHud = true,
+      noDeepArrays = true,
+      noBroadDeepArrays = true,
+      noArrayTraversal = true,
+      noFullArrayIteration = true,
+      cappedElementAccess = true,
+      noInventoryInfo = true,
+      noEnhancements = true,
+      noLevelRead = true,
+      noAccumulatedBuffRead = true,
+      noDataAssetMutation = true,
+      noFunctionCalls = true,
+      passiveOnly = true,
+      crashAttributionMarker = 'inventory-element-da-read'
+    }
+
+    local function classifyNoPlayerState(fieldName)
+      stats.arrayPropertiesPresent[fieldName] = false
+      stats.valueKinds[fieldName] = 'nil'
+      stats.tostringPrefixes[fieldName] = 'nil'
+      stats.countAttempted[fieldName] = false
+      stats.countMethods[fieldName] = 'not_attempted'
+      stats.elementAccessAttempted[fieldName] = false
+      stats.elementAccessMethods[fieldName] = 'not_attempted'
+      stats.elementPresent[fieldName] = false
+      stats.elementValueKinds[fieldName] = 'nil'
+      stats.dataAssetFieldNames[fieldName] = LOCAL_INVENTORY_ELEMENT_DA_FIELDS[fieldName]
+      stats.dataAssetFieldResults[fieldName] = 'not_attempted'
+      stats.fieldResults[fieldName] = 'no_local_player_state'
+      stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+    end
+
+    if not stats.localPlayerStatePresent then
+      for _, fieldName in ipairs(LOCAL_INVENTORY_ARRAY_FIELDS) do classifyNoPlayerState(fieldName) end
+      ctx.cache.InventoryElementDARead = stats
+      return stats
+    end
+
+    for _, fieldName in ipairs(LOCAL_INVENTORY_ARRAY_FIELDS) do
+      stats.dataAssetFieldNames[fieldName] = LOCAL_INVENTORY_ELEMENT_DA_FIELDS[fieldName]
+      local value, err = safe.getProperty(playerState, fieldName)
+      if err then
+        stats.arrayPropertiesPresent[fieldName] = false
+        stats.valueKinds[fieldName] = 'error'
+        stats.tostringPrefixes[fieldName] = 'error'
+        stats.countAttempted[fieldName] = false
+        stats.countMethods[fieldName] = 'not_attempted'
+        stats.elementAccessAttempted[fieldName] = false
+        stats.elementAccessMethods[fieldName] = 'not_attempted'
+        stats.elementPresent[fieldName] = false
+        stats.elementValueKinds[fieldName] = 'error'
+        stats.countErrors[fieldName] = tostring(err)
+        stats.dataAssetFieldResults[fieldName] = 'not_attempted'
+        stats.fieldResults[fieldName] = 'property_error'
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      elseif value == nil then
+        stats.arrayPropertiesPresent[fieldName] = false
+        stats.valueKinds[fieldName] = 'nil'
+        stats.tostringPrefixes[fieldName] = 'nil'
+        stats.countAttempted[fieldName] = false
+        stats.countMethods[fieldName] = 'not_attempted'
+        stats.elementAccessAttempted[fieldName] = false
+        stats.elementAccessMethods[fieldName] = 'not_attempted'
+        stats.elementPresent[fieldName] = false
+        stats.elementValueKinds[fieldName] = 'nil'
+        stats.dataAssetFieldResults[fieldName] = 'not_attempted'
+        stats.fieldResults[fieldName] = 'nil'
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      else
+        stats.arrayPropertiesPresent[fieldName] = true
+        stats.valueKinds[fieldName] = type(value)
+        stats.tostringPrefixes[fieldName] = safeTostringPrefix(value)
+        stats.countAttempted[fieldName] = true
+        stats.countMethods[fieldName] = 'lua_len_operator_pcall'
+        local countResult, countErr = safeLenOperator(value)
+        if countErr then
+          stats.countErrors[fieldName] = countErr
+          stats.elementAccessAttempted[fieldName] = false
+          stats.elementAccessMethods[fieldName] = 'not_attempted_count_unsupported'
+          stats.elementPresent[fieldName] = false
+          stats.elementValueKinds[fieldName] = 'unknown'
+          stats.dataAssetFieldResults[fieldName] = 'not_attempted'
+          stats.fieldResults[fieldName] = 'count_unsupported'
+          stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+        elseif type(countResult) == 'number' then
+          stats.countResults[fieldName] = countResult
+          if countResult > 0 then
+            stats.nonEmptyArrayFields[#stats.nonEmptyArrayFields + 1] = fieldName
+            stats.elementAccessAttempted[fieldName] = false
+            stats.elementAccessMethods[fieldName] = 'unsupported_no_safe_first_element_helper'
+            stats.elementAccessErrors[fieldName] = 'no safe first-element helper exists without iteration or wrapper dereference'
+            stats.elementPresent[fieldName] = false
+            stats.elementValueKinds[fieldName] = 'unsupported'
+            stats.elementTostringPrefixes[fieldName] = 'unsupported'
+            stats.elementIsValid[fieldName] = false
+            stats.dataAssetFieldResults[fieldName] = 'not_attempted_element_access_unsupported'
+            stats.fieldResults[fieldName] = 'element_access_unsupported'
+            stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+          else
+            stats.elementAccessAttempted[fieldName] = false
+            stats.elementAccessMethods[fieldName] = 'not_attempted_empty_array'
+            stats.elementPresent[fieldName] = false
+            stats.elementValueKinds[fieldName] = 'nil'
+            stats.elementTostringPrefixes[fieldName] = 'nil'
+            stats.elementIsValid[fieldName] = false
+            stats.dataAssetFieldResults[fieldName] = 'not_attempted_empty_array'
+            stats.fieldResults[fieldName] = 'empty_array'
+            stats.fieldsReadable[#stats.fieldsReadable + 1] = fieldName
+          end
+        else
+          stats.elementAccessAttempted[fieldName] = false
+          stats.elementAccessMethods[fieldName] = 'not_attempted_count_unsupported'
+          stats.elementPresent[fieldName] = false
+          stats.elementValueKinds[fieldName] = 'unknown'
+          stats.dataAssetFieldResults[fieldName] = 'not_attempted'
+          stats.fieldResults[fieldName] = 'count_unsupported'
+          stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+        end
+      end
+    end
+
+    ctx.cache.InventoryElementDARead = stats
+    return stats
+  end
+
+  local function inventoryElementDAReadMeta(stats, note)
+    return {
+      sourceScope = stats.sourceScope,
+      sourcePath = stats.sourcePath,
+      sourceClass = stats.sourceClass,
+      candidateClasses = { 'CrabPC', 'CrabPS', 'CrabWeaponMod', 'CrabAbilityMod', 'CrabMeleeMod', 'CrabPerk', 'CrabRelic' },
+      localPlayerStatePresent = stats.localPlayerStatePresent == true,
+      arrayFieldNames = stats.arrayFieldNames or LOCAL_INVENTORY_ARRAY_FIELDS,
+      curatedDataAssetFieldNames = stats.curatedDataAssetFieldNames or LOCAL_INVENTORY_ELEMENT_DA_FIELDS,
+      arrayPropertiesPresent = stats.arrayPropertiesPresent or {},
+      valueKinds = stats.valueKinds or {},
+      tostringPrefixes = stats.tostringPrefixes or {},
+      countAttempted = stats.countAttempted or {},
+      countMethods = stats.countMethods or {},
+      countResults = stats.countResults or {},
+      countErrors = stats.countErrors or {},
+      nonEmptyArrayFields = stats.nonEmptyArrayFields or {},
+      elementAccessAttempted = stats.elementAccessAttempted or {},
+      elementAccessMethods = stats.elementAccessMethods or {},
+      elementAccessErrors = stats.elementAccessErrors or {},
+      elementPresent = stats.elementPresent or {},
+      elementValueKinds = stats.elementValueKinds or {},
+      elementTostringPrefixes = stats.elementTostringPrefixes or {},
+      elementIsValid = stats.elementIsValid or {},
+      elementIdentities = stats.elementIdentities or {},
+      dataAssetFieldNames = stats.dataAssetFieldNames or {},
+      dataAssetFieldResults = stats.dataAssetFieldResults or {},
+      dataAssetIdentities = stats.dataAssetIdentities or {},
+      fieldResults = stats.fieldResults or {},
+      fieldsReadable = stats.fieldsReadable or {},
+      fieldsNilOrUnsupported = stats.fieldsNilOrUnsupported or {},
+      elementAccessSupported = stats.elementAccessSupported == true,
+      maxElementsPerArray = 1,
+      noWrites = true,
+      noRpcs = true,
+      noHud = true,
+      noDeepArrays = true,
+      noBroadDeepArrays = true,
+      noArrayTraversal = true,
+      noFullArrayIteration = true,
+      cappedElementAccess = true,
+      noInventoryInfo = true,
+      noEnhancements = true,
+      noLevelRead = true,
+      noAccumulatedBuffRead = true,
+      noDataAssetMutation = true,
+      noFunctionCalls = true,
+      passiveOnly = true,
+      crashAttributionMarker = 'inventory-element-da-read',
+      localNotes = note
+    }
+  end
+
+  local function inventoryElementDAReadSummary(stats)
+    return 'category=inventory-element-da-read'
+      .. ' localPlayerStatePresent=' .. tostring(stats.localPlayerStatePresent == true)
+      .. ' nonEmptyArrayFields=' .. tostring(#(stats.nonEmptyArrayFields or {}))
+      .. ' elementAccessSupported=' .. tostring(stats.elementAccessSupported == true)
+      .. ' maxElementsPerArray=1'
+      .. ' curatedDAFields=WeaponModDA,AbilityModDA,MeleeModDA,PerkDA,RelicDA'
+      .. ' noArrayTraversal=true noFullArrayIteration=true cappedElementAccess=true noInventoryInfo=true noEnhancements=true noLevelRead=true noAccumulatedBuffRead=true'
+      .. ' noWrites=true noRpcs=true noHud=true noBroadDeepArrays=true noDataAssetMutation=true noFunctionCalls=true passiveOnly=true'
+      .. ' crashAttributionMarker=inventory-element-da-read'
   end
 
   local function integerLikeUInt32(value)
@@ -3505,6 +3744,24 @@ function registry.build(safe)
     accessMethod = 'GetPropertyValueLuaLenPcall',
     accessKind = 'inventoryArrayCountRead',
     sourceScope = 'local_player_state_inventory_array_count_read'
+  })
+
+  probes[#probes + 1] = mk('Inventory.LocalArrays.ElementDARead', 'inventory-element-da-read', 'inventory-element-da-read', 'inventoryElementDARead', function(ctx)
+    local stats = buildInventoryElementDAReadCache(ctx)
+    if stats.error then return 'lua_error', nil, nil, stats.error end
+    local hasEvidence = stats.localPlayerStatePresent == true and (
+      #(stats.fieldsReadable or {}) > 0 or #(stats.fieldsNilOrUnsupported or {}) > 0 or #(stats.nonEmptyArrayFields or {}) > 0
+    )
+    return hasEvidence and 'ok' or 'nil', 'inventory_element_da_read',
+      inventoryElementDAReadSummary(stats), nil,
+      inventoryElementDAReadMeta(stats, 'Read-only local CrabPC -> PlayerState -> CrabPS capped first-element DA identity proof phase. Current runtime path records count metadata and returns unsupported when no safe first-element helper exists; it does not traverse arrays, iterate arrays, dereference elements, read InventoryInfo, Enhancements, Level, AccumulatedBuff, mutate DataAssets, call functions, write, RPC, HUD, or broad deep arrays.')
+  end, {
+    symbol = 'CrabPS.WeaponMods',
+    owner = 'CrabPS',
+    member = 'WeaponMods AbilityMods MeleeMods Perks Relics',
+    accessMethod = 'GetPropertyValueCountThenCappedFirstElementIfSupported',
+    accessKind = 'inventoryElementDARead',
+    sourceScope = 'local_player_state_inventory_element_da_read'
   })
 
   probes[#probes + 1] = mk('Resource.Crystals.Read', 'resource-crystals', 'crystals-read', 'localCrystalsRead', function(ctx)

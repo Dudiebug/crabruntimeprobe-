@@ -62,7 +62,7 @@ foreach ($expected in @(
 
 $registry = Get-Content -Raw -LiteralPath $ProbeRegistryPath
 $helperStart = $registry.IndexOf("local function buildInventoryArrayCountReadCache")
-$helperEnd = $registry.IndexOf("local function integerLikeUInt32")
+$helperEnd = $registry.IndexOf("local function buildInventoryElementDAReadCache")
 $probeStart = $registry.IndexOf("Inventory.LocalArrays.CountRead")
 $probeEnd = $registry.IndexOf("Resource.Crystals.Read")
 if ($helperStart -lt 0 -or $helperEnd -le $helperStart -or $probeStart -lt 0 -or $probeEnd -le $probeStart) { throw "could not isolate inventory array count read probe block." }

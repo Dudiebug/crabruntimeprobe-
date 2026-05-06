@@ -689,30 +689,52 @@
     },
     {
       "phaseId": "inventory-element-da-read",
-      "label": "Inventory element data asset read placeholder",
+      "label": "Inventory element data asset read",
       "probeSet": "inventory-element-da-read",
       "tickDriver": "executeDelay",
       "mode": "active",
-      "implemented": false,
-      "blockedReason": "Probe set is not implemented yet and would require explicit deep-read review.",
+      "implemented": true,
       "requiredGates": {
-        "allowDeepArrayProbes": true
+        "allowInventoryElementDataAssetReadProbes": true
       },
       "forbiddenGates": [
         "allowHudTickHook",
         "allowUnknownRoleProbes",
         "allowJoinedClientDeepProbes",
+        "allowDeepArrayProbes",
         "allowInventoryInfoProbes",
         "allowHealthProbes",
+        "allowIdentityProbes",
+        "allowRawIdentityEvidence",
+        "allowResourceVisibilityProbes",
+        "allowCrystalsReadProbes",
+        "allowSlotsReadProbes",
+        "allowSafeScalarWatchProbes",
+        "allowPerkDataAssetCatalogProbes",
+        "allowMaxSafePlayRecorderProbes",
+        "allowInventoryArrayShallowProbes",
+        "allowInventoryArrayShapeConfirmProbes",
+        "allowInventoryUserdataIntrospectionProbes",
+        "allowInventoryArrayCountProbes",
         "allowWriteProbes",
         "allowRpcProbes"
       ],
       "expectedEvidenceSignals": [
-        "TBD capped inventory element DA evidence"
+        "Inventory.LocalArrays.ElementDARead",
+        "noArrayTraversal = true",
+        "noFullArrayIteration = true",
+        "cappedElementAccess = true",
+        "maxElementsPerArray = 1",
+        "noInventoryInfo = true",
+        "noEnhancements = true",
+        "noLevelRead = true",
+        "noAccumulatedBuffRead = true",
+        "noDataAssetMutation = true",
+        "noFunctionCalls = true"
       ],
-      "riskTier": "deep-read",
+      "riskTier": "cautious-read",
       "status": "pending",
-      "humanInstructions": "Do not run until the probe set exists and deep-read safety review is complete.",
+      "humanInstructions": "Launch Crab Champions locally in a stable world/run after inventory-array-count-read has confirmed count metadata. This phase reads only the five local inventory array wrappers, uses count metadata to identify non-empty arrays, and attempts at most one capped first-element DA/identity read only if a safe helper is available. It must not traverse arrays, iterate arrays, read InventoryInfo, Enhancements, Level, AccumulatedBuff, write, RPC, HUD, or mutate DataAssets. Quit, then run scripts\\quick-campaign-collect.ps1.",
       "nextPhase": "inventoryinfo-scalar-read"
     },
     {

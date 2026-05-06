@@ -1,11 +1,11 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-06T05:42:53.453Z
+- Updated: 2026-05-06T05:52:58.652Z
 - Current phase: `inventory-element-da-read`
 - Next recommended phase: `inventory-element-da-read`
 - Latest session: 20260506T052733Z
-- Latest commit: 6bfb46b99d2dc166aa23549b7e022e049892320a
+- Latest commit: 75dcf3d82dd83677f0489158261de351c9770216
 - Latest summary: evidence/runtime/20260506T052733Z/diagnostic_summary.txt
 
 ## Completed Phases
@@ -186,6 +186,12 @@
 - Writes/RPCs/HUD/deep arrays: no
 - No crash dump is associated with the imported count-read evidence.
 - Any count result is wrapper metadata only. It does not authorize traversal, element dereference, item DataAsset reads, InventoryInfo reads, Enhancements reads, or item sync.
+
+## Inventory Element DA Read
+
+- Summary: unresolved; no `inventory-element-da-read` evidence has been imported yet.
+- Purpose: prove whether one capped first element per non-empty local inventory array can safely expose element or DataAsset identity.
+- This phase is not full inventory sync, full traversal, InventoryInfo evidence, Enhancement evidence, Level evidence, or AccumulatedBuff evidence.
 
 ## Local Crystals Read
 

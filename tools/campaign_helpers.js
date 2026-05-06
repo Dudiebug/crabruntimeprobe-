@@ -25,6 +25,7 @@ const ALL_GATES = [
   'allowInventoryArrayShapeConfirmProbes',
   'allowInventoryUserdataIntrospectionProbes',
   'allowInventoryArrayCountProbes',
+  'allowInventoryElementDataAssetReadProbes',
   'allowWriteProbes',
   'allowRpcProbes'
 ];
@@ -818,6 +819,10 @@ function isInventoryArrayCountReadRow(row) {
   return (row.probeName || row.probeId || row.event || '') === 'Inventory.LocalArrays.CountRead';
 }
 
+function isInventoryElementDAReadRow(row) {
+  return (row.probeName || row.probeId || row.event || '') === 'Inventory.LocalArrays.ElementDARead';
+}
+
 function classifyLocalInventoryArrayEvidence(rows, options = {}) {
   const inventoryRows = rows.filter(isLocalInventoryArrayRow);
   const fieldsReadable = Array.from(new Set(inventoryRows.flatMap((row) => flattenStringList(row.fieldsReadable)))).sort();
@@ -1237,6 +1242,131 @@ function classifyInventoryArrayCountEvidence(rows, options = {}) {
   };
 }
 
+function classifyInventoryElementDataAssetEvidence(rows, options = {}) {
+  const elementRows = rows.filter(isInventoryElementDAReadRow);
+  const latest = elementRows.length ? elementRows[elementRows.length - 1] : {};
+  const localPlayerStatePresent = elementRows.some((row) => row.localPlayerStatePresent === true);
+  const valueKinds = {};
+  const countResults = {};
+  const fieldResults = {};
+  const elementAccessAttempted = {};
+  const elementAccessMethods = {};
+  const elementIdentities = {};
+  const dataAssetIdentities = {};
+  const nonEmptyArrayFields = Array.from(new Set(elementRows.flatMap((row) => flattenStringList(row.nonEmptyArrayFields)))).sort();
+  for (const row of elementRows) {
+    for (const [target, source] of [
+      [valueKinds, row.valueKinds],
+      [fieldResults, row.fieldResults],
+      [elementAccessMethods, row.elementAccessMethods],
+      [elementIdentities, row.elementIdentities],
+      [dataAssetIdentities, row.dataAssetIdentities]
+    ]) {
+      if (source && typeof source === 'object') {
+        for (const [name, value] of Object.entries(source)) target[name] = typeof value === 'object' ? value : String(value);
+      }
+    }
+    if (row.countResults && typeof row.countResults === 'object') {
+      for (const [name, value] of Object.entries(row.countResults)) countResults[name] = value;
+    }
+    if (row.elementAccessAttempted && typeof row.elementAccessAttempted === 'object') {
+      for (const [name, value] of Object.entries(row.elementAccessAttempted)) elementAccessAttempted[name] = value === true;
+    }
+  }
+  const expectedFields = ['WeaponMods', 'AbilityMods', 'MeleeMods', 'Perks', 'Relics'];
+  const propertyClassified = expectedFields.every((name) => Object.prototype.hasOwnProperty.call(fieldResults, name));
+  const countResultFields = Object.entries(countResults).filter(([, value]) => Number.isFinite(Number(value))).map(([name]) => name).sort();
+  const allCountedZero = expectedFields.every((name) => Object.prototype.hasOwnProperty.call(countResults, name) && Number(countResults[name]) === 0);
+  const identityFields = Array.from(new Set([...Object.keys(elementIdentities), ...Object.keys(dataAssetIdentities)])).sort();
+  const elementAccessSupported = elementRows.some((row) => row.elementAccessSupported === true);
+  const forbiddenGateNames = [
+    'allowHudTickHook', 'allowUnknownRoleProbes', 'allowJoinedClientDeepProbes', 'allowDeepArrayProbes',
+    'allowInventoryInfoProbes', 'allowHealthProbes', 'allowIdentityProbes', 'allowRawIdentityEvidence',
+    'allowResourceVisibilityProbes', 'allowCrystalsReadProbes', 'allowSlotsReadProbes',
+    'allowSafeScalarWatchProbes', 'allowPerkDataAssetCatalogProbes', 'allowMaxSafePlayRecorderProbes',
+    'allowInventoryArrayShallowProbes', 'allowInventoryArrayShapeConfirmProbes',
+    'allowInventoryUserdataIntrospectionProbes', 'allowInventoryArrayCountProbes',
+    'allowWriteProbes', 'allowRpcProbes'
+  ];
+  const safetyViolation = elementRows.some((row) => {
+    const hasGates = row && row.safetyGates && typeof row.safetyGates === 'object';
+    const gates = hasGates ? row.safetyGates : {};
+    return (hasGates && (forbiddenGateNames.some((gate) => gates[gate] === true) || gates.allowInventoryElementDataAssetReadProbes !== true)) ||
+      row.noWrites !== true ||
+      row.noRpcs !== true ||
+      row.noHud !== true ||
+      row.noBroadDeepArrays !== true ||
+      row.noArrayTraversal !== true ||
+      row.noFullArrayIteration !== true ||
+      row.cappedElementAccess !== true ||
+      Number(row.maxElementsPerArray || 0) > 1 ||
+      row.noInventoryInfo !== true ||
+      row.noEnhancements !== true ||
+      row.noLevelRead !== true ||
+      row.noAccumulatedBuffRead !== true ||
+      row.noDataAssetMutation !== true ||
+      row.noFunctionCalls !== true ||
+      row.passiveOnly !== true;
+  });
+  let status = 'no_evidence';
+  let classification = 'unresolved';
+  if (safetyViolation) {
+    status = 'failed';
+    classification = 'failed';
+  } else if (elementRows.length > 0 && options.crashSuspect) {
+    status = 'crash_suspect_inventory_element_da';
+    classification = 'crash-suspect';
+  } else if (elementRows.length > 0 && localPlayerStatePresent && nonEmptyArrayFields.length > 0 && identityFields.length > 0) {
+    status = 'inventory_element_da_confirmed';
+    classification = 'inventory_element_da_confirmed';
+  } else if (elementRows.length > 0 && localPlayerStatePresent && propertyClassified && allCountedZero) {
+    status = 'inventory_element_da_no_nonempty_arrays';
+    classification = 'inventory_element_da_no_nonempty_arrays';
+  } else if (elementRows.length > 0 && localPlayerStatePresent && propertyClassified && countResultFields.length > 0 && nonEmptyArrayFields.length > 0 && !elementAccessSupported) {
+    status = 'inventory_element_da_unsupported';
+    classification = 'inventory_element_da_unsupported';
+  } else if (elementRows.length > 0) {
+    status = 'inventory_element_da_not_found';
+    classification = 'inventory_element_da_not_found';
+  }
+  return {
+    inventoryElementDataAssetEvidenceFound: elementRows.length > 0,
+    localPlayerStatePresent,
+    valueKinds,
+    countResults,
+    countResultFields,
+    nonEmptyArrayFields,
+    fieldResults,
+    elementAccessAttempted,
+    elementAccessMethods,
+    elementAccessSupported,
+    elementIdentities,
+    dataAssetIdentities,
+    identityFields,
+    propertyClassified,
+    noWrites: elementRows.length > 0 && elementRows.every((row) => row.noWrites === true),
+    noRpcs: elementRows.length > 0 && elementRows.every((row) => row.noRpcs === true),
+    noHud: elementRows.length > 0 && elementRows.every((row) => row.noHud === true),
+    noBroadDeepArrays: elementRows.length > 0 && elementRows.every((row) => row.noBroadDeepArrays === true),
+    noArrayTraversal: elementRows.length > 0 && elementRows.every((row) => row.noArrayTraversal === true),
+    noFullArrayIteration: elementRows.length > 0 && elementRows.every((row) => row.noFullArrayIteration === true),
+    cappedElementAccess: elementRows.length > 0 && elementRows.every((row) => row.cappedElementAccess === true),
+    maxElementsPerArray: elementRows.length ? Number(latest.maxElementsPerArray || 0) : 0,
+    noInventoryInfo: elementRows.length > 0 && elementRows.every((row) => row.noInventoryInfo === true),
+    noEnhancements: elementRows.length > 0 && elementRows.every((row) => row.noEnhancements === true),
+    noLevelRead: elementRows.length > 0 && elementRows.every((row) => row.noLevelRead === true),
+    noAccumulatedBuffRead: elementRows.length > 0 && elementRows.every((row) => row.noAccumulatedBuffRead === true),
+    noDataAssetMutation: elementRows.length > 0 && elementRows.every((row) => row.noDataAssetMutation === true),
+    noFunctionCalls: elementRows.length > 0 && elementRows.every((row) => row.noFunctionCalls === true),
+    passiveOnly: elementRows.length > 0 && elementRows.every((row) => row.passiveOnly === true),
+    safetyViolation,
+    crashSuspect: options.crashSuspect === true,
+    latest,
+    classification,
+    status
+  };
+}
+
 function hasCrashSuspectEvidenceForSession(facts, sessionId) {
   const text = facts && facts.text ? facts.text : '';
   if (!text) return false;
@@ -1330,6 +1460,9 @@ function validatePhaseSafety(phase, gates = gateConfigForPhaseUnchecked(phase)) 
   if (gates.allowInventoryArrayCountProbes && phase.phaseId !== 'inventory-array-count-read') {
     throw new Error(`${phase.phaseId} may not enable allowInventoryArrayCountProbes.`);
   }
+  if (gates.allowInventoryElementDataAssetReadProbes && phase.phaseId !== 'inventory-element-da-read') {
+    throw new Error(`${phase.phaseId} may not enable allowInventoryElementDataAssetReadProbes.`);
+  }
   if (gates.allowHealthProbes && !/^health-|^multiplayer-health-/.test(phase.phaseId) && phase.phaseId !== 'multiplayer-resource-visibility-read') {
     throw new Error(`${phase.phaseId} may not enable allowHealthProbes.`);
   }
@@ -1342,7 +1475,7 @@ function validatePhaseSafety(phase, gates = gateConfigForPhaseUnchecked(phase)) 
   if (gates.allowInventoryInfoProbes && phase.phaseId !== 'inventoryinfo-scalar-read') {
     throw new Error(`${phase.phaseId} may not enable allowInventoryInfoProbes.`);
   }
-  if (gates.allowDeepArrayProbes && !/deep|inventory-element-da-read/.test(phase.phaseId)) {
+  if (gates.allowDeepArrayProbes && !/deep/.test(phase.phaseId)) {
     throw new Error(`${phase.phaseId} may not enable allowDeepArrayProbes.`);
   }
   for (const gate of phase.forbiddenGates || []) {
@@ -1675,7 +1808,7 @@ function blockedPhaseIds(state) {
 
 function advanceablePartialPhaseIds(state) {
   return new Set((state.partialPhases || [])
-    .filter((entry) => entry.status === 'remote_resources_partial' || entry.status === 'crash_suspect_local_inventory_shape_visible' || entry.status === 'perk_da_catalog_not_found' || entry.status === 'perk_da_catalog_candidates_rejected' || entry.status === 'inventory_array_count_not_found' || entry.status === 'crash_suspect_inventory_array_count')
+    .filter((entry) => entry.status === 'remote_resources_partial' || entry.status === 'crash_suspect_local_inventory_shape_visible' || entry.status === 'perk_da_catalog_not_found' || entry.status === 'perk_da_catalog_candidates_rejected' || entry.status === 'inventory_array_count_not_found' || entry.status === 'crash_suspect_inventory_array_count' || entry.status === 'inventory_element_da_not_found' || entry.status === 'crash_suspect_inventory_element_da')
     .map((entry) => entry.phaseId || entry));
 }
 
@@ -1863,6 +1996,25 @@ function markCollected(plan, state, phaseId, result) {
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
     });
+  } else if (phaseId === 'inventory-element-da-read' && (
+    result.status === 'inventory_element_da_confirmed' ||
+    result.status === 'inventory_element_da_no_nonempty_arrays' ||
+    result.status === 'inventory_element_da_unsupported'
+  )) {
+    out.completedPhases.push({
+      phaseId,
+      status: 'complete',
+      completedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || (result.status === 'inventory_element_da_confirmed'
+        ? 'A capped first inventory element identity or DataAsset identity was read with no traversal, InventoryInfo, Enhancements, Level, AccumulatedBuff, writes, RPCs, HUD, function calls, or broad deep arrays.'
+        : (result.status === 'inventory_element_da_no_nonempty_arrays'
+          ? 'Local inventory arrays were visible and counted, but all arrays were empty; no element access was attempted.'
+          : 'Local inventory arrays were visible and non-empty, but no safe first-element access helper is currently supported.')),
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
   } else if (phaseId === 'crystals-read' && result.status === 'crystals_read_confirmed') {
     out.completedPhases.push({
       phaseId,
@@ -1999,6 +2151,23 @@ function markCollected(plan, state, phaseId, result) {
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
     });
+  } else if (phaseId === 'inventory-element-da-read' && (
+    result.status === 'inventory_element_da_not_found' ||
+    result.status === 'crash_suspect_inventory_element_da' ||
+    result.status === 'no_evidence'
+  )) {
+    out.partialPhases.push({
+      phaseId,
+      status: result.status,
+      updatedAt: nowIso(),
+      source: 'campaign-collect',
+      reason: result.reason || (result.status === 'crash_suspect_inventory_element_da'
+        ? 'Inventory element DA read was attempted read-only, but crash evidence exists after this run.'
+        : 'Inventory element DA read did not find usable local PlayerState array wrapper evidence.'),
+      latestSessionId: out.latestSessionId,
+      latestCommit: out.latestCommit,
+      latestSummaryPath: out.latestSummaryPath
+    });
   } else if (phaseId === 'crystals-read' && (
     result.status === 'crash_suspect_crystals_read' ||
     result.status === 'no_evidence'
@@ -2114,7 +2283,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '## Completed Phases\n\n';
   out += renderList(listByStatus(plan, state, 'complete'));
   out += '\n## Partial Phases\n\n';
-  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$|^local_inventory_unresolved$|^crash_suspect_local_inventory_shape_visible$|^crash_suspect_local_inventory_shape_confirmed$|^crash_suspect_local_inventory_userdata_introspection$|^inventory_array_count_not_found$|^crash_suspect_inventory_array_count$|^crash_suspect_crystals_read$|^crash_suspect_safe_scalar_watch$|^perk_da_catalog_not_found$|^perk_da_catalog_candidates_rejected$|^perk_da_catalog_crash_suspect$|^no_evidence$/.test(phaseStatus(state, phase.phaseId)));
+  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$|^local_inventory_unresolved$|^crash_suspect_local_inventory_shape_visible$|^crash_suspect_local_inventory_shape_confirmed$|^crash_suspect_local_inventory_userdata_introspection$|^inventory_array_count_not_found$|^crash_suspect_inventory_array_count$|^inventory_element_da_not_found$|^crash_suspect_inventory_element_da$|^crash_suspect_crystals_read$|^crash_suspect_safe_scalar_watch$|^perk_da_catalog_not_found$|^perk_da_catalog_candidates_rejected$|^perk_da_catalog_crash_suspect$|^no_evidence$/.test(phaseStatus(state, phase.phaseId)));
   if (!partial.length) {
     out += '- None.\n';
   } else {
@@ -2170,6 +2339,11 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     crashSuspect: hasCrashSuspectEvidenceForSession(facts, inventoryArrayCountSessionId || state.latestSessionId || facts.latestSessionId)
   });
   if (inventoryArrayCount.status === 'inventory_array_count_confirmed') safeSignals.push('local PlayerState inventory array wrapper count metadata without traversal or element dereference');
+  const inventoryElementDASessionId = latestSessionIdForRows(facts.rows, isInventoryElementDAReadRow);
+  const inventoryElementDA = classifyInventoryElementDataAssetEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, inventoryElementDASessionId || state.latestSessionId || facts.latestSessionId)
+  });
+  if (inventoryElementDA.status === 'inventory_element_da_confirmed') safeSignals.push('capped first local inventory element identity or DataAsset identity without full traversal');
   const crystalsReadSessionId = latestSessionIdForRows(facts.rows, isCrystalsReadRow);
   const crystalsRead = classifyCrystalsReadEvidence(facts.rows, {
     crashSuspect: hasCrashSuspectEvidenceForSession(facts, crystalsReadSessionId || state.latestSessionId || facts.latestSessionId)
@@ -2366,6 +2540,34 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     out += '- Any count result is wrapper metadata only. It does not authorize traversal, element dereference, item DataAsset reads, InventoryInfo reads, Enhancements reads, or item sync.\n';
   }
 
+  out += '\n## Inventory Element DA Read\n\n';
+  if (!inventoryElementDA.inventoryElementDataAssetEvidenceFound) {
+    out += '- Summary: unresolved; no `inventory-element-da-read` evidence has been imported yet.\n';
+    out += '- Purpose: prove whether one capped first element per non-empty local inventory array can safely expose element or DataAsset identity.\n';
+    out += '- This phase is not full inventory sync, full traversal, InventoryInfo evidence, Enhancement evidence, Level evidence, or AccumulatedBuff evidence.\n';
+  } else {
+    out += `- Summary: ${inventoryElementDA.classification}\n`;
+    out += `- Inventory element DA status: ${inventoryElementDA.status}\n`;
+    out += `- Local PlayerState present: ${inventoryElementDA.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
+    out += `- Properties classified: ${inventoryElementDA.propertyClassified ? 'all five' : 'not all five'}\n`;
+    out += `- Count results: ${Object.keys(inventoryElementDA.countResults).length ? Object.entries(inventoryElementDA.countResults).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Non-empty array fields: ${inventoryElementDA.nonEmptyArrayFields.length ? inventoryElementDA.nonEmptyArrayFields.join(', ') : 'none'}\n`;
+    out += `- Element access supported: ${inventoryElementDA.elementAccessSupported ? 'yes' : 'no'}\n`;
+    out += `- Element access methods: ${Object.keys(inventoryElementDA.elementAccessMethods).length ? Object.entries(inventoryElementDA.elementAccessMethods).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Element identities: ${Object.keys(inventoryElementDA.elementIdentities).length ? Object.entries(inventoryElementDA.elementIdentities).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- DataAsset identities: ${Object.keys(inventoryElementDA.dataAssetIdentities).length ? Object.entries(inventoryElementDA.dataAssetIdentities).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Array traversal/full iteration: ${inventoryElementDA.noArrayTraversal && inventoryElementDA.noFullArrayIteration ? 'no' : 'yes'}\n`;
+    out += `- Max elements per array: ${inventoryElementDA.maxElementsPerArray}\n`;
+    out += `- InventoryInfo read: ${inventoryElementDA.noInventoryInfo ? 'no' : 'yes'}\n`;
+    out += `- Enhancements read: ${inventoryElementDA.noEnhancements ? 'no' : 'yes'}\n`;
+    out += `- Level/AccumulatedBuff read: ${inventoryElementDA.noLevelRead && inventoryElementDA.noAccumulatedBuffRead ? 'no' : 'yes'}\n`;
+    out += `- Writes/RPCs/HUD/function calls/broad deep arrays: ${inventoryElementDA.noWrites && inventoryElementDA.noRpcs && inventoryElementDA.noHud && inventoryElementDA.noFunctionCalls && inventoryElementDA.noBroadDeepArrays ? 'no' : 'yes'}\n`;
+    out += inventoryElementDA.crashSuspect
+      ? '- A crash dump exists after this run, so this element identity path remains crash-suspect pending a repeat.\n'
+      : '- No crash dump is associated with the imported element DA evidence.\n';
+    out += '- One successful capped first-element read would not authorize full traversal, multiple element reads, InventoryInfo, Enhancements, Level, AccumulatedBuff, or item sync.\n';
+  }
+
   out += '\n## Local Crystals Read\n\n';
   if (!crystalsRead.crystalsReadEvidenceFound) {
     out += '- Summary: unresolved; no `crystals-read` evidence has been imported yet.\n';
@@ -2543,6 +2745,7 @@ module.exports = {
   classifyLocalInventoryArrayShapeConfirmEvidence,
   classifyLocalInventoryUserdataIntrospectionEvidence,
   classifyInventoryArrayCountEvidence,
+  classifyInventoryElementDataAssetEvidence,
   classifyResourceVisibilityEvidence,
   classifyRosterEvidence,
   completedPhaseIds,
