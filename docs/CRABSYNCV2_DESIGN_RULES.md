@@ -7,7 +7,7 @@ These are future CrabSyncV2 constraints. They do not authorize RuntimeProbe writ
 - No apply/write during unknown role, startup, loading, travel, respawn, join, disconnect, or unstable local player state.
 - Require stable PlayerState and stable generation for multiple ticks before trusting reads.
 - Joined clients default to read-only/no-apply until specific joined-client evidence proves safety.
-- Reset stale push/recv/apply state on role/lifecycle transitions.
+- Reset stale snapshot/apply state on role/lifecycle transitions.
 
 ## Health
 
@@ -34,12 +34,23 @@ These are future CrabSyncV2 constraints. They do not authorize RuntimeProbe writ
 - Crystals are UInt32 range and must clamp to `0..4294967295`.
 - Keys policy is unresolved.
 
-## Networking/Merge
+## P2P Merge
 
-- Server/relay merge must preserve metadata.
+- CrabSyncV2 v2 baseline is P2P/game-native first.
+- No bridge/server/JSON IPC transport for v2 baseline.
 - Do not emit values outside objectdump-backed property ranges.
-- Do not let one stale client overwrite safer local runtime state.
+- Do not let stale peer-visible state overwrite safer local runtime state.
 - Prefer generation/timestamp/role-aware merge policy over blind last-write-wins.
+- Separate local-only, peer-visible, host-authoritative-candidate, and unresolved fields.
+
+## Carrier Safety
+
+- Do not hijack gameplay-authoritative fields as custom payload channels.
+- Prohibited payload channels include gameplay-critical values such as `Crystals`, keys, `HealthInfo`, slot counts, equipment DA fields, identity fields, inventory arrays, or AutoSave data.
+- Custom `CrabSyncBlock` carrier work requires:
+  1. Dedicated carrier-discovery/read phase.
+  2. Evidence review and explicit gate approval.
+  3. Later gated write-smoke phase outside RuntimeProbe default behavior.
 
 ## RPCs/Writes
 

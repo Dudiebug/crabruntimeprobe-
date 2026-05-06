@@ -1,0 +1,78 @@
+# CrabSyncV2 P2P Architecture (Planning)
+
+CrabSyncV2 is a future architecture target. This document is planning-only and does not authorize implementation, RuntimeProbe writes, or mutating RPC usage.
+
+## Design Premise
+
+CrabSyncV2 is **P2P/game-native first**:
+
+- No external relay/server as a default transport model.
+- No PowerShell bridge process.
+- No push/recv JSON IPC transport.
+- No room password or relay dashboard control plane.
+
+The intended model is to derive what can be synchronized from the game's own replicated runtime state first, then add narrowly scoped extensions only when evidence proves they are safe.
+
+## Why CrabInvSync v1 Transport Is Not Copied
+
+CrabInvSync v1 proved useful as a prototype, but its transport model is intentionally not carried forward as the CrabSyncV2 baseline.
+
+v1 bridge/server architecture introduced:
+
+- Added end-to-end latency beyond game-native replication.
+- External failure modes (bridge/replay/relay availability and stale process state).
+- Stale room or transport state risks during join/travel/reconnect transitions.
+- A non-game-native authority layer that could diverge from in-session game truth.
+
+## What v1 Still Contributes (Archival Prototype Lessons)
+
+CrabInvSync v1 remains an **archival/prototype reference** for safety and modeling lessons:
+
+- Lifecycle gates and transition-aware safety stops.
+- Metadata-aware item model expectations.
+- Joined-client caution and role-aware behavior.
+- Range clamping discipline.
+- Diagnostic logging for reads/plans/skips.
+- Stale-state protection and generation checks.
+
+These lessons inform v2 safety posture, but do not re-approve the v1 transport stack.
+
+## Planned P2P Sync Model
+
+CrabSyncV2 planning currently targets this progression:
+
+1. Derive state from visible replicated `PlayerState` surfaces when possible.
+2. Use deterministic local client math for categories where every client can observe sufficient shared state.
+3. Consider host-authoritative behavior only where evidence shows host visibility is sufficient and safer than symmetric peer convergence.
+4. Consider a custom `CrabSyncBlock` carrier only if future research proves a safe replicated carrier path.
+
+## Category Feasibility (Current Evidence-Aware Planning)
+
+- **Health**: likely P2P candidate based on remote `HealthInfo` visibility evidence; apply/pooling behavior remains design-gated.
+- **Equipment**: likely P2P candidate based on remote equipment DA visibility evidence.
+- **Crystals**: likely P2P candidate based on remote `Crystals` visibility evidence.
+- **Slots**: plausible candidate; slot model and policy remain unresolved.
+- **Inventory items**: blocked until item identity/metadata and remote visibility (or a proven safe carrier) are demonstrated.
+
+This feasibility list is a planning status snapshot, not proof of end-to-end sync safety.
+
+## Explicit Non-Goals
+
+- No external relay fallback unless explicitly re-approved in future planning.
+- No custom transport tunneled through gameplay-critical values, including:
+  - `Crystals`
+  - keys
+  - `HealthInfo`
+  - slot counts
+  - equipment DA fields
+  - `PlayerName`
+  - `UniqueId`
+  - inventory arrays
+  - AutoSave fields
+- No mutation during RuntimeProbe evidence collection.
+
+## Safety Boundaries
+
+- RuntimeProbe remains read-only evidence collection.
+- CrabModFramework remains the future safe access layer for any eventual implementation.
+- CrabSyncV2 does not exist yet; this document defines architecture intent, not runtime behavior proof.

@@ -48,6 +48,6 @@ The local inventory shallow shape/count phase has crash-suspect history. Later s
 
 P2P-style merge appears plausible for crystals, slots, equipment, and possibly health inputs because current evidence shows those categories can be read from visible PlayerState/resource paths.
 
-Inventory sync is not proven by current PlayerState evidence. Inventory may require a relay/server or another safe carrier until item metadata visibility is proven.
+Inventory sync is not proven by current PlayerState evidence. Inventory may require a proven safe game-native carrier if peer-visible item metadata cannot be established.
 
 CrabSyncV2 should not be built around name-only item sync. Once item reads are proven, CrabSyncV2 should preserve full per-item metadata rather than collapsing items to DA names.
