@@ -158,11 +158,38 @@ function runner.new(config, safe, writer, evidenceWriter)
       record.lenOperatorAttempted = meta.lenOperatorAttempted
       record.lenOperatorResults = meta.lenOperatorResults
       record.lenOperatorErrors = meta.lenOperatorErrors
+      record.countAttempted = meta.countAttempted
+      record.countMethods = meta.countMethods
+      record.countResults = meta.countResults
+      record.countErrors = meta.countErrors
+      record.countResultFields = meta.countResultFields
+      record.curatedDataAssetFieldNames = meta.curatedDataAssetFieldNames
+      record.nonEmptyArrayFields = meta.nonEmptyArrayFields
+      record.elementAccessAttempted = meta.elementAccessAttempted
+      record.elementAccessMethods = meta.elementAccessMethods
+      record.elementAccessErrors = meta.elementAccessErrors
+      record.elementAccessSupported = meta.elementAccessSupported
+      record.elementPresent = meta.elementPresent
+      record.elementValueKinds = meta.elementValueKinds
+      record.elementTostringPrefixes = meta.elementTostringPrefixes
+      record.elementIsValid = meta.elementIsValid
+      record.elementIdentities = meta.elementIdentities
+      record.dataAssetFieldNames = meta.dataAssetFieldNames
+      record.dataAssetFieldResults = meta.dataAssetFieldResults
+      record.dataAssetIdentities = meta.dataAssetIdentities
+      record.maxElementsPerArray = meta.maxElementsPerArray
       record.noElementDereference = meta.noElementDereference
       record.noArrayCount = meta.noArrayCount
+      record.noInventoryTraversal = meta.noInventoryTraversal
       record.noArrayTraversal = meta.noArrayTraversal
+      record.noBroadDeepArrays = meta.noBroadDeepArrays
+      record.noFullArrayIteration = meta.noFullArrayIteration
+      record.cappedElementAccess = meta.cappedElementAccess
+      record.noItemDataAssetRead = meta.noItemDataAssetRead
       record.noInventoryInfo = meta.noInventoryInfo
       record.noEnhancements = meta.noEnhancements
+      record.noLevelRead = meta.noLevelRead
+      record.noAccumulatedBuffRead = meta.noAccumulatedBuffRead
       record.noWrites = meta.noWrites
       record.noRpcs = meta.noRpcs
       record.noHud = meta.noHud
@@ -325,11 +352,38 @@ function runner.new(config, safe, writer, evidenceWriter)
       row.lenOperatorAttempted = meta.lenOperatorAttempted
       row.lenOperatorResults = meta.lenOperatorResults
       row.lenOperatorErrors = meta.lenOperatorErrors
+      row.countAttempted = meta.countAttempted
+      row.countMethods = meta.countMethods
+      row.countResults = meta.countResults
+      row.countErrors = meta.countErrors
+      row.countResultFields = meta.countResultFields
+      row.curatedDataAssetFieldNames = meta.curatedDataAssetFieldNames
+      row.nonEmptyArrayFields = meta.nonEmptyArrayFields
+      row.elementAccessAttempted = meta.elementAccessAttempted
+      row.elementAccessMethods = meta.elementAccessMethods
+      row.elementAccessErrors = meta.elementAccessErrors
+      row.elementAccessSupported = meta.elementAccessSupported
+      row.elementPresent = meta.elementPresent
+      row.elementValueKinds = meta.elementValueKinds
+      row.elementTostringPrefixes = meta.elementTostringPrefixes
+      row.elementIsValid = meta.elementIsValid
+      row.elementIdentities = meta.elementIdentities
+      row.dataAssetFieldNames = meta.dataAssetFieldNames
+      row.dataAssetFieldResults = meta.dataAssetFieldResults
+      row.dataAssetIdentities = meta.dataAssetIdentities
+      row.maxElementsPerArray = meta.maxElementsPerArray
       row.noElementDereference = meta.noElementDereference
       row.noArrayCount = meta.noArrayCount
+      row.noInventoryTraversal = meta.noInventoryTraversal
       row.noArrayTraversal = meta.noArrayTraversal
+      row.noBroadDeepArrays = meta.noBroadDeepArrays
+      row.noFullArrayIteration = meta.noFullArrayIteration
+      row.cappedElementAccess = meta.cappedElementAccess
+      row.noItemDataAssetRead = meta.noItemDataAssetRead
       row.noInventoryInfo = meta.noInventoryInfo
       row.noEnhancements = meta.noEnhancements
+      row.noLevelRead = meta.noLevelRead
+      row.noAccumulatedBuffRead = meta.noAccumulatedBuffRead
       row.noWrites = meta.noWrites
       row.noRpcs = meta.noRpcs
       row.noHud = meta.noHud
@@ -416,10 +470,12 @@ function runner.new(config, safe, writer, evidenceWriter)
     if probe.set == 'local-inventory-array-shallow-read' and not config.allowInventoryArrayShallowProbes then return false, 'unsafe_disabled' end
     if probe.set == 'local-inventory-array-shape-confirm' and not config.allowInventoryArrayShapeConfirmProbes then return false, 'unsafe_disabled' end
     if probe.set == 'local-inventory-userdata-introspection' and not config.allowInventoryUserdataIntrospectionProbes then return false, 'unsafe_disabled' end
+    if probe.set == 'inventory-array-count-read' and not config.allowInventoryArrayCountProbes then return false, 'unsafe_disabled' end
+    if probe.set == 'inventory-element-da-read' and not config.allowInventoryElementDataAssetReadProbes then return false, 'unsafe_disabled' end
     if probe.set == 'rpc-dryrun' and not config.allowRpcProbes then return false, 'unsafe_disabled' end
     if probe.set == 'write' and not config.allowWriteProbes then return false, 'unsafe_disabled' end
-    if state.role == 'unknown' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'safe-scalar-watch' and probe.set ~= 'perk-da-catalog-read' and probe.set ~= 'max-safe-play-recorder' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
-    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'safe-scalar-watch' and probe.set ~= 'perk-da-catalog-read' and probe.set ~= 'max-safe-play-recorder' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
+    if state.role == 'unknown' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'safe-scalar-watch' and probe.set ~= 'perk-da-catalog-read' and probe.set ~= 'max-safe-play-recorder' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and probe.set ~= 'inventory-array-count-read' and probe.set ~= 'inventory-element-da-read' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
+    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'safe-scalar-watch' and probe.set ~= 'perk-da-catalog-read' and probe.set ~= 'max-safe-play-recorder' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and probe.set ~= 'inventory-array-count-read' and probe.set ~= 'inventory-element-da-read' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
     if probe.set ~= config.probeSet and config.probeSet ~= 'all-readonly' then return false, 'skipped_by_config' end
     return true
   end

@@ -38,7 +38,7 @@
 
 `stable generation`: A repeated, unchanged read generation over multiple ticks before trust/apply.
 
-`relay/server`: External or host-mediated carrier/merge authority that may be needed if P2P inventory metadata is not visible.
+`relay/server` (v1 archival): External bridge/relay authority used by CrabInvSync v1 prototype transport; not part of CrabSyncV2 baseline planning.
 
 `P2P merge`: Peer-to-peer state merge using visible PlayerState/resource evidence without a dedicated relay.
 

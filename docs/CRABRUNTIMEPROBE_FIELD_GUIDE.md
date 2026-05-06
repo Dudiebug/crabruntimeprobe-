@@ -76,6 +76,10 @@ For a custom install, use `scripts/run-local-diagnostic-cycle.ps1 -GameBin "<pat
 
 `allowInventoryArrayShallowProbes` gates shallow local inventory array shape/count research.
 
+`allowInventoryArrayCountProbes` gates the narrow local wrapper count metadata phase. It does not permit traversal or element reads.
+
+`allowInventoryElementDataAssetReadProbes` gates the narrow capped first-element identity phase. It does not permit full traversal, multiple elements, `InventoryInfo`, Enhancements, Level, AccumulatedBuff, gameplay function calls, writes, RPCs, HUD hooks, or broad deep arrays.
+
 `allowWriteProbes` gates write probes. RuntimeProbe must keep this false for normal work and should not grow mutating probes.
 
 `allowRpcProbes` gates RPC-related probes. RuntimeProbe may document function presence, but must not call mutating RPCs.
@@ -86,7 +90,7 @@ The current config also includes narrower gates such as `allowInventoryArrayShap
 
 The HUD tick hook is restricted because local evidence shows immediate crash risk in this setup.
 
-Deep array traversal, element dereference, `InventoryInfo`, and `Enhancements` remain unproven unless current imported evidence later proves them.
+Deep array traversal, full inventory element traversal, `InventoryInfo`, and `Enhancements` remain unproven unless current imported evidence later proves them.
 
 Writes and mutating RPCs are outside RuntimeProbe's purpose.
 
@@ -115,5 +119,7 @@ Prefer `install-client-to-game.ps1` or `export-client-folder.ps1` over drag-and-
 Userdata shape visibility is not traversal proof. Seeing `userdata` for inventory arrays does not prove safe count, element wrappers, element dereference, item fields, or sync.
 
 Count metadata is not item metadata proof. A length or count result, if present, still does not prove DA identity, `InventoryInfo`, `Enhancements`, or item preservation.
+
+Inventory element DA evidence is capped identity evidence only. One first-element result does not prove full traversal, multiple element reads, InventoryInfo, Enhancements, Level, AccumulatedBuff, or item synchronization.
 
 `pcall` catches Lua errors. It cannot guarantee protection from native access violations, stale pointers, invalid UObject state, or UE4SS/native crashes.

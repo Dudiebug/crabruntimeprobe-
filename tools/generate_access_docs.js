@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { parseIdentityFromFullName, extractFullNameFromSummary } = require('./identity_helpers');
-const { classifyCrystalsReadEvidence, classifySafeScalarWatchEvidence, classifyPerkDataAssetCatalogEvidence, classifySlotsReadEvidence, classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
+const { classifyCrystalsReadEvidence, classifySafeScalarWatchEvidence, classifyPerkDataAssetCatalogEvidence, classifySlotsReadEvidence, classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyInventoryArrayCountEvidence, classifyInventoryElementDataAssetEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
 const { generatePerkDataAssetCatalogOutputs } = require('./extract_perk_dataasset_catalog');
 const { generateRelatedDataAssetCatalogStatusOutputs } = require('./extract_related_dataasset_catalog_status');
 
@@ -360,6 +360,24 @@ const latestPerkCatalogSessionId = evidenceRows
 const perkCatalog = classifyPerkDataAssetCatalogEvidence(evidenceRows, {
   crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestPerkCatalogSessionId)
 });
+const latestInventoryArrayCountSessionId = evidenceRows
+  .filter((row) => (row.probeId || row.probeName || row.event || '') === 'Inventory.LocalArrays.CountRead')
+  .map((row) => row.sessionId)
+  .filter(Boolean)
+  .sort()
+  .pop();
+const inventoryArrayCount = classifyInventoryArrayCountEvidence(evidenceRows, {
+  crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestInventoryArrayCountSessionId)
+});
+const latestInventoryElementDASessionId = evidenceRows
+  .filter((row) => (row.probeId || row.probeName || row.event || '') === 'Inventory.LocalArrays.ElementDARead')
+  .map((row) => row.sessionId)
+  .filter(Boolean)
+  .sort()
+  .pop();
+const inventoryElementDA = classifyInventoryElementDataAssetEvidence(evidenceRows, {
+  crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestInventoryElementDASessionId)
+});
 index += '\n## Local Inventory Array Shallow/Count Visibility Summary\n\n';
 if (!localInventory.localInventoryArrayEvidenceFound) {
   index += '- Summary: unresolved; no `local-inventory-array-shallow-read` evidence has been imported yet.\n';
@@ -427,7 +445,52 @@ if (!localInventoryUserdataIntrospection.localInventoryUserdataIntrospectionEvid
   index += `- InventoryInfo read: ${localInventoryUserdataIntrospection.noInventoryInfo ? 'no' : 'yes'}\n`;
   index += `- Enhancements read: ${localInventoryUserdataIntrospection.noEnhancements ? 'no' : 'yes'}\n`;
   index += `- Writes/RPCs: ${localInventoryUserdataIntrospection.noWrites && localInventoryUserdataIntrospection.noRpcs ? 'no' : 'yes'}\n`;
-  index += '- Length operator results, if present, are metadata-only and do not prove count traversal, element traversal, or item sync.\n';
+index += '- Length operator results, if present, are metadata-only and do not prove count traversal, element traversal, or item sync.\n';
+}
+index += '\n## Inventory Array Count Read Summary\n\n';
+if (!inventoryArrayCount.inventoryArrayCountEvidenceFound) {
+  index += '- Summary: unresolved; no `inventory-array-count-read` evidence has been imported yet.\n';
+  index += '- Count-read will only read local `CrabPS.WeaponMods`, `AbilityMods`, `MeleeMods`, `Perks`, and `Relics` wrapper metadata.\n';
+  index += '- Count evidence is not traversal evidence, item sync evidence, item DataAsset evidence, InventoryInfo evidence, or Enhancements evidence.\n';
+} else {
+  index += `- Summary: ${inventoryArrayCount.classification}\n`;
+  index += `- Inventory array count status: ${inventoryArrayCount.status}\n`;
+  index += `- Local PlayerState present: ${inventoryArrayCount.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
+  index += `- Properties classified: ${inventoryArrayCount.propertyClassified ? 'all five' : 'not all five'}\n`;
+  index += `- Value kinds: ${Object.keys(inventoryArrayCount.valueKinds).length ? Object.entries(inventoryArrayCount.valueKinds).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Count attempted: ${Object.keys(inventoryArrayCount.countAttempted).length ? Object.entries(inventoryArrayCount.countAttempted).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Count methods: ${Object.keys(inventoryArrayCount.countMethods).length ? Object.entries(inventoryArrayCount.countMethods).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Count results: ${Object.keys(inventoryArrayCount.countResults).length ? Object.entries(inventoryArrayCount.countResults).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Count errors: ${Object.keys(inventoryArrayCount.countErrors).length ? Object.entries(inventoryArrayCount.countErrors).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Array traversal attempted: ${inventoryArrayCount.noArrayTraversal && inventoryArrayCount.noInventoryTraversal ? 'no' : 'yes'}\n`;
+  index += `- Array elements dereferenced: ${inventoryArrayCount.noElementDereference ? 'no' : 'yes'}\n`;
+  index += `- Item DataAsset fields read: ${inventoryArrayCount.noItemDataAssetRead ? 'no' : 'yes'}\n`;
+  index += `- InventoryInfo read: ${inventoryArrayCount.noInventoryInfo ? 'no' : 'yes'}\n`;
+  index += `- Enhancements read: ${inventoryArrayCount.noEnhancements ? 'no' : 'yes'}\n`;
+  index += '- Count results, if present, are metadata-only and do not authorize traversal, element dereference, item DataAsset reads, InventoryInfo reads, Enhancements reads, or item sync.\n';
+}
+index += '\n## Inventory Element DA Read Summary\n\n';
+if (!inventoryElementDA.inventoryElementDataAssetEvidenceFound) {
+  index += '- Summary: unresolved; no `inventory-element-da-read` evidence has been imported yet.\n';
+  index += '- Element DA read will use only count metadata to consider at most one first element per non-empty local array.\n';
+  index += '- It is not full inventory sync, full traversal, InventoryInfo evidence, Enhancement evidence, Level evidence, or AccumulatedBuff evidence.\n';
+} else {
+  index += `- Summary: ${inventoryElementDA.classification}\n`;
+  index += `- Inventory element DA status: ${inventoryElementDA.status}\n`;
+  index += `- Local PlayerState present: ${inventoryElementDA.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
+  index += `- Properties classified: ${inventoryElementDA.propertyClassified ? 'all five' : 'not all five'}\n`;
+  index += `- Count results: ${Object.keys(inventoryElementDA.countResults).length ? Object.entries(inventoryElementDA.countResults).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Non-empty array fields: ${inventoryElementDA.nonEmptyArrayFields.length ? inventoryElementDA.nonEmptyArrayFields.join(', ') : 'none'}\n`;
+  index += `- Element access supported: ${inventoryElementDA.elementAccessSupported ? 'yes' : 'no'}\n`;
+  index += `- Element access methods: ${Object.keys(inventoryElementDA.elementAccessMethods).length ? Object.entries(inventoryElementDA.elementAccessMethods).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Element identities: ${Object.keys(inventoryElementDA.elementIdentities).length ? Object.entries(inventoryElementDA.elementIdentities).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- DataAsset identities: ${Object.keys(inventoryElementDA.dataAssetIdentities).length ? Object.entries(inventoryElementDA.dataAssetIdentities).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Array traversal/full iteration: ${inventoryElementDA.noArrayTraversal && inventoryElementDA.noFullArrayIteration ? 'no' : 'yes'}\n`;
+  index += `- Max elements per array: ${inventoryElementDA.maxElementsPerArray}\n`;
+  index += `- InventoryInfo read: ${inventoryElementDA.noInventoryInfo ? 'no' : 'yes'}\n`;
+  index += `- Enhancements read: ${inventoryElementDA.noEnhancements ? 'no' : 'yes'}\n`;
+  index += `- Level/AccumulatedBuff read: ${inventoryElementDA.noLevelRead && inventoryElementDA.noAccumulatedBuffRead ? 'no' : 'yes'}\n`;
+  index += '- One successful capped first-element read does not authorize full traversal, multiple element reads, InventoryInfo, Enhancements, Level, AccumulatedBuff, or item sync.\n';
 }
 index += '\n## Local Crystals Read Summary\n\n';
 if (!crystalsRead.crystalsReadEvidenceFound) {
@@ -563,6 +626,7 @@ const defaultUntested = [
   ['CrabPS.WeaponMods', 'GetPropertyValueCountOnly', 'UNTESTED', 'Local inventory arrays require local-inventory-array-shallow-read; no element dereference.'],
   ['CrabPS.WeaponMods', 'GetPropertyValueShapeConfirm', 'UNTESTED', 'Local inventory shape confirm reads property presence/value kind only; no count, traversal, element dereference, InventoryInfo, or Enhancements.'],
   ['CrabPS.WeaponMods', 'GetPropertyValueUserdataMetadata', 'UNTESTED', 'Local inventory userdata introspection reads wrapper metadata only; length operator results are metadata-only and not element traversal proof.'],
+  ['CrabPS.WeaponMods[0]', 'CappedFirstElementIdentity', 'UNTESTED', 'Inventory element DA read is gated separately and may inspect at most one first element per non-empty local array; no traversal, InventoryInfo, Enhancements, Level, or AccumulatedBuff.'],
   ['CrabPerkDA', 'FindAllOfCappedCuratedClasses', 'UNTESTED', 'Perk DataAsset catalog reads are gated by allowPerkDataAssetCatalogProbes and are read-only evidence, not permission to mutate DataAssets.'],
   ['PlayerState.UniqueId', 'identity', 'UNTESTED', 'Stable IDs must be fingerprinted unless allowRawIdentityEvidence is explicitly enabled.'],
   ['GameplayState.*', 'write', 'UNSAFE_DISABLED', 'Writes are disabled.'],

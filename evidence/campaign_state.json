@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-06T04:10:07.074Z",
+  "updatedAt": "2026-05-06T23:56:33.301Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -122,6 +122,16 @@
       "latestSessionId": "20260505T235245Z",
       "latestCommit": "83361ef851e990891e63856148bd99177ad4058b",
       "latestSummaryPath": "evidence/runtime/20260505T235245Z/diagnostic_summary.txt"
+    },
+    {
+      "phaseId": "perk-da-catalog-read",
+      "status": "complete",
+      "completedAt": "2026-05-06T04:03:48.516Z",
+      "source": "campaign-collect",
+      "reason": "Perk DataAsset catalog confirmed from imported max-safe-play catalog snapshot 20260506T032658Z: 64 candidates, 64 entries, zero rejected, TastyOrange present as a normal entry; read-only catalog evidence only.",
+      "latestSessionId": "20260506T032658Z",
+      "latestCommit": "2681213933be20a2e95d432bbd3531ef045077d4",
+      "latestSummaryPath": "evidence/runtime/20260506T032658Z/diagnostic_summary.txt"
     }
   ],
   "partialPhases": [
@@ -144,6 +154,16 @@
       "latestSessionId": "20260505T072250Z",
       "latestCommit": "591389d5f71e99e2c19f7c287290cbf853a8e496",
       "latestSummaryPath": "evidence/runtime/20260505T072250Z/diagnostic_summary.txt"
+    },
+    {
+      "phaseId": "inventory-array-count-read",
+      "status": "crash_suspect_inventory_array_count",
+      "updatedAt": "2026-05-06T05:28:11.901Z",
+      "source": "campaign-collect",
+      "reason": "Inventory array count metadata was attempted read-only, but a crash dump/folder was updated after campaign prepare/run.",
+      "latestSessionId": "20260506T052733Z",
+      "latestCommit": "abd957926dbdec437153dcba2e573bc9c4756d95",
+      "latestSummaryPath": "evidence/runtime/20260506T052733Z/diagnostic_summary.txt"
     }
   ],
   "failedPhases": [
@@ -162,16 +182,6 @@
       "phaseId": "inventory-array-shallow-read",
       "status": "blocked",
       "reason": "Probe set is not implemented yet."
-    },
-    {
-      "phaseId": "inventory-array-count-read",
-      "status": "blocked",
-      "reason": "Probe set is not implemented yet."
-    },
-    {
-      "phaseId": "inventory-element-da-read",
-      "status": "blocked",
-      "reason": "Probe set is not implemented yet and would require explicit deep-read review."
     },
     {
       "phaseId": "inventoryinfo-scalar-read",
@@ -294,11 +304,11 @@
       "reason": "Future CrabModFramework-only work; never a RuntimeProbe write phase."
     }
   ],
-  "currentPhase": "perk-da-catalog-read",
-  "nextRecommendedPhase": "perk-da-catalog-read",
-  "latestSessionId": "20260506T014608Z",
-  "latestCommit": "cf81fba3d3774f0c1106f8c35b45e4e536676ae2",
-  "latestSummaryPath": "evidence/runtime/20260506T014608Z/diagnostic_summary.txt",
+  "currentPhase": "inventory-element-da-read",
+  "nextRecommendedPhase": "inventory-element-da-read",
+  "latestSessionId": "20260506T052733Z",
+  "latestCommit": "4c868e95e87d53e6c510f56f6af560c890fcdc97",
+  "latestSummaryPath": "evidence/runtime/20260506T052733Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {
       "status": "complete",
@@ -408,7 +418,7 @@
       "mode": "active"
     },
     "perk-da-catalog-read": {
-      "status": "current",
+      "status": "complete",
       "riskTier": "cautious-read",
       "probeSet": "perk-da-catalog-read",
       "tickDriver": "executeDelay",
@@ -423,20 +433,19 @@
       "reason": "Probe set is not implemented yet."
     },
     "inventory-array-count-read": {
-      "status": "blocked",
+      "status": "crash_suspect_inventory_array_count",
       "riskTier": "cautious-read",
       "probeSet": "inventory-array-count-read",
       "tickDriver": "executeDelay",
       "mode": "active",
-      "reason": "Probe set is not implemented yet."
+      "reason": "Inventory array count metadata was attempted read-only, but a crash dump/folder was updated after campaign prepare/run."
     },
     "inventory-element-da-read": {
-      "status": "blocked",
-      "riskTier": "deep-read",
+      "status": "current",
+      "riskTier": "cautious-read",
       "probeSet": "inventory-element-da-read",
       "tickDriver": "executeDelay",
-      "mode": "active",
-      "reason": "Probe set is not implemented yet and would require explicit deep-read review."
+      "mode": "active"
     },
     "inventoryinfo-scalar-read": {
       "status": "blocked",

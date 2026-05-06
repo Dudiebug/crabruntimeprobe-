@@ -45,8 +45,30 @@
 - [CrabSyncV2 Open Questions](CRABSYNCV2_OPEN_QUESTIONS.md)
 - [CrabSyncV2 Crash Safety](CRABSYNCV2_CRASH_SAFETY.md)
 - [CrabSyncV2 Implementation Blueprint](CRABSYNCV2_IMPLEMENTATION_BLUEPRINT.md)
+- [CrabSyncV2 P2P Architecture](CRABSYNCV2_P2P_ARCHITECTURE.md)
+- [CrabSyncV2 P2P Carrier Research Plan](CRABSYNCV2_P2P_CARRIER_RESEARCH_PLAN.md)
+- [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md)
+- [CrabSyncV2 v1 Migration Doctrine](CRABSYNCV2_V1_MIGRATION_DOCTRINE.md)
 - [CrabSyncV2 Research Roadmap](CRABSYNCV2_RESEARCH_ROADMAP.md)
 - [CrabSyncV2 Glossary](CRABSYNCV2_GLOSSARY.md)
+
+## Write Path Research Templates
+
+- [Write Path Ledger](WRITE_PATH_LEDGER.md)
+- [Write Path Unsafe Paths](WRITE_PATH_UNSAFE_PATHS.md)
+- [Write Path Observed Natural Calls](WRITE_PATH_OBSERVED_NATURAL_CALLS.md)
+- [Write Path Sandbox Smoke Plan](WRITE_PATH_SANDBOX_SMOKE_PLAN.md)
+
+## P2P Carrier Research Templates
+
+- [P2P Carrier Discovery Phase Contracts](P2P_CARRIER_DISCOVERY_PHASE_CONTRACTS.md)
+- [P2P Carrier Safety Gates](P2P_CARRIER_SAFETY_GATES.md)
+- [P2P Carrier Readiness Checklist](P2P_CARRIER_READINESS_CHECKLIST.md)
+- [P2P Carrier Evidence Mapping](P2P_CARRIER_EVIDENCE_MAPPING.md)
+- [P2P Carrier Candidates](P2P_CARRIER_CANDIDATES.md)
+- [P2P Carrier Visibility Matrix](P2P_CARRIER_VISIBILITY_MATRIX.md)
+- [P2P Carrier Unsafe Paths](P2P_CARRIER_UNSAFE_PATHS.md)
+- [P2P Carrier Write-Smoke Plan](P2P_CARRIER_WRITE_SMOKE_PLAN.md)
 
 ## Objectdump/Candidate Docs
 

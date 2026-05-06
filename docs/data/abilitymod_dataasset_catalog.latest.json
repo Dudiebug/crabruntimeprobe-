@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T04:09:16.850Z",
+  "generatedAt": "2026-05-06T23:53:27.725Z",
   "familyId": "abilitymod",
   "title": "Ability Mod DataAsset Catalog",
   "sourceSessionId": "",
@@ -14,7 +14,8 @@
     "evidence/runtime/20260506T004503Z/access_evidence.jsonl",
     "evidence/runtime/20260506T021129Z/access_evidence.jsonl",
     "evidence/runtime/20260506T021452Z/access_evidence.jsonl",
-    "evidence/runtime/20260506T032658Z/access_evidence.jsonl"
+    "evidence/runtime/20260506T032658Z/access_evidence.jsonl",
+    "evidence/runtime/20260506T052733Z/access_evidence.jsonl"
   ],
   "knownModel": {
     "playerStateArrayProperty": "CrabPS.AbilityMods",
@@ -46,7 +47,8 @@
       "20260506T004503Z",
       "20260506T021129Z",
       "20260506T021452Z",
-      "20260506T032658Z"
+      "20260506T032658Z",
+      "20260506T052733Z"
     ],
     "relatedRuntimeEvidenceKinds": [
       "ResourceVisibility.PlayerState.Sample",
@@ -64,7 +66,8 @@
       "SafeWatch.Scalar.Sample",
       "MaxSafePlay.Scalar.Sample",
       "MaxSafePlay.Session.Heartbeat",
-      "MaxSafePlay.Session.Summary"
+      "MaxSafePlay.Session.Summary",
+      "Inventory.LocalArrays.CountRead"
     ],
     "relatedRuntimeEvidenceRows": [
       {
@@ -210,6 +213,15 @@
         "valueSummary": "category=max-safe-play-recorder summary scalarSamples=1 scalarLogged=1 catalogSnapshots=1 catalogKnownEntries=64 catalogRejected=0 catalogTopRejectionReasons=none nilCount=0 errorCount=0 passiveOnly=true",
         "sourceFile": "evidence/runtime/20260506T032658Z/access_evidence.jsonl",
         "sourceLine": 4
+      },
+      {
+        "sessionId": "20260506T052733Z",
+        "probeName": "Inventory.LocalArrays.CountRead",
+        "result": "ok",
+        "runtimeStatus": "SAFE",
+        "valueSummary": "category=inventory-array-count-read localPlayerStatePresent=true fieldsReadable=5 fieldsNilOrUnsupported=0 countResultFields=5 countMethod=lua_len_operator_pcall noInventoryTraversal=true noArrayTraversal=true noElementDereference=true noItemDataAssetRead=true noInventoryInfo=true noEnhancements=true noWrites=true noRpcs=true noHud=true noDeepArrays=true noDataAssetMutation=true passiveOnly=true crashAttributionMarker=inventory-array-count-read",
+        "sourceFile": "evidence/runtime/20260506T052733Z/access_evidence.jsonl",
+        "sourceLine": 1
       }
     ],
     "campaignPhase": {

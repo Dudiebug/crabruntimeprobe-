@@ -40,6 +40,7 @@ function Assert-UnsafeGatesFalse {
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
+    "allowInventoryArrayCountProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -68,6 +69,7 @@ function Assert-HealthBaselineGates {
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
+    "allowInventoryArrayCountProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -147,6 +149,7 @@ function Write-TestSessionManifest {
       allowInventoryArrayShallowProbes = $false
       allowInventoryArrayShapeConfirmProbes = $false
       allowInventoryUserdataIntrospectionProbes = $false
+      allowInventoryArrayCountProbes = $false
       allowWriteProbes = $false
       allowRpcProbes = $false
       allowJoinedClientDeepProbes = $false
@@ -236,6 +239,7 @@ foreach ($key in @(
   "allowInventoryArrayShallowProbes",
   "allowInventoryArrayShapeConfirmProbes",
   "allowInventoryUserdataIntrospectionProbes",
+  "allowInventoryArrayCountProbes",
   "allowCrystalsReadProbes",
   "allowSlotsReadProbes",
   "allowSafeScalarWatchProbes",
@@ -271,6 +275,7 @@ foreach ($key in @(
   "allowInventoryArrayShallowProbes",
   "allowInventoryArrayShapeConfirmProbes",
   "allowInventoryUserdataIntrospectionProbes",
+  "allowInventoryArrayCountProbes",
   "allowWriteProbes",
   "allowRpcProbes"
 )) {
@@ -301,6 +306,7 @@ foreach ($key in @(
   "allowInventoryArrayShallowProbes",
   "allowInventoryArrayShapeConfirmProbes",
   "allowInventoryUserdataIntrospectionProbes",
+  "allowInventoryArrayCountProbes",
   "allowWriteProbes",
   "allowRpcProbes"
 )) {
@@ -330,6 +336,7 @@ foreach ($key in @(
   "allowInventoryArrayShallowProbes",
   "allowInventoryArrayShapeConfirmProbes",
   "allowInventoryUserdataIntrospectionProbes",
+  "allowInventoryArrayCountProbes",
   "allowWriteProbes",
   "allowRpcProbes"
 )) {
@@ -367,6 +374,7 @@ foreach ($key in @(
   "allowInventoryArrayShallowProbes",
   "allowInventoryArrayShapeConfirmProbes",
   "allowInventoryUserdataIntrospectionProbes",
+  "allowInventoryArrayCountProbes",
   "allowWriteProbes",
   "allowRpcProbes"
 )) {

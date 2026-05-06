@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T04:09:16.871Z",
+  "generatedAt": "2026-05-06T23:53:27.753Z",
   "familyId": "relic",
   "title": "Relic DataAsset Catalog",
   "sourceSessionId": "",
@@ -8,7 +8,8 @@
     "evidence/runtime/20260505T063937Z/access_evidence.jsonl",
     "evidence/runtime/20260505T072250Z/access_evidence.jsonl",
     "evidence/runtime/20260505T204615Z/access_evidence.jsonl",
-    "evidence/runtime/20260505T225501Z/access_evidence.jsonl"
+    "evidence/runtime/20260505T225501Z/access_evidence.jsonl",
+    "evidence/runtime/20260506T052733Z/access_evidence.jsonl"
   ],
   "knownModel": {
     "playerStateArrayProperty": "CrabPS.Relics",
@@ -33,7 +34,8 @@
       "20260505T063937Z",
       "20260505T072250Z",
       "20260505T204615Z",
-      "20260505T225501Z"
+      "20260505T225501Z",
+      "20260506T052733Z"
     ],
     "relatedRuntimeEvidenceKinds": [
       "ResourceVisibility.PlayerState.Sample",
@@ -46,7 +48,8 @@
       "Inventory.LocalArrays.Shape",
       "Inventory.LocalArrays.CountOnly",
       "Inventory.LocalArrays.ShapeConfirm",
-      "Inventory.LocalArrays.UserdataIntrospection"
+      "Inventory.LocalArrays.UserdataIntrospection",
+      "Inventory.LocalArrays.CountRead"
     ],
     "relatedRuntimeEvidenceRows": [
       {
@@ -146,6 +149,15 @@
         "runtimeStatus": "SAFE",
         "valueSummary": "category=userdata-introspection localPlayerStatePresent=true fieldsReadable=5 fieldsNilOrUnsupported=0 lenOperatorAttempted=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true crashAttributionMarker=userdata-introspection",
         "sourceFile": "evidence/runtime/20260505T225501Z/access_evidence.jsonl",
+        "sourceLine": 1
+      },
+      {
+        "sessionId": "20260506T052733Z",
+        "probeName": "Inventory.LocalArrays.CountRead",
+        "result": "ok",
+        "runtimeStatus": "SAFE",
+        "valueSummary": "category=inventory-array-count-read localPlayerStatePresent=true fieldsReadable=5 fieldsNilOrUnsupported=0 countResultFields=5 countMethod=lua_len_operator_pcall noInventoryTraversal=true noArrayTraversal=true noElementDereference=true noItemDataAssetRead=true noInventoryInfo=true noEnhancements=true noWrites=true noRpcs=true noHud=true noDeepArrays=true noDataAssetMutation=true passiveOnly=true crashAttributionMarker=inventory-array-count-read",
+        "sourceFile": "evidence/runtime/20260506T052733Z/access_evidence.jsonl",
         "sourceLine": 1
       }
     ],

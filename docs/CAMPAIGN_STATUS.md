@@ -1,12 +1,12 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-06T04:10:07.074Z
-- Current phase: `perk-da-catalog-read`
-- Next recommended phase: `perk-da-catalog-read`
-- Latest session: 20260506T014608Z
-- Latest commit: cf81fba3d3774f0c1106f8c35b45e4e536676ae2
-- Latest summary: evidence/runtime/20260506T014608Z/diagnostic_summary.txt
+- Updated: 2026-05-06T23:56:33.301Z
+- Current phase: `inventory-element-da-read`
+- Next recommended phase: `inventory-element-da-read`
+- Latest session: 20260506T052733Z
+- Latest commit: 4c868e95e87d53e6c510f56f6af560c890fcdc97
+- Latest summary: evidence/runtime/20260506T052733Z/diagnostic_summary.txt
 
 ## Completed Phases
 
@@ -22,11 +22,13 @@
 - `local-inventory-userdata-introspection` - Local inventory userdata introspection
 - `crystals-read` - Local PlayerState crystals read
 - `slots-read` - Local PlayerState slots read
+- `perk-da-catalog-read` - Perk DataAsset catalog read
 
 ## Partial Phases
 
 - `multiplayer-resource-visibility-read` - Multiplayer resource visibility read: remote_resources_partial; Multiple PlayerState candidates were sampled and some resource fields were visible remotely, but visibility was partial.
 - `local-inventory-array-shallow-read` - Local inventory array shallow read: crash_suspect_local_inventory_shape_visible; Local inventory array fields were visible as shallow userdata shapes, but crash_2026_05_05_07_24_18.dmp exists after prepare/run; keep the phase crash-suspect pending safer confirmation.
+- `inventory-array-count-read` - Inventory array count read: crash_suspect_inventory_array_count; Inventory array count metadata was attempted read-only, but a crash dump/folder was updated after campaign prepare/run.
 
 ## Failed Phases
 
@@ -35,8 +37,6 @@
 ## Blocked Phases
 
 - `inventory-array-shallow-read` - Inventory array shallow read placeholder: Probe set is not implemented yet.
-- `inventory-array-count-read` - Inventory array count read placeholder: Probe set is not implemented yet.
-- `inventory-element-da-read` - Inventory element data asset read placeholder: Probe set is not implemented yet and would require explicit deep-read review.
 - `inventoryinfo-scalar-read` - InventoryInfo scalar read placeholder: Probe set is not implemented yet and InventoryInfo remains disabled until this explicit phase.
 - `enhancements-read` - Enhancements read placeholder: Probe set is not implemented yet.
 - `weaponmod-da-catalog-read` - Weapon mod DataAsset catalog placeholder: Future DataAsset catalog phase; implement after perk catalog evidence and safety review.
@@ -77,6 +77,7 @@
 - partial remote multiplayer PlayerState resource reads for crystals, slots, equipment, and health scalars
 - local PlayerState inventory array property shape confirmation without count, traversal, or element dereference
 - local PlayerState inventory userdata wrapper metadata without traversal or element dereference
+- local PlayerState inventory array wrapper count metadata without traversal or element dereference
 - local PlayerState Crystals scalar read through CrabPC -> PlayerState -> CrabPS
 - local PlayerState candidate slot scalar reads through CrabPC -> PlayerState -> CrabPS
 - safe scalar watch over proven local scalar/property paths
@@ -113,8 +114,8 @@
 
 ## Local Inventory Array Shallow/Count Visibility
 
-- Summary: local_inventory_shape_visible_crash_suspect
-- Local inventory array status: crash_suspect_local_inventory_shape_visible
+- Summary: unresolved
+- Local inventory array status: failed
 - Local PlayerState present: yes
 - Fields readable by shallow shape/count: AbilityMods, MeleeMods, Perks, Relics, WeaponMods
 - Fields nil or unsupported: none
@@ -123,7 +124,7 @@
 - Slot scalar values: NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
 - Array elements dereferenced: no
 - InventoryInfo and Enhancements were not read; writes/RPCs/HUD hooks/deep arrays were disabled.
-- A crash dump exists after this run, so this path remains crash-suspect pending another safer confirmation pass.
+- No crash dump is associated with the imported local inventory evidence.
 - Remote inventory array visibility remains unresolved separately.
 
 ## Local Inventory Array Shape Confirm
@@ -167,6 +168,32 @@
 - HUD/deep arrays: no
 - No crash dump is associated with the imported userdata introspection evidence.
 - Any length operator result is metadata-only; it is not proof of count traversal or item synchronization.
+
+## Inventory Array Count Read
+
+- Summary: inventory_array_count_confirmed
+- Inventory array count status: inventory_array_count_confirmed
+- Local PlayerState present: yes
+- Properties classified: all five
+- Value kinds: AbilityMods=userdata, MeleeMods=userdata, Perks=userdata, Relics=userdata, WeaponMods=userdata
+- Count attempted: AbilityMods=true, MeleeMods=true, Perks=true, Relics=true, WeaponMods=true
+- Count methods: AbilityMods=lua_len_operator_pcall, MeleeMods=lua_len_operator_pcall, Perks=lua_len_operator_pcall, Relics=lua_len_operator_pcall, WeaponMods=lua_len_operator_pcall
+- Count results: AbilityMods=0, MeleeMods=0, Perks=0, Relics=0, WeaponMods=1
+- Count errors: none
+- Array traversal attempted: no
+- Array elements dereferenced: no
+- Item DataAsset fields read: no
+- InventoryInfo read: no
+- Enhancements read: no
+- Writes/RPCs/HUD/deep arrays: no
+- No crash dump is associated with the imported count-read evidence.
+- Any count result is wrapper metadata only. It does not authorize traversal, element dereference, item DataAsset reads, InventoryInfo reads, Enhancements reads, or item sync.
+
+## Inventory Element DA Read
+
+- Summary: unresolved; no `inventory-element-da-read` evidence has been imported yet.
+- Purpose: prove whether one capped first element per non-empty local inventory array can safely expose element or DataAsset identity.
+- This phase is not full inventory sync, full traversal, InventoryInfo evidence, Enhancement evidence, Level evidence, or AccumulatedBuff evidence.
 
 ## Local Crystals Read
 
@@ -274,8 +301,8 @@
 - Local crystals are covered only by `crystals-read`; remote crystals remain covered separately by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.
 - Locked slots remain unresolved; no separate locked/max/total slot-capacity field is present in the tracked objectdump-derived notes, so locked slots may be UI-derived or stored elsewhere.
 - `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, and `NumPerkSlots` are only observed scalar slot counters / candidate unlocked slot counters. They are not proven total capacity or locked-slot state.
-- Local inventory array shallow/count visibility is covered by `local-inventory-array-shallow-read`; property-shape confirmation is covered by `local-inventory-array-shape-confirm`; userdata wrapper metadata is covered by `local-inventory-userdata-introspection`.
-- Item contents are still not proven; userdata metadata does not read item data asset fields or element contents.
+- Local inventory array shallow/count visibility is covered by `local-inventory-array-shallow-read`; property-shape confirmation is covered by `local-inventory-array-shape-confirm`; userdata wrapper metadata is covered by `local-inventory-userdata-introspection`; wrapper count metadata is covered by `inventory-array-count-read`.
+- Item contents are still not proven; userdata/count metadata does not read item data asset fields or element contents.
 - Perk DataAsset catalog evidence, when present, proves only curated read paths for future CrabModFramework / CrabTastyMod design; controlled write/edit APIs must be built separately.
 - `InventoryInfo` and enhancements remain placeholders until explicit probe sets are implemented.
 - Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.
@@ -295,4 +322,5 @@
 - `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.
 - `allowInventoryArrayShapeConfirmProbes` is enabled only for `local-inventory-array-shape-confirm`.
 - `allowInventoryUserdataIntrospectionProbes` is enabled only for `local-inventory-userdata-introspection`.
+- `allowInventoryArrayCountProbes` is enabled only for `inventory-array-count-read`.
 - `allowDeepArrayProbes` and `allowInventoryInfoProbes` are not enabled by implemented phases.

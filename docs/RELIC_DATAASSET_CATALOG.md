@@ -21,14 +21,15 @@ RuntimeProbe catalog evidence is read-only and is not permission to mutate DataA
 
 ## Known Safe Evidence
 
-- Related runtime evidence sessions: 20260505T063937Z, 20260505T072250Z, 20260505T204615Z, 20260505T225501Z
-- Related runtime evidence kinds: ResourceVisibility.PlayerState.Sample, ResourceVisibility.Health.Sample, ResourceVisibility.Resources.Sample, ResourceVisibility.Slots.Sample, ResourceVisibility.Equipment.Sample, ResourceVisibility.InventoryArrays.ShallowSample, Inventory.LocalSlots.Sample, Inventory.LocalArrays.Shape, Inventory.LocalArrays.CountOnly, Inventory.LocalArrays.ShapeConfirm, Inventory.LocalArrays.UserdataIntrospection
+- Related runtime evidence sessions: 20260505T063937Z, 20260505T072250Z, 20260505T204615Z, 20260505T225501Z, 20260506T052733Z
+- Related runtime evidence kinds: ResourceVisibility.PlayerState.Sample, ResourceVisibility.Health.Sample, ResourceVisibility.Resources.Sample, ResourceVisibility.Slots.Sample, ResourceVisibility.Equipment.Sample, ResourceVisibility.InventoryArrays.ShallowSample, Inventory.LocalSlots.Sample, Inventory.LocalArrays.Shape, Inventory.LocalArrays.CountOnly, Inventory.LocalArrays.ShapeConfirm, Inventory.LocalArrays.UserdataIntrospection, Inventory.LocalArrays.CountRead
 - Objectdump signals: CrabPS.Relics, CrabRelic, CrabRelic.RelicDA
 Source files:
 - `evidence/runtime/20260505T063937Z/access_evidence.jsonl`
 - `evidence/runtime/20260505T072250Z/access_evidence.jsonl`
 - `evidence/runtime/20260505T204615Z/access_evidence.jsonl`
 - `evidence/runtime/20260505T225501Z/access_evidence.jsonl`
+- `evidence/runtime/20260506T052733Z/access_evidence.jsonl`
 
 | Session | Probe | Result | Summary |
 |---|---|---|---|
@@ -43,6 +44,7 @@ Source files:
 | 20260505T072250Z | Inventory.LocalSlots.Sample | ok | category=slots localPlayerStatePresent=true fieldsReadable=5 fieldsNilOrUnsupported=0 countCa... |
 | 20260505T204615Z | Inventory.LocalArrays.ShapeConfirm | ok | category=shape-confirm localPlayerStatePresent=true fieldsReadable=5 fieldsNilOrUnsupported=0... |
 | 20260505T225501Z | Inventory.LocalArrays.UserdataIntrospection | ok | category=userdata-introspection localPlayerStatePresent=true fieldsReadable=5 fieldsNilOrUnsu... |
+| 20260506T052733Z | Inventory.LocalArrays.CountRead | ok | category=inventory-array-count-read localPlayerStatePresent=true fieldsReadable=5 fieldsNilOr... |
 
 ## Not Yet Proven
 

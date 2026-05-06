@@ -7,7 +7,7 @@ These are future CrabSyncV2 constraints. They do not authorize RuntimeProbe writ
 - No apply/write during unknown role, startup, loading, travel, respawn, join, disconnect, or unstable local player state.
 - Require stable PlayerState and stable generation for multiple ticks before trusting reads.
 - Joined clients default to read-only/no-apply until specific joined-client evidence proves safety.
-- Reset stale push/recv/apply state on role/lifecycle transitions.
+- Reset stale snapshot/apply state on role/lifecycle transitions.
 
 ## Health
 
@@ -34,16 +34,33 @@ These are future CrabSyncV2 constraints. They do not authorize RuntimeProbe writ
 - Crystals are UInt32 range and must clamp to `0..4294967295`.
 - Keys policy is unresolved.
 
-## Networking/Merge
+## P2P Merge
 
-- Server/relay merge must preserve metadata.
+- CrabSyncV2 v2 baseline is P2P/game-native first.
+- No bridge/server/JSON IPC transport for v2 baseline.
 - Do not emit values outside objectdump-backed property ranges.
-- Do not let one stale client overwrite safer local runtime state.
+- Do not let stale peer-visible state overwrite safer local runtime state.
 - Prefer generation/timestamp/role-aware merge policy over blind last-write-wins.
+- Separate local-only, peer-visible, host-authoritative-candidate, and unresolved fields.
+
+## Carrier Safety
+
+- Do not hijack gameplay-authoritative fields as custom payload channels.
+- Prohibited payload channels include gameplay-critical values such as `Crystals`, keys, `HealthInfo`, slot counts, equipment DA fields, identity fields, inventory arrays, or AutoSave data.
+- [P2P Carrier Unsafe Paths](P2P_CARRIER_UNSAFE_PATHS.md) records forbidden carrier paths and must be checked before any future carrier status can advance.
+- [CrabSyncV2 P2P Carrier Research Plan](CRABSYNCV2_P2P_CARRIER_RESEARCH_PLAN.md) is the only approved planning path toward a future `CrabSyncBlock` carrier; it does not prove or authorize a carrier today.
+- [P2P Carrier Safety Gates](P2P_CARRIER_SAFETY_GATES.md) defines future planning gate names; no carrier gate may enable RuntimeProbe writes or RPCs.
+- [P2P Carrier Readiness Checklist](P2P_CARRIER_READINESS_CHECKLIST.md) must be satisfied before any future `CrabSyncBlock` design depends on a carrier.
+- Custom `CrabSyncBlock` carrier work requires:
+  1. Dedicated carrier-discovery/read phase.
+  2. Evidence review and explicit gate approval.
+  3. Later gated write-smoke phase outside RuntimeProbe default behavior.
 
 ## RPCs/Writes
 
 - RuntimeProbe must not call mutating RPCs.
+- Safe write/apply planning must follow [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md): passive observation first, manual CrabSyncV2-only sandbox later, and no RuntimeProbe write behavior.
+- [Write Path Ledger](WRITE_PATH_LEDGER.md) and [Write Path Unsafe Paths](WRITE_PATH_UNSAFE_PATHS.md) must be reviewed before any future apply/write path advances.
 - CrabSyncV2 may test official RPCs separately only behind explicit safety gates and with manual test phases.
 - Raw writes should be fallback only after official paths are proven unusable.
 - OnRep/UI refresh behavior must be tested before relying on it.

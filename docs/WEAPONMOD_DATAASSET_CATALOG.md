@@ -21,8 +21,8 @@ RuntimeProbe catalog evidence is read-only and is not permission to mutate DataA
 
 ## Known Safe Evidence
 
-- Related runtime evidence sessions: 20260505T063937Z, 20260505T072250Z, 20260505T204615Z, 20260505T225501Z, 20260505T235245Z, 20260506T003518Z, 20260506T004503Z, 20260506T021129Z, 20260506T021452Z, 20260506T032658Z
-- Related runtime evidence kinds: ResourceVisibility.PlayerState.Sample, ResourceVisibility.Health.Sample, ResourceVisibility.Resources.Sample, ResourceVisibility.Slots.Sample, ResourceVisibility.Equipment.Sample, ResourceVisibility.InventoryArrays.ShallowSample, Inventory.LocalSlots.Sample, Inventory.LocalArrays.Shape, Inventory.LocalArrays.CountOnly, Inventory.LocalArrays.ShapeConfirm, Inventory.LocalArrays.UserdataIntrospection, Resource.Slots.Read, SafeWatch.Scalar.Sample, MaxSafePlay.Scalar.Sample, MaxSafePlay.Session.Heartbeat, MaxSafePlay.Session.Summary
+- Related runtime evidence sessions: 20260505T063937Z, 20260505T072250Z, 20260505T204615Z, 20260505T225501Z, 20260505T235245Z, 20260506T003518Z, 20260506T004503Z, 20260506T021129Z, 20260506T021452Z, 20260506T032658Z, 20260506T052733Z
+- Related runtime evidence kinds: ResourceVisibility.PlayerState.Sample, ResourceVisibility.Health.Sample, ResourceVisibility.Resources.Sample, ResourceVisibility.Slots.Sample, ResourceVisibility.Equipment.Sample, ResourceVisibility.InventoryArrays.ShallowSample, Inventory.LocalSlots.Sample, Inventory.LocalArrays.Shape, Inventory.LocalArrays.CountOnly, Inventory.LocalArrays.ShapeConfirm, Inventory.LocalArrays.UserdataIntrospection, Resource.Slots.Read, SafeWatch.Scalar.Sample, MaxSafePlay.Scalar.Sample, MaxSafePlay.Session.Heartbeat, MaxSafePlay.Session.Summary, Inventory.LocalArrays.CountRead
 - Objectdump signals: CrabPS.WeaponMods, CrabPS.NumWeaponModSlots, CrabWeaponMod, CrabWeaponMod.WeaponModDA
 Source files:
 - `evidence/runtime/20260505T063937Z/access_evidence.jsonl`
@@ -35,6 +35,7 @@ Source files:
 - `evidence/runtime/20260506T021129Z/access_evidence.jsonl`
 - `evidence/runtime/20260506T021452Z/access_evidence.jsonl`
 - `evidence/runtime/20260506T032658Z/access_evidence.jsonl`
+- `evidence/runtime/20260506T052733Z/access_evidence.jsonl`
 
 | Session | Probe | Result | Summary |
 |---|---|---|---|
@@ -54,6 +55,7 @@ Source files:
 | 20260506T032658Z | MaxSafePlay.Scalar.Sample | ok | category=max-safe-play-recorder scalar sampleCount=2 loggedCount=2 reason=changed playerState... |
 | 20260506T032658Z | MaxSafePlay.Session.Heartbeat | ok | category=max-safe-play-recorder heartbeat scalarSamples=1 scalarLogged=1 catalogSnapshots=1 c... |
 | 20260506T032658Z | MaxSafePlay.Session.Summary | ok | category=max-safe-play-recorder summary scalarSamples=1 scalarLogged=1 catalogSnapshots=1 cat... |
+| 20260506T052733Z | Inventory.LocalArrays.CountRead | ok | category=inventory-array-count-read localPlayerStatePresent=true fieldsReadable=5 fieldsNilOr... |
 
 ## Not Yet Proven
 
