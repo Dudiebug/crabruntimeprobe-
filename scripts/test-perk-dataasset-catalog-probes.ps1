@@ -65,7 +65,7 @@ Assert-Contains -Text $registry -Expected "noEnhancements = true" -Label "probe_
 Assert-Contains -Text $registry -Expected "noDataAssetMutation = true" -Label "probe_registry.lua"
 Assert-Contains -Text $registry -Expected "noFunctionCalls = true" -Label "probe_registry.lua"
 
-$catalogBlock = [regex]::Match($registry, "local PERK_DA_CLASS_CANDIDATES[\s\S]+?probes\[#probes \+ 1\] = mk\('DataAsset\.Perks\.CatalogRead'[\s\S]+?\n\s*end, \{[\s\S]+?\n\s*\}\)").Value
+$catalogBlock = [regex]::Match($registry, "local PERK_DA_CLASS_CANDIDATES[\s\S]+?local function maxSafePlayState").Value
 if ([string]::IsNullOrWhiteSpace($catalogBlock)) {
   throw "Could not isolate perk DataAsset catalog block."
 }
@@ -108,6 +108,7 @@ for (const key of [
   'allowCrystalsReadProbes',
   'allowSlotsReadProbes',
   'allowSafeScalarWatchProbes',
+  'allowMaxSafePlayRecorderProbes',
   'allowInventoryArrayShallowProbes',
   'allowInventoryArrayShapeConfirmProbes',
   'allowInventoryUserdataIntrospectionProbes',
@@ -155,6 +156,7 @@ const baseRow = {
     allowCrystalsReadProbes: false,
     allowSlotsReadProbes: false,
     allowSafeScalarWatchProbes: false,
+    allowMaxSafePlayRecorderProbes: false,
     allowInventoryArrayShallowProbes: false,
     allowInventoryArrayShapeConfirmProbes: false,
     allowInventoryUserdataIntrospectionProbes: false,

@@ -1,12 +1,12 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-06T01:38:47.248Z
-- Current phase: `safe-scalar-watch`
-- Next recommended phase: `safe-scalar-watch`
-- Latest session: 20260505T235245Z
-- Latest commit: 6eb552a6ebf40f4a2a215b7598e35061fc4d2c3d
-- Latest summary: evidence/runtime/20260505T235245Z/diagnostic_summary.txt
+- Updated: 2026-05-06T02:08:02.759Z
+- Current phase: `perk-da-catalog-read`
+- Next recommended phase: `perk-da-catalog-read`
+- Latest session: 20260506T014608Z
+- Latest commit: 4be376038be3fbd60b3813e59447c70f0d1c5785
+- Latest summary: evidence/runtime/20260506T014608Z/diagnostic_summary.txt
 
 ## Completed Phases
 
@@ -30,7 +30,7 @@
 
 ## Failed Phases
 
-- None.
+- `safe-scalar-watch` - Safe scalar watch
 
 ## Blocked Phases
 
@@ -63,7 +63,7 @@
 
 ## Pending Phases
 
-- `perk-da-catalog-read` - Perk DataAsset catalog read
+- None.
 
 ## Confirmed Safe Paths
 
@@ -222,6 +222,12 @@
 - TastyOrange is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.
 - Collector is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.
 
+## Max Safe Play Recorder
+
+- Summary: unresolved; no direct `max-safe-play-recorder` evidence has been imported yet.
+- Purpose: long normal play sessions that combine all currently proven-safe scalar state recording with capped perk DataAsset catalog snapshots.
+- Failed/no-sample runs are diagnostic failures and are not useful confirmed evidence.
+
 ## Confirmed Unsafe Paths
 
 - HUD ReceiveDrawHUD tick hook remains blocked by default.
@@ -253,6 +259,7 @@
 - `allowSlotsReadProbes` is enabled only for `slots-read`.
 - `allowSafeScalarWatchProbes` is enabled only for `safe-scalar-watch`.
 - `allowPerkDataAssetCatalogProbes` is enabled only for `perk-da-catalog-read`.
+- `allowMaxSafePlayRecorderProbes` is enabled only for the direct `max-safe-play-recorder` profile.
 - `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.
 - `allowInventoryArrayShapeConfirmProbes` is enabled only for `local-inventory-array-shape-confirm`.
 - `allowInventoryUserdataIntrospectionProbes` is enabled only for `local-inventory-userdata-introspection`.

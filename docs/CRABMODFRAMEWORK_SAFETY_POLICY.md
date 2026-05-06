@@ -19,11 +19,17 @@ RuntimeProbe phases must remain read-only unless a future task explicitly change
 
 The `perk-da-catalog-read` phase adds these required markers to probe/access rows: `noWrites`, `noRpcs`, `noHud`, `noDeepArrays`, `noInventoryArrays`, `noArrayCount`, `noArrayTraversal`, `noElementDereference`, `noInventoryInfo`, `noEnhancements`, `noDataAssetMutation`, and `noFunctionCalls`.
 
+The direct `max-safe-play-recorder` profile is a recorder, not a new safety authorization. It may log only already proven-safe scalar paths and capped read-only perk DataAsset catalog snapshots. Its rows must mark `noWrites`, `noRpcs`, `noHud`, `noDeepArrays`, `noInventoryArrays`, `noArrayCount`, `noArrayTraversal`, `noElementDereference`, `noInventoryInfo`, `noEnhancements`, `noDataAssetMutation`, `noFunctionCalls`, and `passiveOnly` as true.
+
+Failed/no-sample recorder runs are failures. If no PlayerState-present scalar samples are collected, the run must be reported with remediation and must not be promoted into confirmed useful evidence.
+
 ## Framework Rules
 
 CrabModFramework should prefer high-level Crab Champions APIs backed by RuntimeProbe evidence. Raw UE4SS calls should be wrapped, reviewed, and eventually linted or validated.
 
 Any future write/edit API must be separate from RuntimeProbe, capability-gated, and documented as experimental until dedicated evidence and review exists. DataAsset catalog evidence is read evidence only; it is not permission to mutate DataAssets.
+
+Future live inventory array counts, inventory element DataAsset reads, InventoryInfo, Enhancements, event watchers, and additional DataAsset catalog families may enter the max-safe recorder only after their own dedicated campaign phases prove safety.
 
 ## Passive Watchers
 

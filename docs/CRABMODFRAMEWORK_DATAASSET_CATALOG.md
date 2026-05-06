@@ -8,6 +8,8 @@ Catalog evidence is not permission to mutate DataAssets. RuntimeProbe proves rea
 
 `perk-da-catalog-read` discovers perk DataAsset-like objects through curated class/name patterns and capped `FindAllOf` usage. It reads only curated fields, class/name identity, validity, and object reference summaries without recursion.
 
+`max-safe-play-recorder` reuses this capped perk catalog logic during long normal play sessions. It records the first full snapshot, newly discovered perk DataAssets, changed readable fields, and compact heartbeat summaries. It does not special-case TastyOrange or Collector; either may appear only as a normal catalog entry if safely found.
+
 TastyOrange is not special-cased by RuntimeProbe. It appears only as a normal perk catalog entry if safely found.
 
 Collector is not special-cased by RuntimeProbe. It appears only as a normal perk catalog entry if safely found.
@@ -32,6 +34,8 @@ Each field read records the field name, read status, value kind, and value summa
 Required markers are `noWrites`, `noRpcs`, `noHud`, `noDeepArrays`, `noInventoryArrays`, `noArrayCount`, `noArrayTraversal`, `noElementDereference`, `noInventoryInfo`, `noEnhancements`, `noDataAssetMutation`, and `noFunctionCalls`.
 
 The narrow gate is `allowPerkDataAssetCatalogProbes`. The phase must keep unrelated gates disabled, including safe scalar watch, slots, crystals, health, identity, raw identity, inventory array, InventoryInfo, deep array, write, RPC, HUD, and unknown-role gates.
+
+The direct max-safe recorder uses `allowMaxSafePlayRecorderProbes` instead of requiring users to enable `allowPerkDataAssetCatalogProbes` separately. It must still keep the perk catalog capped, read-only, non-mutating, and free of DataAsset function calls.
 
 ## Future Catalog Phases
 

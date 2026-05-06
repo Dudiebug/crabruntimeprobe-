@@ -4,6 +4,10 @@
 
 ## RuntimeProbe Evidence Tracks
 
+Direct long-play recorder:
+
+- `max-safe-play-recorder`: implemented direct profile for up to 60 minutes of normal play. It combines all currently proven-safe scalar state recording with capped perk DataAsset catalog snapshots. It is not a campaign replacement and does not authorize writes, live inventory internals, InventoryInfo, Enhancements, deep arrays, RPCs, HUD hooks, or arbitrary UObject crawling.
+
 DataAsset catalog track:
 
 - `perk-da-catalog-read`: implemented read-only phase for safely discoverable perk DataAssets.
@@ -31,6 +35,25 @@ Remaining inventory research track:
 - `inventoryinfo-scalar-read`: blocked pending safety review.
 - `enhancements-read`: blocked pending safety review.
 
+Future layers that may graduate into `max-safe-play-recorder` only after dedicated campaign proof:
+
+- `inventory-array-count-read`.
+- `inventory-element-da-read`.
+- `inventoryinfo-scalar-read`.
+- `enhancements-read`.
+- `event-watch-smoke`.
+- `event-watch-equipment`.
+- `event-watch-crystals`.
+- `event-watch-slots`.
+- `event-watch-pickups`.
+- `event-watch-inventory-replication`.
+- `weaponmod-da-catalog-read`.
+- `abilitymod-da-catalog-read`.
+- `meleemod-da-catalog-read`.
+- `weapon-da-catalog-read`.
+- `ability-da-catalog-read`.
+- `melee-da-catalog-read`.
+
 ## Framework Track
 
 - `framework-skeleton`: create the UE4SS-loaded CrabModFramework package shape.
@@ -50,3 +73,5 @@ Remaining inventory research track:
 `Num*Slots` changed from startup/run defaults to effective in-run values. The locked/max/total slot model remains conservatively unresolved.
 
 No writes, RPCs, HUD hook, deep arrays, inventory traversal, InventoryInfo, or Enhancements were used. Crash suspicion was none.
+
+A later `safe-scalar-watch` collect produced only `Debug.StartupSmoke` and `Debug.WriterSelfTest`, did not run `SafeWatch.Scalar.Sample`, collected zero PlayerState-present samples, and ended failed. Treat that session as failed/no-sample diagnostic evidence only, not useful confirmed evidence.

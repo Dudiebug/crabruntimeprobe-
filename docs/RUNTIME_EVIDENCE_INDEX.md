@@ -2,9 +2,9 @@
 
 Generated from imported runtime evidence under `evidence/runtime/`.
 
-- Access evidence files: 17
-- Probe result files: 17
-- Diagnostic summaries: 16
+- Access evidence files: 18
+- Probe result files: 18
+- Diagnostic summaries: 17
 - Evidence rows: 398
 - Health playerstate watch samples: 200
 - Identity/roster samples: 15

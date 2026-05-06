@@ -43,6 +43,7 @@ function Assert-UnsafeGatesFalse {
     "allowSlotsReadProbes",
     "allowSafeScalarWatchProbes",
     "allowPerkDataAssetCatalogProbes",
+    "allowMaxSafePlayRecorderProbes",
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",

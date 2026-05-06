@@ -20,6 +20,7 @@ const ALL_GATES = [
   'allowSlotsReadProbes',
   'allowSafeScalarWatchProbes',
   'allowPerkDataAssetCatalogProbes',
+  'allowMaxSafePlayRecorderProbes',
   'allowInventoryArrayShallowProbes',
   'allowInventoryArrayShapeConfirmProbes',
   'allowInventoryUserdataIntrospectionProbes',
@@ -277,6 +278,7 @@ function classifyCrystalsReadEvidence(rows, options = {}) {
     'allowSlotsReadProbes',
     'allowSafeScalarWatchProbes',
     'allowPerkDataAssetCatalogProbes',
+    'allowMaxSafePlayRecorderProbes',
     'allowInventoryArrayShallowProbes',
     'allowInventoryArrayShapeConfirmProbes',
     'allowInventoryUserdataIntrospectionProbes',
@@ -368,6 +370,7 @@ function classifySlotsReadEvidence(rows, options = {}) {
     'allowCrystalsReadProbes',
     'allowSafeScalarWatchProbes',
     'allowPerkDataAssetCatalogProbes',
+    'allowMaxSafePlayRecorderProbes',
     'allowInventoryArrayShallowProbes',
     'allowInventoryArrayShapeConfirmProbes',
     'allowInventoryUserdataIntrospectionProbes',
@@ -457,6 +460,7 @@ function classifySafeScalarWatchEvidence(rows, options = {}) {
     'allowCrystalsReadProbes',
     'allowSlotsReadProbes',
     'allowPerkDataAssetCatalogProbes',
+    'allowMaxSafePlayRecorderProbes',
     'allowInventoryArrayShallowProbes',
     'allowInventoryArrayShapeConfirmProbes',
     'allowInventoryUserdataIntrospectionProbes',
@@ -548,6 +552,7 @@ function classifyPerkDataAssetCatalogEvidence(rows, options = {}) {
     'allowCrystalsReadProbes',
     'allowSlotsReadProbes',
     'allowSafeScalarWatchProbes',
+    'allowMaxSafePlayRecorderProbes',
     'allowInventoryArrayShallowProbes',
     'allowInventoryArrayShapeConfirmProbes',
     'allowInventoryUserdataIntrospectionProbes',
@@ -610,6 +615,148 @@ function classifyPerkDataAssetCatalogEvidence(rows, options = {}) {
     noEnhancements: catalogRows.length > 0 && catalogRows.every((row) => row.noEnhancements === true),
     noDataAssetMutation: catalogRows.length > 0 && catalogRows.every((row) => row.noDataAssetMutation === true),
     noFunctionCalls: catalogRows.length > 0 && catalogRows.every((row) => row.noFunctionCalls === true),
+    safetyViolation,
+    crashSuspect: options.crashSuspect === true,
+    classification,
+    status
+  };
+}
+
+function isMaxSafePlayRow(row) {
+  const id = row.probeName || row.probeId || row.event || '';
+  return /^MaxSafePlay\./.test(id);
+}
+
+function isMaxSafePlayScalarRow(row) {
+  const id = row.probeName || row.probeId || row.event || '';
+  return id === 'MaxSafePlay.Scalar.Sample';
+}
+
+function isMaxSafePlayCatalogRow(row) {
+  const id = row.probeName || row.probeId || row.event || '';
+  return id === 'MaxSafePlay.PerkDataAsset.CatalogSnapshot';
+}
+
+function containsNamedCatalogEntry(rows, name) {
+  return rows.some((row) => {
+    if (name === 'TastyOrange' && row.tastyOrangeFound === true) return true;
+    if (name === 'Collector' && row.collectorFound === true) return true;
+    const entries = Array.isArray(row.catalogEntries) ? row.catalogEntries : [];
+    return entries.some((entry) => `${entry.shortName || ''} ${entry.fullName || ''}`.includes(name));
+  });
+}
+
+function classifyMaxSafePlayEvidence(rows, options = {}) {
+  const recorderRows = rows.filter(isMaxSafePlayRow);
+  const scalarRows = rows.filter(isMaxSafePlayScalarRow);
+  const catalogRows = rows.filter(isMaxSafePlayCatalogRow);
+  const latest = recorderRows.length ? recorderRows[recorderRows.length - 1] : {};
+  const latestScalar = scalarRows.length ? scalarRows[scalarRows.length - 1] : {};
+  const latestCatalog = catalogRows.length ? catalogRows[catalogRows.length - 1] : {};
+  const scalarSampleCount = Number(latest.maxSafePlayScalarSampleCount || latestScalar.maxSafePlayScalarSampleCount || scalarRows.length || 0);
+  const scalarLoggedCount = Number(latest.maxSafePlayScalarLoggedCount || latestScalar.maxSafePlayScalarLoggedCount || scalarRows.length || 0);
+  const usableScalarSamples = scalarRows.filter((row) => row.playerStatePresent === true || row.localPlayerStatePresent === true).length;
+  const changedFields = arrayFromValue(latest.maxSafePlayChangedFields || latestScalar.maxSafePlayChangedFields).filter((item) => String(item || '').trim() !== '');
+  const catalogSnapshotCount = Number(latest.maxSafePlayCatalogSnapshotCount || latestCatalog.maxSafePlayCatalogSnapshotCount || catalogRows.length || 0);
+  const catalogCandidateCount = Math.max(0, ...catalogRows.map((row) => rowNumber(row, 'catalogCandidateCount')));
+  const catalogEntryCount = Math.max(
+    Number(latest.maxSafePlayCatalogKnownEntryCount || latestCatalog.maxSafePlayCatalogKnownEntryCount || 0),
+    ...catalogRows.map((row) => rowNumber(row, 'catalogEntryCount'))
+  );
+  const newOrChangedCatalog = catalogRows.some((row) =>
+    arrayFromValue(row.maxSafePlayNewDataAssets).filter(Boolean).length > 0 ||
+    arrayFromValue(row.maxSafePlayChangedCatalogEntries).filter(Boolean).length > 0
+  );
+  const forbiddenGateNames = [
+    'allowHudTickHook',
+    'allowUnknownRoleProbes',
+    'allowJoinedClientDeepProbes',
+    'allowDeepArrayProbes',
+    'allowInventoryInfoProbes',
+    'allowHealthProbes',
+    'allowIdentityProbes',
+    'allowRawIdentityEvidence',
+    'allowResourceVisibilityProbes',
+    'allowCrystalsReadProbes',
+    'allowSlotsReadProbes',
+    'allowSafeScalarWatchProbes',
+    'allowPerkDataAssetCatalogProbes',
+    'allowInventoryArrayShallowProbes',
+    'allowInventoryArrayShapeConfirmProbes',
+    'allowInventoryUserdataIntrospectionProbes',
+    'allowWriteProbes',
+    'allowRpcProbes'
+  ];
+  const safetyViolation = recorderRows.some((row) => {
+    const gates = row && row.safetyGates ? row.safetyGates : {};
+    return forbiddenGateNames.some((gate) => gates[gate] === true) ||
+      gates.allowMaxSafePlayRecorderProbes !== true ||
+      row.noWrites !== true ||
+      row.noRpcs !== true ||
+      row.noHud !== true ||
+      row.noDeepArrays !== true ||
+      row.noInventoryArrays !== true ||
+      row.noArrayCount !== true ||
+      row.noArrayTraversal !== true ||
+      row.noElementDereference !== true ||
+      row.noInventoryInfo !== true ||
+      row.noEnhancements !== true ||
+      row.noDataAssetMutation !== true ||
+      row.noFunctionCalls !== true ||
+      row.passiveOnly !== true;
+  });
+  let status = 'no_evidence';
+  let classification = 'unresolved';
+  if (safetyViolation) {
+    status = 'failed';
+    classification = 'failed';
+  } else if (recorderRows.length > 0 && options.crashSuspect) {
+    status = 'crash_suspect_max_safe_play';
+    classification = 'crash-suspect';
+  } else if (scalarRows.length > 0 && usableScalarSamples === 0) {
+    status = 'max_safe_play_no_playerstate_samples';
+    classification = 'failed-no-sample';
+  } else if (scalarRows.length > 0 && usableScalarSamples > 0 && catalogSnapshotCount > 0 && catalogEntryCount === 0) {
+    status = 'max_safe_play_no_catalog_entries';
+    classification = 'partial-no-catalog';
+  } else if (changedFields.length > 0 || newOrChangedCatalog) {
+    status = 'max_safe_play_observed_change';
+    classification = 'max_safe_play_observed_change';
+  } else if ((scalarSampleCount > 1 || catalogSnapshotCount > 1) && usableScalarSamples > 0) {
+    status = 'max_safe_play_confirmed_no_change';
+    classification = 'max_safe_play_confirmed_no_change';
+  }
+  return {
+    maxSafePlayEvidenceFound: recorderRows.length > 0,
+    scalarSampleCount,
+    scalarLoggedCount,
+    usableScalarSamples,
+    firstValues: latest.maxSafePlayFirstValues || latestScalar.maxSafePlayFirstValues || {},
+    latestValues: latest.maxSafePlayLatestValues || latestScalar.maxSafePlayLatestValues || {},
+    minValues: latest.maxSafePlayMinValues || latestScalar.maxSafePlayMinValues || {},
+    maxValues: latest.maxSafePlayMaxValues || latestScalar.maxSafePlayMaxValues || {},
+    changedFields,
+    changeCounts: latest.maxSafePlayChangeCounts || latestScalar.maxSafePlayChangeCounts || {},
+    catalogSnapshotCount,
+    catalogCandidateCount,
+    catalogEntryCount,
+    tastyOrangeFound: containsNamedCatalogEntry(recorderRows, 'TastyOrange'),
+    collectorFound: containsNamedCatalogEntry(recorderRows, 'Collector'),
+    nilCount: Number(latest.maxSafePlayNilCount || 0),
+    errorCount: Number(latest.maxSafePlayErrorCount || 0),
+    noWrites: recorderRows.length > 0 && recorderRows.every((row) => row.noWrites === true),
+    noRpcs: recorderRows.length > 0 && recorderRows.every((row) => row.noRpcs === true),
+    noHud: recorderRows.length > 0 && recorderRows.every((row) => row.noHud === true),
+    noDeepArrays: recorderRows.length > 0 && recorderRows.every((row) => row.noDeepArrays === true),
+    noInventoryArrays: recorderRows.length > 0 && recorderRows.every((row) => row.noInventoryArrays === true),
+    noArrayCount: recorderRows.length > 0 && recorderRows.every((row) => row.noArrayCount === true),
+    noArrayTraversal: recorderRows.length > 0 && recorderRows.every((row) => row.noArrayTraversal === true),
+    noElementDereference: recorderRows.length > 0 && recorderRows.every((row) => row.noElementDereference === true),
+    noInventoryInfo: recorderRows.length > 0 && recorderRows.every((row) => row.noInventoryInfo === true),
+    noEnhancements: recorderRows.length > 0 && recorderRows.every((row) => row.noEnhancements === true),
+    noDataAssetMutation: recorderRows.length > 0 && recorderRows.every((row) => row.noDataAssetMutation === true),
+    noFunctionCalls: recorderRows.length > 0 && recorderRows.every((row) => row.noFunctionCalls === true),
+    passiveOnly: recorderRows.length > 0 && recorderRows.every((row) => row.passiveOnly === true),
     safetyViolation,
     crashSuspect: options.crashSuspect === true,
     classification,
@@ -749,6 +896,7 @@ function classifyLocalInventoryArrayShapeConfirmEvidence(rows, options = {}) {
     'allowCrystalsReadProbes',
     'allowSlotsReadProbes',
     'allowPerkDataAssetCatalogProbes',
+    'allowMaxSafePlayRecorderProbes',
     'allowUnknownRoleProbes',
     'allowJoinedClientDeepProbes',
     'allowInventoryUserdataIntrospectionProbes'
@@ -848,6 +996,7 @@ function classifyLocalInventoryUserdataIntrospectionEvidence(rows, options = {})
     'allowCrystalsReadProbes',
     'allowSlotsReadProbes',
     'allowPerkDataAssetCatalogProbes',
+    'allowMaxSafePlayRecorderProbes',
     'allowUnknownRoleProbes',
     'allowJoinedClientDeepProbes'
   ];
@@ -985,6 +1134,9 @@ function validatePhaseSafety(phase, gates = gateConfigForPhaseUnchecked(phase)) 
   }
   if (gates.allowPerkDataAssetCatalogProbes && phase.phaseId !== 'perk-da-catalog-read') {
     throw new Error(`${phase.phaseId} may not enable allowPerkDataAssetCatalogProbes.`);
+  }
+  if (gates.allowMaxSafePlayRecorderProbes && phase.phaseId !== 'max-safe-play-recorder') {
+    throw new Error(`${phase.phaseId} may not enable allowMaxSafePlayRecorderProbes.`);
   }
   if (gates.allowInventoryArrayShallowProbes && phase.phaseId !== 'local-inventory-array-shallow-read') {
     throw new Error(`${phase.phaseId} may not enable allowInventoryArrayShallowProbes.`);
@@ -1791,6 +1943,11 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     crashSuspect: hasCrashSuspectEvidenceForSession(facts, perkCatalogSessionId || state.latestSessionId || facts.latestSessionId)
   });
   if (perkCatalog.status === 'perk_da_catalog_confirmed') safeSignals.push('read-only perk DataAsset catalog discovery and curated field reads');
+  const maxSafePlaySessionId = latestSessionIdForRows(facts.rows, isMaxSafePlayRow);
+  const maxSafePlay = classifyMaxSafePlayEvidence(facts.rows, {
+    crashSuspect: hasCrashSuspectEvidenceForSession(facts, maxSafePlaySessionId || state.latestSessionId || facts.latestSessionId)
+  });
+  if (maxSafePlay.status === 'max_safe_play_confirmed_no_change' || maxSafePlay.status === 'max_safe_play_observed_change') safeSignals.push('direct max-safe play recorder over proven scalars plus capped perk DataAsset snapshots');
   if (!safeSignals.length) out += '- None imported yet.\n';
   else out += safeSignals.map((item) => `- ${item}\n`).join('');
 
@@ -2028,6 +2185,32 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- TastyOrange is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.\n';
   out += '- Collector is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.\n';
 
+  out += '\n## Max Safe Play Recorder\n\n';
+  if (!maxSafePlay.maxSafePlayEvidenceFound) {
+    out += '- Summary: unresolved; no direct `max-safe-play-recorder` evidence has been imported yet.\n';
+    out += '- Purpose: long normal play sessions that combine all currently proven-safe scalar state recording with capped perk DataAsset catalog snapshots.\n';
+    out += '- Failed/no-sample runs are diagnostic failures and are not useful confirmed evidence.\n';
+  } else {
+    out += `- Summary: ${maxSafePlay.classification}\n`;
+    out += `- Max-safe play status: ${maxSafePlay.status}\n`;
+    out += `- Scalar samples/logged rows: ${maxSafePlay.scalarSampleCount}/${maxSafePlay.scalarLoggedCount}\n`;
+    out += `- First values: ${Object.keys(maxSafePlay.firstValues).length ? Object.entries(maxSafePlay.firstValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Latest values: ${Object.keys(maxSafePlay.latestValues).length ? Object.entries(maxSafePlay.latestValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Min numeric values: ${Object.keys(maxSafePlay.minValues).length ? Object.entries(maxSafePlay.minValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Max numeric values: ${Object.keys(maxSafePlay.maxValues).length ? Object.entries(maxSafePlay.maxValues).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Changed fields: ${maxSafePlay.changedFields.length ? maxSafePlay.changedFields.join(', ') : 'none'}\n`;
+    out += `- Change counts: ${Object.keys(maxSafePlay.changeCounts).length ? Object.entries(maxSafePlay.changeCounts).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+    out += `- Perk catalog snapshots: ${maxSafePlay.catalogSnapshotCount}\n`;
+    out += `- Perk DA candidate count: ${maxSafePlay.catalogCandidateCount}\n`;
+    out += `- Perk DA entry count: ${maxSafePlay.catalogEntryCount}\n`;
+    out += `- TastyOrange found as normal entry: ${maxSafePlay.tastyOrangeFound ? 'yes' : 'no'}\n`;
+    out += `- Collector found as normal entry: ${maxSafePlay.collectorFound ? 'yes' : 'no'}\n`;
+    out += `- Nil/error counts: ${maxSafePlay.nilCount}/${maxSafePlay.errorCount}\n`;
+    out += `- Writes/RPCs/HUD/deep arrays: ${maxSafePlay.noWrites && maxSafePlay.noRpcs && maxSafePlay.noHud && maxSafePlay.noDeepArrays ? 'no' : 'yes'}\n`;
+    out += `- Inventory arrays/count/traversal/elements, InventoryInfo, Enhancements: ${maxSafePlay.noInventoryArrays && maxSafePlay.noArrayCount && maxSafePlay.noArrayTraversal && maxSafePlay.noElementDereference && maxSafePlay.noInventoryInfo && maxSafePlay.noEnhancements ? 'no' : 'yes'}\n`;
+    out += `- DataAsset mutation/function calls/passive-only violation: ${maxSafePlay.noDataAssetMutation && maxSafePlay.noFunctionCalls && maxSafePlay.passiveOnly ? 'no' : 'yes'}\n`;
+  }
+
   out += '\n## Confirmed Unsafe Paths\n\n';
   out += '- HUD ReceiveDrawHUD tick hook remains blocked by default.\n';
   out += '- `FindFirstOf.CrabHC` is not confirmed as a player-health source; imported evidence has seen an unscoped destructible/barrel candidate.\n';
@@ -2056,6 +2239,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '- `allowSlotsReadProbes` is enabled only for `slots-read`.\n';
   out += '- `allowSafeScalarWatchProbes` is enabled only for `safe-scalar-watch`.\n';
   out += '- `allowPerkDataAssetCatalogProbes` is enabled only for `perk-da-catalog-read`.\n';
+  out += '- `allowMaxSafePlayRecorderProbes` is enabled only for the direct `max-safe-play-recorder` profile.\n';
   out += '- `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.\n';
   out += '- `allowInventoryArrayShapeConfirmProbes` is enabled only for `local-inventory-array-shape-confirm`.\n';
   out += '- `allowInventoryUserdataIntrospectionProbes` is enabled only for `local-inventory-userdata-introspection`.\n';
@@ -2072,6 +2256,7 @@ module.exports = {
   classifyCrystalsReadEvidence,
   classifySafeScalarWatchEvidence,
   classifyPerkDataAssetCatalogEvidence,
+  classifyMaxSafePlayEvidence,
   classifySlotsReadEvidence,
   classifyLocalInventoryArrayEvidence,
   classifyLocalInventoryArrayShapeConfirmEvidence,

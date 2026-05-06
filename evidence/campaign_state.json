@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-06T01:38:47.248Z",
+  "updatedAt": "2026-05-06T02:08:02.759Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -146,7 +146,17 @@
       "latestSummaryPath": "evidence/runtime/20260505T072250Z/diagnostic_summary.txt"
     }
   ],
-  "failedPhases": [],
+  "failedPhases": [
+    {
+      "phaseId": "safe-scalar-watch",
+      "status": "failed",
+      "failedAt": "2026-05-06T01:46:24.230Z",
+      "reason": "Collection or stale-artifact validation failed.",
+      "latestSessionId": "20260506T014608Z",
+      "latestCommit": "4be376038be3fbd60b3813e59447c70f0d1c5785",
+      "latestSummaryPath": "evidence/runtime/20260506T014608Z/diagnostic_summary.txt"
+    }
+  ],
   "blockedPhases": [
     {
       "phaseId": "inventory-array-shallow-read",
@@ -279,11 +289,11 @@
       "reason": "Future CrabModFramework-only work; never a RuntimeProbe write phase."
     }
   ],
-  "currentPhase": "safe-scalar-watch",
-  "nextRecommendedPhase": "safe-scalar-watch",
-  "latestSessionId": "20260505T235245Z",
-  "latestCommit": "6eb552a6ebf40f4a2a215b7598e35061fc4d2c3d",
-  "latestSummaryPath": "evidence/runtime/20260505T235245Z/diagnostic_summary.txt",
+  "currentPhase": "perk-da-catalog-read",
+  "nextRecommendedPhase": "perk-da-catalog-read",
+  "latestSessionId": "20260506T014608Z",
+  "latestCommit": "4be376038be3fbd60b3813e59447c70f0d1c5785",
+  "latestSummaryPath": "evidence/runtime/20260506T014608Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {
       "status": "complete",
@@ -386,14 +396,14 @@
       "mode": "active"
     },
     "safe-scalar-watch": {
-      "status": "current",
+      "status": "failed",
       "riskTier": "cautious-read",
       "probeSet": "safe-scalar-watch",
       "tickDriver": "executeDelay",
       "mode": "active"
     },
     "perk-da-catalog-read": {
-      "status": "pending",
+      "status": "current",
       "riskTier": "cautious-read",
       "probeSet": "perk-da-catalog-read",
       "tickDriver": "executeDelay",
