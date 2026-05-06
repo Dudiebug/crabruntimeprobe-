@@ -22,6 +22,18 @@ Carrier template/status docs exist for future evidence outputs: [P2P Carrier Can
 
 [P2P Carrier Readiness Checklist](P2P_CARRIER_READINESS_CHECKLIST.md) is required before any `CrabSyncBlock` design depends on a carrier. It does not prove a carrier exists or authorize write-smoke.
 
+## Future Write-Path Observation Track
+
+These are planning contracts only. RuntimeProbe remains read-only and must not call mutating RPCs or write fields.
+
+| Phase | Goal | Required config gates | Allowed | Forbidden | Expected evidence file | Success criteria | Crash stop condition | CrabSyncV2 decision unlocked |
+|---|---|---|---|---|---|---|---|---|
+| `write-path-natural-observation` | Passively observe how vanilla game paths naturally mutate state. | Future passive observation gates only; write/RPC false. | Function/event/property names, owner/source, role/context, redacted args, before/after snapshots where naturally available. | Calling functions, forcing values, writes, RPCs, synthetic mutations. | Future write-path evidence/status docs. | Natural path observations are recorded without mutation. | Crash, dirty evidence, or unexpected active mutation. | Candidate write-path ledger entries. |
+| `write-path-before-after-read` | Document natural pre/post state, OnRep/UI follow-up, authority, lifecycle windows, and persistence side effects. | Future passive observation gates only; write/RPC false. | Read-only before/after snapshots and lifecycle tags around vanilla behavior. | RuntimeProbe apply, mutating RPCs, raw writes, destructive inventory rebuilds. | Future write-path evidence/status docs. | Candidate has enough passive evidence for human review. | Crash, stale state, or dirty evidence. | Whether a sandbox proposal can be discussed later. |
+| `write-path-sandbox-smoke` *(future, not RuntimeProbe)* | Manual CrabSyncV2-only sandbox smoke after explicit approval. | Future CrabSyncV2 sandbox gates only. | One tiny/naturally equivalent write-path candidate in disposable context. | RuntimeProbe default mutation, broad writes, production use, join/travel/respawn/loading tests. | Separate sandbox evidence. | Smoke behavior characterized with rollback/abort results. | Any crash, save/identity/gameplay corruption, dirty state, or unexpected persistence. | Experimental write capability candidate only. |
+
+[CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md) defines the methodology for this track. It does not prove any write path is safe today.
+
 ## Inventory Proof Track
 
 | Phase | Goal | Required config gates | Allowed | Forbidden | Expected evidence file | Success criteria | Crash stop condition | CrabSyncV2 decision unlocked |

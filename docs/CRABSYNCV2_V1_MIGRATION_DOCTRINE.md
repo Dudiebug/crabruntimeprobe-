@@ -76,6 +76,8 @@ The following v1-adjacent behaviors are not automatically safe for CrabSyncV2:
 
 RuntimeProbe proof means read-only evidence for reads. Write/apply behavior is not RuntimeProbe default behavior and requires separate CrabSyncV2-only sandbox planning and evidence.
 
+Future write/apply behavior must follow [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md): passive observation first, official paths preferred, raw writes last-resort only, and no RuntimeProbe mutation.
+
 ## 6. v2 Doctrine
 
 CrabSyncV2 follows these rules:

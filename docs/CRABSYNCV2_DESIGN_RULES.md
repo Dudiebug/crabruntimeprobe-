@@ -59,6 +59,7 @@ These are future CrabSyncV2 constraints. They do not authorize RuntimeProbe writ
 ## RPCs/Writes
 
 - RuntimeProbe must not call mutating RPCs.
+- Safe write/apply planning must follow [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md): passive observation first, manual CrabSyncV2-only sandbox later, and no RuntimeProbe write behavior.
 - CrabSyncV2 may test official RPCs separately only behind explicit safety gates and with manual test phases.
 - Raw writes should be fallback only after official paths are proven unusable.
 - OnRep/UI refresh behavior must be tested before relying on it.

@@ -10,6 +10,8 @@ Future approval requests must also satisfy [P2P Carrier Safety Gates](P2P_CARRIE
 
 [P2P Carrier Readiness Checklist](P2P_CARRIER_READINESS_CHECKLIST.md) is a prerequisite for any future write-smoke proposal. It does not approve write-smoke by itself.
 
+Carrier write-smoke is a specific case of the broader [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md) sandbox doctrine, while still controlled by stricter carrier readiness rules.
+
 ## Minimum Prerequisites
 
 Before a write-smoke can even be considered:

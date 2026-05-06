@@ -10,6 +10,8 @@ Carrier readiness is only one part of CrabSyncV2 readiness. Transport readiness 
 
 RuntimeProbe remains read-only. Read evidence never equals write evidence.
 
+Carrier readiness does not satisfy write/apply readiness; future write behavior must separately follow [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md).
+
 ## 2. Readiness Levels
 
 | Level | Name | Meaning | What it can unblock |
