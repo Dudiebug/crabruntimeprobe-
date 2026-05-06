@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-06T02:25:25.474Z",
+  "updatedAt": "2026-05-06T04:03:58.733Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -122,6 +122,16 @@
       "latestSessionId": "20260505T235245Z",
       "latestCommit": "83361ef851e990891e63856148bd99177ad4058b",
       "latestSummaryPath": "evidence/runtime/20260505T235245Z/diagnostic_summary.txt"
+    },
+    {
+      "phaseId": "perk-da-catalog-read",
+      "status": "complete",
+      "completedAt": "2026-05-06T04:03:48.516Z",
+      "source": "campaign-collect",
+      "reason": "Perk DataAsset catalog confirmed from imported max-safe-play catalog snapshot 20260506T032658Z: 64 candidates, 64 entries, zero rejected, TastyOrange present as a normal entry; read-only catalog evidence only.",
+      "latestSessionId": "20260506T032658Z",
+      "latestCommit": "2681213933be20a2e95d432bbd3531ef045077d4",
+      "latestSummaryPath": "evidence/runtime/20260506T032658Z/diagnostic_summary.txt"
     }
   ],
   "partialPhases": [
@@ -160,11 +170,6 @@
   "blockedPhases": [
     {
       "phaseId": "inventory-array-shallow-read",
-      "status": "blocked",
-      "reason": "Probe set is not implemented yet."
-    },
-    {
-      "phaseId": "inventory-array-count-read",
       "status": "blocked",
       "reason": "Probe set is not implemented yet."
     },
@@ -289,11 +294,11 @@
       "reason": "Future CrabModFramework-only work; never a RuntimeProbe write phase."
     }
   ],
-  "currentPhase": "perk-da-catalog-read",
-  "nextRecommendedPhase": "perk-da-catalog-read",
-  "latestSessionId": "20260506T014608Z",
-  "latestCommit": "d6f85bef9733ca1a777c4a81154141172931019c",
-  "latestSummaryPath": "evidence/runtime/20260506T014608Z/diagnostic_summary.txt",
+  "currentPhase": "inventory-array-count-read",
+  "nextRecommendedPhase": "inventory-array-count-read",
+  "latestSessionId": "20260506T032658Z",
+  "latestCommit": "5e7a2bc0d2dae5db8a93f51f5c14604720c8e2ec",
+  "latestSummaryPath": "evidence/runtime/20260506T032658Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {
       "status": "complete",
@@ -403,7 +408,7 @@
       "mode": "active"
     },
     "perk-da-catalog-read": {
-      "status": "current",
+      "status": "complete",
       "riskTier": "cautious-read",
       "probeSet": "perk-da-catalog-read",
       "tickDriver": "executeDelay",
@@ -418,12 +423,11 @@
       "reason": "Probe set is not implemented yet."
     },
     "inventory-array-count-read": {
-      "status": "blocked",
+      "status": "current",
       "riskTier": "cautious-read",
       "probeSet": "inventory-array-count-read",
       "tickDriver": "executeDelay",
-      "mode": "active",
-      "reason": "Probe set is not implemented yet."
+      "mode": "active"
     },
     "inventory-element-da-read": {
       "status": "blocked",

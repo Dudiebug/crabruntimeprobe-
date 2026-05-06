@@ -19,6 +19,13 @@
 - [Symbol Access Reference](SYMBOL_ACCESS_REFERENCE.md)
 - [Untested Access Paths](UNTESTED_ACCESS_PATHS.md)
 
+## Perk DataAsset Catalog
+
+- [Perk DataAsset Catalog](PERK_DATAASSET_CATALOG.md)
+- [CrabModFramework DataAsset Catalog](CRABMODFRAMEWORK_DATAASSET_CATALOG.md)
+- [Perk catalog JSON export](data/perk_dataasset_catalog.latest.json)
+- [Perk catalog CSV export](data/perk_dataasset_catalog.latest.csv)
+
 ## CrabSyncV2 Planning Docs
 
 - [CrabSyncV2 Evidence Baseline](CRABSYNCV2_EVIDENCE_BASELINE.md)

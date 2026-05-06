@@ -49,7 +49,7 @@ function Select-NextCampaignPhase {
   $completed = @(Get-CampaignPhaseIds -Entries @($State.completedPhases))
   $failed = @(Get-CampaignPhaseIds -Entries @($State.failedPhases))
   $blocked = @(Get-CampaignPhaseIds -Entries @($State.blockedPhases))
-  $advanceablePartial = @($State.partialPhases | Where-Object { $_.status -eq "remote_resources_partial" -or $_.status -eq "crash_suspect_local_inventory_shape_visible" -or $_.status -eq "perk_da_catalog_not_found" -or $_.status -eq "perk_da_catalog_candidates_rejected" } | ForEach-Object { [string]$_.phaseId })
+  $advanceablePartial = @($State.partialPhases | Where-Object { $_.status -eq "remote_resources_partial" -or $_.status -eq "crash_suspect_local_inventory_shape_visible" -or $_.status -eq "perk_da_catalog_not_found" -or $_.status -eq "perk_da_catalog_candidates_rejected" -or $_.status -eq "inventory_array_count_not_found" -or $_.status -eq "crash_suspect_inventory_array_count" } | ForEach-Object { [string]$_.phaseId })
 
   foreach ($phase in @($Plan.phases)) {
     if ($completed -contains $phase.phaseId) { continue }
@@ -109,6 +109,9 @@ function Assert-CampaignPhaseSafety {
   if (($required.ContainsKey("allowInventoryUserdataIntrospectionProbes") -and $required["allowInventoryUserdataIntrospectionProbes"]) -and $Phase.phaseId -ne "local-inventory-userdata-introspection") {
     throw "Campaign phase $($Phase.phaseId) may not enable allowInventoryUserdataIntrospectionProbes."
   }
+  if (($required.ContainsKey("allowInventoryArrayCountProbes") -and $required["allowInventoryArrayCountProbes"]) -and $Phase.phaseId -ne "inventory-array-count-read") {
+    throw "Campaign phase $($Phase.phaseId) may not enable allowInventoryArrayCountProbes."
+  }
   if ($required.ContainsKey("allowRawIdentityEvidence") -and $required["allowRawIdentityEvidence"]) {
     throw "Campaign phase $($Phase.phaseId) may not enable allowRawIdentityEvidence by default."
   }
@@ -157,6 +160,7 @@ function Set-CampaignPhaseConfig {
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
+    "allowInventoryArrayCountProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -200,6 +204,7 @@ function Assert-CampaignInstalledSafety {
     [switch]$AllowInventoryArrayShallowProbes,
     [switch]$AllowInventoryArrayShapeConfirmProbes,
     [switch]$AllowInventoryUserdataIntrospectionProbes,
+    [switch]$AllowInventoryArrayCountProbes,
     [switch]$AllowInventoryInfoProbes,
     [switch]$AllowDeepArrayProbes
   )
@@ -220,6 +225,7 @@ function Assert-CampaignInstalledSafety {
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
+    "allowInventoryArrayCountProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {
@@ -235,6 +241,7 @@ function Assert-CampaignInstalledSafety {
       ($AllowInventoryArrayShallowProbes -and $key -eq "allowInventoryArrayShallowProbes") -or
       ($AllowInventoryArrayShapeConfirmProbes -and $key -eq "allowInventoryArrayShapeConfirmProbes") -or
       ($AllowInventoryUserdataIntrospectionProbes -and $key -eq "allowInventoryUserdataIntrospectionProbes") -or
+      ($AllowInventoryArrayCountProbes -and $key -eq "allowInventoryArrayCountProbes") -or
       ($AllowInventoryInfoProbes -and $key -eq "allowInventoryInfoProbes") -or
       ($AllowDeepArrayProbes -and $key -eq "allowDeepArrayProbes")
     if ($allowed -and $value -eq "true") { continue }
@@ -316,6 +323,7 @@ Assert-CampaignInstalledSafety `
   -AllowInventoryArrayShallowProbes:($phase.phaseId -eq "local-inventory-array-shallow-read") `
   -AllowInventoryArrayShapeConfirmProbes:($phase.phaseId -eq "local-inventory-array-shape-confirm") `
   -AllowInventoryUserdataIntrospectionProbes:($phase.phaseId -eq "local-inventory-userdata-introspection") `
+  -AllowInventoryArrayCountProbes:($phase.phaseId -eq "inventory-array-count-read") `
   -AllowInventoryInfoProbes:($phase.phaseId -eq "inventoryinfo-scalar-read") `
   -AllowDeepArrayProbes:($phase.phaseId -match 'deep|inventory-element-da-read')
 Clear-CampaignRuntimeFiles -ScriptsRoot $InstallScriptsRoot

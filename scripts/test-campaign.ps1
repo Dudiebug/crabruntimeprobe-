@@ -63,7 +63,7 @@ if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "tickDri
 if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "probeSet") -ne "shallow-core") {
   throw "default config probeSet must remain shallow-core."
 }
-foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowPerkDataAssetCatalogProbes", "allowMaxSafePlayRecorderProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowWriteProbes", "allowRpcProbes")) {
+foreach ($key in @("allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowRawIdentityEvidence", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowPerkDataAssetCatalogProbes", "allowMaxSafePlayRecorderProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryUserdataIntrospectionProbes", "allowInventoryArrayCountProbes", "allowWriteProbes", "allowRpcProbes")) {
   if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key $key) -ne "false") {
     throw "default config expected $key = false."
   }
@@ -127,6 +127,9 @@ for (const phase of plan.phases) {
   }
   if (phase.phaseId !== 'local-inventory-userdata-introspection') {
     assert(gates.allowInventoryUserdataIntrospectionProbes === false, `${phase.phaseId} enabled local inventory userdata introspection outside userdata phase`);
+  }
+  if (phase.phaseId !== 'inventory-array-count-read') {
+    assert(gates.allowInventoryArrayCountProbes === false, `${phase.phaseId} enabled inventory array count outside count-read phase`);
   }
   if (!/^health-|^multiplayer-health-/.test(phase.phaseId) && phase.phaseId !== 'multiplayer-resource-visibility-read') {
     assert(gates.allowHealthProbes === false, `${phase.phaseId} enabled health outside health phases`);
@@ -388,7 +391,20 @@ const perkCatalogCompleteState = helpers.markCollected(plan, safeScalarWatchComp
   latestCommit: '7b9c773f133d5464a1f5d6046bdf4ebdd565c75f',
   latestSummaryPath: 'evidence/runtime/20260505T213000Z/diagnostic_summary.txt'
 });
-assert(perkCatalogCompleteState.nextRecommendedPhase === 'inventory-array-shallow-read', `perk catalog completion should advance to inventory-array-shallow-read placeholder, got ${perkCatalogCompleteState.nextRecommendedPhase}`);
+assert(perkCatalogCompleteState.nextRecommendedPhase === 'inventory-array-count-read', `perk catalog completion should advance to inventory-array-count-read, got ${perkCatalogCompleteState.nextRecommendedPhase}`);
+
+let inventoryArrayCount = helpers.classifyInventoryArrayCountEvidence([
+  { probeName: 'Inventory.LocalArrays.CountRead', result: 'ok', localPlayerStatePresent: true, fieldsReadable: ['WeaponMods'], fieldsNilOrUnsupported: ['AbilityMods', 'MeleeMods', 'Perks', 'Relics'], valueKinds: { WeaponMods: 'userdata', AbilityMods: 'userdata', MeleeMods: 'userdata', Perks: 'userdata', Relics: 'userdata' }, countAttempted: { WeaponMods: true, AbilityMods: true, MeleeMods: true, Perks: true, Relics: true }, countMethods: { WeaponMods: 'lua_len_operator_pcall', AbilityMods: 'lua_len_operator_pcall', MeleeMods: 'lua_len_operator_pcall', Perks: 'lua_len_operator_pcall', Relics: 'lua_len_operator_pcall' }, countResults: { WeaponMods: 1 }, fieldResults: { WeaponMods: 'count', AbilityMods: 'count_unsupported', MeleeMods: 'count_unsupported', Perks: 'count_unsupported', Relics: 'count_unsupported' }, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, noInventoryTraversal: true, noArrayTraversal: true, noElementDereference: true, noItemDataAssetRead: true, noInventoryInfo: true, noEnhancements: true, noDataAssetMutation: true, passiveOnly: true, safetyGates: { allowInventoryArrayCountProbes: true, allowDeepArrayProbes: false, allowInventoryInfoProbes: false, allowInventoryArrayShallowProbes: false, allowInventoryUserdataIntrospectionProbes: false, allowWriteProbes: false, allowRpcProbes: false, allowHudTickHook: false } }
+]);
+assert(inventoryArrayCount.status === 'inventory_array_count_confirmed', `inventory array count should confirm count metadata, got ${inventoryArrayCount.status}`);
+inventoryArrayCount = helpers.classifyInventoryArrayCountEvidence([
+  { probeName: 'Inventory.LocalArrays.CountRead', result: 'ok', localPlayerStatePresent: true, fieldsReadable: [], fieldsNilOrUnsupported: ['WeaponMods', 'AbilityMods', 'MeleeMods', 'Perks', 'Relics'], valueKinds: { WeaponMods: 'userdata', AbilityMods: 'userdata', MeleeMods: 'userdata', Perks: 'userdata', Relics: 'userdata' }, countAttempted: { WeaponMods: true, AbilityMods: true, MeleeMods: true, Perks: true, Relics: true }, fieldResults: { WeaponMods: 'count_unsupported', AbilityMods: 'count_unsupported', MeleeMods: 'count_unsupported', Perks: 'count_unsupported', Relics: 'count_unsupported' }, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, noInventoryTraversal: true, noArrayTraversal: true, noElementDereference: true, noItemDataAssetRead: true, noInventoryInfo: true, noEnhancements: true, noDataAssetMutation: true, passiveOnly: true, safetyGates: { allowInventoryArrayCountProbes: true } }
+]);
+assert(inventoryArrayCount.status === 'inventory_array_count_unsupported', `inventory array count should classify unsupported counts, got ${inventoryArrayCount.status}`);
+inventoryArrayCount = helpers.classifyInventoryArrayCountEvidence([
+  { probeName: 'Inventory.LocalArrays.CountRead', result: 'ok', localPlayerStatePresent: false, fieldsReadable: [], fieldsNilOrUnsupported: ['WeaponMods', 'AbilityMods', 'MeleeMods', 'Perks', 'Relics'], fieldResults: { WeaponMods: 'no_local_player_state', AbilityMods: 'no_local_player_state', MeleeMods: 'no_local_player_state', Perks: 'no_local_player_state', Relics: 'no_local_player_state' }, noWrites: true, noRpcs: true, noHud: true, noDeepArrays: true, noInventoryTraversal: true, noArrayTraversal: true, noElementDereference: true, noItemDataAssetRead: true, noInventoryInfo: true, noEnhancements: true, noDataAssetMutation: true, passiveOnly: true, safetyGates: { allowInventoryArrayCountProbes: true } }
+]);
+assert(inventoryArrayCount.status === 'inventory_array_count_not_found', `inventory array count should classify not-found, got ${inventoryArrayCount.status}`);
 '@
 node $NodeTestPath (Join-Path $RepoRoot "tools\campaign_helpers.js") $RepoRoot
 if ($LASTEXITCODE -ne 0) { throw "campaign helper tests failed." }
@@ -439,7 +455,7 @@ if ($prepareRan) {
         throw "resource visibility campaign phase expected $key = true."
       }
     }
-    foreach ($key in @("allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowJoinedClientDeepProbes")) {
+    foreach ($key in @("allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowInventoryArrayCountProbes", "allowJoinedClientDeepProbes")) {
       if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
         throw "resource visibility campaign phase expected $key = false."
       }
@@ -448,7 +464,7 @@ if ($prepareRan) {
     if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowInventoryArrayShallowProbes") -ne "true") {
       throw "local inventory array campaign phase expected allowInventoryArrayShallowProbes = true."
     }
-    foreach ($key in @("allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
+    foreach ($key in @("allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowInventoryArrayCountProbes", "allowJoinedClientDeepProbes")) {
       if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
         throw "local inventory campaign phase expected $key = false."
       }
@@ -457,7 +473,7 @@ if ($prepareRan) {
     if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowInventoryArrayShapeConfirmProbes") -ne "true") {
       throw "local inventory array shape confirm campaign phase expected allowInventoryArrayShapeConfirmProbes = true."
     }
-    foreach ($key in @("allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
+    foreach ($key in @("allowInventoryArrayShallowProbes", "allowInventoryArrayCountProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
       if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
         throw "local inventory shape confirm campaign phase expected $key = false."
       }
@@ -466,16 +482,25 @@ if ($prepareRan) {
     if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowInventoryUserdataIntrospectionProbes") -ne "true") {
       throw "local inventory userdata introspection campaign phase expected allowInventoryUserdataIntrospectionProbes = true."
     }
-    foreach ($key in @("allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
+    foreach ($key in @("allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayCountProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
       if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
         throw "local inventory userdata introspection campaign phase expected $key = false."
+      }
+    }
+  } elseif ($preparedPhase -eq "inventory-array-count-read") {
+    if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowInventoryArrayCountProbes") -ne "true") {
+      throw "inventory array count read campaign phase expected allowInventoryArrayCountProbes = true."
+    }
+    foreach ($key in @("allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowInventoryUserdataIntrospectionProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowPerkDataAssetCatalogProbes", "allowMaxSafePlayRecorderProbes", "allowJoinedClientDeepProbes", "allowUnknownRoleProbes")) {
+      if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
+        throw "inventory array count read campaign phase expected $key = false."
       }
     }
   } elseif ($preparedPhase -eq "crystals-read") {
     if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowCrystalsReadProbes") -ne "true") {
       throw "crystals campaign phase expected allowCrystalsReadProbes = true."
     }
-    foreach ($key in @("allowSlotsReadProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
+    foreach ($key in @("allowSlotsReadProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayCountProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
       if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
         throw "crystals campaign phase expected $key = false."
       }
@@ -484,7 +509,7 @@ if ($prepareRan) {
     if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "allowSlotsReadProbes") -ne "true") {
       throw "slots campaign phase expected allowSlotsReadProbes = true."
     }
-    foreach ($key in @("allowCrystalsReadProbes", "allowSafeScalarWatchProbes", "allowPerkDataAssetCatalogProbes", "allowMaxSafePlayRecorderProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
+    foreach ($key in @("allowCrystalsReadProbes", "allowSafeScalarWatchProbes", "allowPerkDataAssetCatalogProbes", "allowMaxSafePlayRecorderProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayCountProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes")) {
       if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
         throw "slots campaign phase expected $key = false."
       }
@@ -496,7 +521,7 @@ if ($prepareRan) {
     if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "repeatProbeSet") -ne "true") {
       throw "safe scalar watch campaign phase expected repeatProbeSet = true."
     }
-    foreach ($key in @("allowCrystalsReadProbes", "allowSlotsReadProbes", "allowPerkDataAssetCatalogProbes", "allowMaxSafePlayRecorderProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes", "allowUnknownRoleProbes")) {
+    foreach ($key in @("allowCrystalsReadProbes", "allowSlotsReadProbes", "allowPerkDataAssetCatalogProbes", "allowMaxSafePlayRecorderProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowInventoryArrayCountProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes", "allowUnknownRoleProbes")) {
       if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
         throw "safe scalar watch campaign phase expected $key = false."
       }
@@ -508,7 +533,7 @@ if ($prepareRan) {
     if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key "repeatProbeSet") -ne "false") {
       throw "perk DataAsset catalog campaign phase expected repeatProbeSet = false."
     }
-    foreach ($key in @("allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowMaxSafePlayRecorderProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowInventoryUserdataIntrospectionProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes", "allowUnknownRoleProbes")) {
+    foreach ($key in @("allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowMaxSafePlayRecorderProbes", "allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowInventoryUserdataIntrospectionProbes", "allowInventoryArrayCountProbes", "allowRawIdentityEvidence", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowJoinedClientDeepProbes", "allowUnknownRoleProbes")) {
       if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $InstalledConfigPath -Key $key) -ne "false") {
         throw "perk DataAsset catalog campaign phase expected $key = false."
       }

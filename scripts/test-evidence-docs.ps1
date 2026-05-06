@@ -47,6 +47,7 @@ function Assert-UnsafeGatesFalse {
     "allowInventoryArrayShallowProbes",
     "allowInventoryArrayShapeConfirmProbes",
     "allowInventoryUserdataIntrospectionProbes",
+    "allowInventoryArrayCountProbes",
     "allowWriteProbes",
     "allowRpcProbes"
   )) {

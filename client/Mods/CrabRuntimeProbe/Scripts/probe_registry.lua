@@ -982,6 +982,155 @@ function registry.build(safe)
       .. ' crashAttributionMarker=userdata-introspection'
   end
 
+  local function buildInventoryArrayCountReadCache(ctx)
+    if ctx.cache.InventoryArrayCountRead then return ctx.cache.InventoryArrayCountRead end
+
+    local playerState, playerStateErr = getCrabPlayerState(ctx)
+    if playerStateErr then
+      ctx.cache.InventoryArrayCountRead = { error = playerStateErr }
+      return ctx.cache.InventoryArrayCountRead
+    end
+
+    local stats = {
+      sourceScope = 'local_player_state_inventory_array_count_read',
+      sourcePath = 'CrabPC.PlayerState',
+      sourceClass = 'CrabPS',
+      localPlayerStatePresent = safe.isValidObject(playerState),
+      arrayFieldNames = LOCAL_INVENTORY_ARRAY_FIELDS,
+      arrayPropertiesPresent = {},
+      valueKinds = {},
+      tostringPrefixes = {},
+      countAttempted = {},
+      countMethods = {},
+      countResults = {},
+      countErrors = {},
+      fieldResults = {},
+      fieldsReadable = {},
+      fieldsNilOrUnsupported = {},
+      countResultFields = {},
+      noWrites = true,
+      noRpcs = true,
+      noHud = true,
+      noDeepArrays = true,
+      noInventoryTraversal = true,
+      noArrayTraversal = true,
+      noElementDereference = true,
+      noItemDataAssetRead = true,
+      noInventoryInfo = true,
+      noEnhancements = true,
+      noDataAssetMutation = true,
+      passiveOnly = true,
+      crashAttributionMarker = 'inventory-array-count-read'
+    }
+
+    if not stats.localPlayerStatePresent then
+      for _, fieldName in ipairs(LOCAL_INVENTORY_ARRAY_FIELDS) do
+        stats.arrayPropertiesPresent[fieldName] = false
+        stats.valueKinds[fieldName] = 'nil'
+        stats.tostringPrefixes[fieldName] = 'nil'
+        stats.countAttempted[fieldName] = false
+        stats.countMethods[fieldName] = 'not_attempted'
+        stats.fieldResults[fieldName] = 'no_local_player_state'
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      end
+      ctx.cache.InventoryArrayCountRead = stats
+      return stats
+    end
+
+    for _, fieldName in ipairs(LOCAL_INVENTORY_ARRAY_FIELDS) do
+      local value, err = safe.getProperty(playerState, fieldName)
+      if err then
+        stats.arrayPropertiesPresent[fieldName] = false
+        stats.valueKinds[fieldName] = 'error'
+        stats.tostringPrefixes[fieldName] = 'error'
+        stats.countAttempted[fieldName] = false
+        stats.countMethods[fieldName] = 'not_attempted'
+        stats.fieldResults[fieldName] = 'property_error'
+        stats.countErrors[fieldName] = tostring(err)
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      elseif value == nil then
+        stats.arrayPropertiesPresent[fieldName] = false
+        stats.valueKinds[fieldName] = 'nil'
+        stats.tostringPrefixes[fieldName] = 'nil'
+        stats.countAttempted[fieldName] = false
+        stats.countMethods[fieldName] = 'not_attempted'
+        stats.fieldResults[fieldName] = 'nil'
+        stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+      else
+        stats.arrayPropertiesPresent[fieldName] = true
+        stats.valueKinds[fieldName] = type(value)
+        stats.tostringPrefixes[fieldName] = safeTostringPrefix(value)
+        stats.countAttempted[fieldName] = true
+        stats.countMethods[fieldName] = 'lua_len_operator_pcall'
+        local countResult, countErr = safeLenOperator(value)
+        if countErr then
+          stats.countErrors[fieldName] = countErr
+          stats.fieldResults[fieldName] = 'count_unsupported'
+          stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+        elseif type(countResult) == 'number' then
+          stats.countResults[fieldName] = countResult
+          stats.fieldResults[fieldName] = 'count'
+          stats.fieldsReadable[#stats.fieldsReadable + 1] = fieldName
+          stats.countResultFields[#stats.countResultFields + 1] = fieldName
+        else
+          stats.fieldResults[fieldName] = 'count_unsupported'
+          stats.fieldsNilOrUnsupported[#stats.fieldsNilOrUnsupported + 1] = fieldName
+        end
+      end
+    end
+
+    ctx.cache.InventoryArrayCountRead = stats
+    return stats
+  end
+
+  local function inventoryArrayCountReadMeta(stats, note)
+    return {
+      sourceScope = stats.sourceScope,
+      sourcePath = stats.sourcePath,
+      sourceClass = stats.sourceClass,
+      candidateClasses = { 'CrabPC', 'CrabPS' },
+      localPlayerStatePresent = stats.localPlayerStatePresent == true,
+      arrayFieldNames = stats.arrayFieldNames or LOCAL_INVENTORY_ARRAY_FIELDS,
+      arrayPropertiesPresent = stats.arrayPropertiesPresent or {},
+      valueKinds = stats.valueKinds or {},
+      tostringPrefixes = stats.tostringPrefixes or {},
+      countAttempted = stats.countAttempted or {},
+      countMethods = stats.countMethods or {},
+      countResults = stats.countResults or {},
+      countErrors = stats.countErrors or {},
+      fieldResults = stats.fieldResults or {},
+      fieldsReadable = stats.fieldsReadable or {},
+      fieldsNilOrUnsupported = stats.fieldsNilOrUnsupported or {},
+      countResultFields = stats.countResultFields or {},
+      noWrites = true,
+      noRpcs = true,
+      noHud = true,
+      noDeepArrays = true,
+      noInventoryTraversal = true,
+      noArrayTraversal = true,
+      noElementDereference = true,
+      noItemDataAssetRead = true,
+      noInventoryInfo = true,
+      noEnhancements = true,
+      noDataAssetMutation = true,
+      passiveOnly = true,
+      crashAttributionMarker = 'inventory-array-count-read',
+      localNotes = note
+    }
+  end
+
+  local function inventoryArrayCountReadSummary(stats)
+    return 'category=inventory-array-count-read'
+      .. ' localPlayerStatePresent=' .. tostring(stats.localPlayerStatePresent == true)
+      .. ' fieldsReadable=' .. tostring(#(stats.fieldsReadable or {}))
+      .. ' fieldsNilOrUnsupported=' .. tostring(#(stats.fieldsNilOrUnsupported or {}))
+      .. ' countResultFields=' .. tostring(#(stats.countResultFields or {}))
+      .. ' countMethod=lua_len_operator_pcall'
+      .. ' noInventoryTraversal=true noArrayTraversal=true noElementDereference=true noItemDataAssetRead=true noInventoryInfo=true noEnhancements=true'
+      .. ' noWrites=true noRpcs=true noHud=true noDeepArrays=true noDataAssetMutation=true passiveOnly=true'
+      .. ' crashAttributionMarker=inventory-array-count-read'
+  end
+
   local function integerLikeUInt32(value)
     if type(value) ~= 'number' then return false, false end
     if value ~= value or value == math.huge or value == -math.huge then return false, false end
@@ -3338,6 +3487,24 @@ function registry.build(safe)
     accessMethod = 'GetPropertyValueUserdataMetadata',
     accessKind = 'localInventoryUserdataIntrospection',
     sourceScope = 'local_player_state_inventory_userdata_introspection'
+  })
+
+  probes[#probes + 1] = mk('Inventory.LocalArrays.CountRead', 'inventory-array-count-read', 'inventory-array-count-read', 'inventoryArrayCountRead', function(ctx)
+    local stats = buildInventoryArrayCountReadCache(ctx)
+    if stats.error then return 'lua_error', nil, nil, stats.error end
+    local hasEvidence = stats.localPlayerStatePresent == true and (
+      #(stats.fieldsReadable or {}) > 0 or #(stats.fieldsNilOrUnsupported or {}) > 0
+    )
+    return hasEvidence and 'ok' or 'nil', 'inventory_array_count_read',
+      inventoryArrayCountReadSummary(stats), nil,
+      inventoryArrayCountReadMeta(stats, 'Read-only local CrabPC -> PlayerState -> CrabPS array wrapper count metadata using only pcall(#value); no traversal, element dereference, item DataAsset reads, InventoryInfo, Enhancements, writes, RPCs, HUD, or deep arrays')
+  end, {
+    symbol = 'CrabPS.WeaponMods',
+    owner = 'CrabPS',
+    member = 'WeaponMods AbilityMods MeleeMods Perks Relics',
+    accessMethod = 'GetPropertyValueLuaLenPcall',
+    accessKind = 'inventoryArrayCountRead',
+    sourceScope = 'local_player_state_inventory_array_count_read'
   })
 
   probes[#probes + 1] = mk('Resource.Crystals.Read', 'resource-crystals', 'crystals-read', 'localCrystalsRead', function(ctx)

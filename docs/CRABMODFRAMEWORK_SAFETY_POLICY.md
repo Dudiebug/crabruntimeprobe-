@@ -10,7 +10,8 @@ RuntimeProbe phases must remain read-only unless a future task explicitly change
 - RPC calls.
 - HUD tick hook use.
 - Deep array probes.
-- Live inventory array traversal, counting, or element dereference.
+- Live inventory array traversal or element dereference.
+- Live inventory array counting except the narrow `inventory-array-count-read` wrapper metadata phase.
 - InventoryInfo reads.
 - Enhancements reads.
 - Arbitrary object graph recursion.
@@ -23,13 +24,17 @@ The direct `max-safe-play-recorder` profile is a recorder, not a new safety auth
 
 Failed/no-sample recorder runs are failures. If no PlayerState-present scalar samples are collected, the run must be reported with remediation and must not be promoted into confirmed useful evidence.
 
+The `inventory-array-count-read` phase is a narrow read-only proof for local PlayerState inventory wrapper count metadata only. It reads only `WeaponMods`, `AbilityMods`, `MeleeMods`, `Perks`, and `Relics` with `GetPropertyValue`, then attempts only a protected Lua length operation on the returned wrapper. Its required markers include `noInventoryTraversal`, `noArrayTraversal`, `noElementDereference`, `noItemDataAssetRead`, `noInventoryInfo`, `noEnhancements`, `noWrites`, `noRpcs`, `noHud`, `noDeepArrays`, `noDataAssetMutation`, and `passiveOnly`.
+
+Count evidence is not traversal evidence, item sync evidence, item DataAsset evidence, InventoryInfo evidence, or Enhancements evidence. It does not authorize item element reads; `inventory-element-da-read` remains a separate blocked future phase until count evidence is collected and reviewed.
+
 ## Framework Rules
 
 CrabModFramework should prefer high-level Crab Champions APIs backed by RuntimeProbe evidence. Raw UE4SS calls should be wrapped, reviewed, and eventually linted or validated.
 
 Any future write/edit API must be separate from RuntimeProbe, capability-gated, and documented as experimental until dedicated evidence and review exists. DataAsset catalog evidence is read evidence only; it is not permission to mutate DataAssets.
 
-Future live inventory array counts, inventory element DataAsset reads, InventoryInfo, Enhancements, event watchers, and additional DataAsset catalog families may enter the max-safe recorder only after their own dedicated campaign phases prove safety.
+Future inventory element DataAsset reads, InventoryInfo, Enhancements, event watchers, and additional DataAsset catalog families may enter the max-safe recorder only after their own dedicated campaign phases prove safety. Inventory wrapper count metadata can enter later only after `inventory-array-count-read` produces clean evidence and the recorder is explicitly updated.
 
 ## Passive Watchers
 

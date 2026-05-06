@@ -2,7 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 const { parseIdentityFromFullName, extractFullNameFromSummary } = require('./identity_helpers');
-const { classifyCrystalsReadEvidence, classifySafeScalarWatchEvidence, classifyPerkDataAssetCatalogEvidence, classifySlotsReadEvidence, classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
+const { classifyCrystalsReadEvidence, classifySafeScalarWatchEvidence, classifyPerkDataAssetCatalogEvidence, classifySlotsReadEvidence, classifyLocalInventoryArrayEvidence, classifyLocalInventoryArrayShapeConfirmEvidence, classifyLocalInventoryUserdataIntrospectionEvidence, classifyInventoryArrayCountEvidence, classifyResourceVisibilityEvidence, hasConfirmedVisibleRosterEvidence, hasCrashSuspectEvidenceForSession, hasRawIdentityLeak } = require('./campaign_helpers');
+const { generatePerkDataAssetCatalogOutputs } = require('./extract_perk_dataasset_catalog');
 
 function walk(dir, name) {
   if (!fs.existsSync(dir)) return [];
@@ -358,6 +359,15 @@ const latestPerkCatalogSessionId = evidenceRows
 const perkCatalog = classifyPerkDataAssetCatalogEvidence(evidenceRows, {
   crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestPerkCatalogSessionId)
 });
+const latestInventoryArrayCountSessionId = evidenceRows
+  .filter((row) => (row.probeId || row.probeName || row.event || '') === 'Inventory.LocalArrays.CountRead')
+  .map((row) => row.sessionId)
+  .filter(Boolean)
+  .sort()
+  .pop();
+const inventoryArrayCount = classifyInventoryArrayCountEvidence(evidenceRows, {
+  crashSuspect: hasCrashSuspectEvidenceForSession(localInventoryFacts, latestInventoryArrayCountSessionId)
+});
 index += '\n## Local Inventory Array Shallow/Count Visibility Summary\n\n';
 if (!localInventory.localInventoryArrayEvidenceFound) {
   index += '- Summary: unresolved; no `local-inventory-array-shallow-read` evidence has been imported yet.\n';
@@ -425,7 +435,29 @@ if (!localInventoryUserdataIntrospection.localInventoryUserdataIntrospectionEvid
   index += `- InventoryInfo read: ${localInventoryUserdataIntrospection.noInventoryInfo ? 'no' : 'yes'}\n`;
   index += `- Enhancements read: ${localInventoryUserdataIntrospection.noEnhancements ? 'no' : 'yes'}\n`;
   index += `- Writes/RPCs: ${localInventoryUserdataIntrospection.noWrites && localInventoryUserdataIntrospection.noRpcs ? 'no' : 'yes'}\n`;
-  index += '- Length operator results, if present, are metadata-only and do not prove count traversal, element traversal, or item sync.\n';
+index += '- Length operator results, if present, are metadata-only and do not prove count traversal, element traversal, or item sync.\n';
+}
+index += '\n## Inventory Array Count Read Summary\n\n';
+if (!inventoryArrayCount.inventoryArrayCountEvidenceFound) {
+  index += '- Summary: unresolved; no `inventory-array-count-read` evidence has been imported yet.\n';
+  index += '- Count-read will only read local `CrabPS.WeaponMods`, `AbilityMods`, `MeleeMods`, `Perks`, and `Relics` wrapper metadata.\n';
+  index += '- Count evidence is not traversal evidence, item sync evidence, item DataAsset evidence, InventoryInfo evidence, or Enhancements evidence.\n';
+} else {
+  index += `- Summary: ${inventoryArrayCount.classification}\n`;
+  index += `- Inventory array count status: ${inventoryArrayCount.status}\n`;
+  index += `- Local PlayerState present: ${inventoryArrayCount.localPlayerStatePresent ? 'yes' : 'not proven'}\n`;
+  index += `- Properties classified: ${inventoryArrayCount.propertyClassified ? 'all five' : 'not all five'}\n`;
+  index += `- Value kinds: ${Object.keys(inventoryArrayCount.valueKinds).length ? Object.entries(inventoryArrayCount.valueKinds).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Count attempted: ${Object.keys(inventoryArrayCount.countAttempted).length ? Object.entries(inventoryArrayCount.countAttempted).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Count methods: ${Object.keys(inventoryArrayCount.countMethods).length ? Object.entries(inventoryArrayCount.countMethods).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Count results: ${Object.keys(inventoryArrayCount.countResults).length ? Object.entries(inventoryArrayCount.countResults).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Count errors: ${Object.keys(inventoryArrayCount.countErrors).length ? Object.entries(inventoryArrayCount.countErrors).sort().map(([key, value]) => `${key}=${value}`).join(', ') : 'none'}\n`;
+  index += `- Array traversal attempted: ${inventoryArrayCount.noArrayTraversal && inventoryArrayCount.noInventoryTraversal ? 'no' : 'yes'}\n`;
+  index += `- Array elements dereferenced: ${inventoryArrayCount.noElementDereference ? 'no' : 'yes'}\n`;
+  index += `- Item DataAsset fields read: ${inventoryArrayCount.noItemDataAssetRead ? 'no' : 'yes'}\n`;
+  index += `- InventoryInfo read: ${inventoryArrayCount.noInventoryInfo ? 'no' : 'yes'}\n`;
+  index += `- Enhancements read: ${inventoryArrayCount.noEnhancements ? 'no' : 'yes'}\n`;
+  index += '- Count results, if present, are metadata-only and do not authorize traversal, element dereference, item DataAsset reads, InventoryInfo reads, Enhancements reads, or item sync.\n';
 }
 index += '\n## Local Crystals Read Summary\n\n';
 if (!crystalsRead.crystalsReadEvidenceFound) {
@@ -576,5 +608,6 @@ fs.writeFileSync(path.join(docsDir, 'SAFE_ACCESS_MATRIX.md'), matrix);
 fs.writeFileSync(path.join(docsDir, 'SYMBOL_ACCESS_REFERENCE.md'), reference);
 fs.writeFileSync(path.join(docsDir, 'KNOWN_UNSAFE_PATHS.md'), unsafe);
 fs.writeFileSync(path.join(docsDir, 'UNTESTED_ACCESS_PATHS.md'), untested);
+generatePerkDataAssetCatalogOutputs({ repoRoot: process.cwd(), quiet: true });
 
-console.log('generated access docs = docs/RUNTIME_EVIDENCE_INDEX.md, docs/SAFE_ACCESS_MATRIX.md, docs/SYMBOL_ACCESS_REFERENCE.md, docs/KNOWN_UNSAFE_PATHS.md, docs/UNTESTED_ACCESS_PATHS.md');
+console.log('generated access docs = docs/RUNTIME_EVIDENCE_INDEX.md, docs/SAFE_ACCESS_MATRIX.md, docs/SYMBOL_ACCESS_REFERENCE.md, docs/KNOWN_UNSAFE_PATHS.md, docs/UNTESTED_ACCESS_PATHS.md, docs/PERK_DATAASSET_CATALOG.md, docs/data/perk_dataasset_catalog.latest.json, docs/data/perk_dataasset_catalog.latest.csv');

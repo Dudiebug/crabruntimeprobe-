@@ -243,6 +243,10 @@ function Invoke-CampaignCollect {
     & $cycle -GameBin $GameBinFull -CollectLocalInventoryUserdataIntrospection
     return $LASTEXITCODE
   }
+  if ($PhaseId -eq "inventory-array-count-read") {
+    & $cycle -GameBin $GameBinFull -CollectInventoryArrayCountRead
+    return $LASTEXITCODE
+  }
   throw "Campaign phase '$PhaseId' is not implemented and cannot be collected."
 }
 
@@ -616,6 +620,73 @@ if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "lo
   }
 }
 
+if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "inventory-array-count-read") {
+  $rows = Read-JsonLines -Paths @(
+    $(if ($null -ne $latestProbeFile) { $latestProbeFile.FullName } else { "" }),
+    $(if ($null -ne $latestAccessFile) { $latestAccessFile.FullName } else { "" })
+  )
+  $countRows = @($rows | Where-Object {
+    $name = ""
+    foreach ($field in @("probeName", "probeId", "event")) {
+      if ($_.PSObject.Properties.Name -contains $field) {
+        $name = [string]$_.$field
+        if (-not [string]::IsNullOrWhiteSpace($name)) { break }
+      }
+    }
+    $name -eq "Inventory.LocalArrays.CountRead"
+  })
+
+  $localPlayerStatePresent = $false
+  $propertyClassifiedCount = 0
+  $countResultCount = 0
+  $safetyViolation = $false
+  foreach ($row in $countRows) {
+    if (($row.PSObject.Properties.Name -contains "localPlayerStatePresent") -and $row.localPlayerStatePresent -eq $true) {
+      $localPlayerStatePresent = $true
+    }
+    if (($row.PSObject.Properties.Name -contains "fieldResults") -and $null -ne $row.fieldResults) {
+      $propertyClassifiedCount = [Math]::Max($propertyClassifiedCount, @($row.fieldResults.PSObject.Properties).Count)
+    }
+    if (($row.PSObject.Properties.Name -contains "countResults") -and $null -ne $row.countResults) {
+      $countResultCount = [Math]::Max($countResultCount, @($row.countResults.PSObject.Properties).Count)
+    }
+    foreach ($flag in @("noWrites", "noRpcs", "noHud", "noDeepArrays", "noInventoryTraversal", "noArrayTraversal", "noElementDereference", "noItemDataAssetRead", "noInventoryInfo", "noEnhancements", "noDataAssetMutation", "passiveOnly")) {
+      if (-not ($row.PSObject.Properties.Name -contains $flag) -or $row.$flag -ne $true) {
+        $safetyViolation = $true
+      }
+    }
+    if (($row.PSObject.Properties.Name -contains "safetyGates") -and $null -ne $row.safetyGates) {
+      foreach ($gate in @("allowInventoryArrayShapeConfirmProbes", "allowInventoryArrayShallowProbes", "allowInventoryUserdataIntrospectionProbes", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowWriteProbes", "allowRpcProbes", "allowHudTickHook", "allowRawIdentityEvidence", "allowHealthProbes", "allowIdentityProbes", "allowResourceVisibilityProbes", "allowCrystalsReadProbes", "allowSlotsReadProbes", "allowSafeScalarWatchProbes", "allowPerkDataAssetCatalogProbes", "allowMaxSafePlayRecorderProbes", "allowUnknownRoleProbes", "allowJoinedClientDeepProbes")) {
+        if (($row.safetyGates.PSObject.Properties.Name -contains $gate) -and $row.safetyGates.$gate -eq $true) {
+          $safetyViolation = $true
+        }
+      }
+    }
+  }
+
+  if ($countRows.Count -eq 0) {
+    $status = "no_evidence"
+    $reason = "No inventory array count-read probe evidence was found."
+  } elseif ($safetyViolation) {
+    $status = "failed"
+    $reason = "Inventory array count-read evidence violated safety gates or touched traversal, elements, item DataAssets, InventoryInfo, Enhancements, writes, RPCs, HUD, or deep arrays."
+  } elseif ($crashAfterPrepare) {
+    $status = "crash_suspect_inventory_array_count"
+    $reason = "Inventory array count metadata was attempted read-only, but a crash dump/folder was updated after campaign prepare/run."
+  } elseif (-not $localPlayerStatePresent -or $propertyClassifiedCount -eq 0) {
+    $status = "inventory_array_count_not_found"
+    $reason = "Inventory array count-read ran but did not find local PlayerState inventory array properties."
+  } elseif ($propertyClassifiedCount -ge 5 -and $countResultCount -gt 0) {
+    $status = "inventory_array_count_confirmed"
+  } elseif ($propertyClassifiedCount -ge 5) {
+    $status = "inventory_array_count_unsupported"
+    $reason = "Inventory array properties were visible, but count metadata was unsupported for all arrays."
+  } else {
+    $status = "inventory_array_count_not_found"
+    $reason = "Inventory array count-read did not classify all expected local inventory array properties."
+  }
+}
+
 if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "crystals-read") {
   $rows = Read-JsonLines -Paths @(
     $(if ($null -ne $latestProbeFile) { $latestProbeFile.FullName } else { "" }),
@@ -942,6 +1013,6 @@ Write-Host "phaseResult = $status"
 Write-Host "phaseId = $($phase.phaseId)"
 Write-Host "nextRecommendedPhase = $($updatedState.nextRecommendedPhase)"
 
-if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved" -and $status -ne "crash_suspect_local_inventory_shape_visible" -and $status -ne "local_inventory_shape_confirmed" -and $status -ne "crash_suspect_local_inventory_shape_confirmed" -and $status -ne "local_inventory_userdata_introspection_confirmed" -and $status -ne "crash_suspect_local_inventory_userdata_introspection" -and $status -ne "crystals_read_confirmed" -and $status -ne "crash_suspect_crystals_read" -and $status -ne "slots_read_confirmed" -and $status -ne "crash_suspect_slots_read" -and $status -ne "safe_scalar_watch_confirmed_no_change" -and $status -ne "safe_scalar_watch_observed_change" -and $status -ne "crash_suspect_safe_scalar_watch" -and $status -ne "perk_da_catalog_confirmed" -and $status -ne "perk_da_catalog_not_found" -and $status -ne "perk_da_catalog_candidates_rejected" -and $status -ne "perk_da_catalog_crash_suspect" -and -not ($phase.phaseId -eq "local-inventory-array-shape-confirm" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "local-inventory-userdata-introspection" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "crystals-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "slots-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "safe-scalar-watch" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "perk-da-catalog-read" -and $status -eq "no_evidence")) {
+if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved" -and $status -ne "crash_suspect_local_inventory_shape_visible" -and $status -ne "local_inventory_shape_confirmed" -and $status -ne "crash_suspect_local_inventory_shape_confirmed" -and $status -ne "local_inventory_userdata_introspection_confirmed" -and $status -ne "crash_suspect_local_inventory_userdata_introspection" -and $status -ne "inventory_array_count_confirmed" -and $status -ne "inventory_array_count_unsupported" -and $status -ne "inventory_array_count_not_found" -and $status -ne "crash_suspect_inventory_array_count" -and $status -ne "crystals_read_confirmed" -and $status -ne "crash_suspect_crystals_read" -and $status -ne "slots_read_confirmed" -and $status -ne "crash_suspect_slots_read" -and $status -ne "safe_scalar_watch_confirmed_no_change" -and $status -ne "safe_scalar_watch_observed_change" -and $status -ne "crash_suspect_safe_scalar_watch" -and $status -ne "perk_da_catalog_confirmed" -and $status -ne "perk_da_catalog_not_found" -and $status -ne "perk_da_catalog_candidates_rejected" -and $status -ne "perk_da_catalog_crash_suspect" -and -not ($phase.phaseId -eq "local-inventory-array-shape-confirm" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "local-inventory-userdata-introspection" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "inventory-array-count-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "crystals-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "slots-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "safe-scalar-watch" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "perk-da-catalog-read" -and $status -eq "no_evidence")) {
   exit 1
 }

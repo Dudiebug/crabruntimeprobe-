@@ -1,12 +1,12 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-06T02:25:25.474Z
-- Current phase: `perk-da-catalog-read`
-- Next recommended phase: `perk-da-catalog-read`
-- Latest session: 20260506T014608Z
-- Latest commit: d6f85bef9733ca1a777c4a81154141172931019c
-- Latest summary: evidence/runtime/20260506T014608Z/diagnostic_summary.txt
+- Updated: 2026-05-06T04:03:58.733Z
+- Current phase: `inventory-array-count-read`
+- Next recommended phase: `inventory-array-count-read`
+- Latest session: 20260506T032658Z
+- Latest commit: 5e7a2bc0d2dae5db8a93f51f5c14604720c8e2ec
+- Latest summary: evidence/runtime/20260506T032658Z/diagnostic_summary.txt
 
 ## Completed Phases
 
@@ -22,6 +22,7 @@
 - `local-inventory-userdata-introspection` - Local inventory userdata introspection
 - `crystals-read` - Local PlayerState crystals read
 - `slots-read` - Local PlayerState slots read
+- `perk-da-catalog-read` - Perk DataAsset catalog read
 
 ## Partial Phases
 
@@ -35,7 +36,6 @@
 ## Blocked Phases
 
 - `inventory-array-shallow-read` - Inventory array shallow read placeholder: Probe set is not implemented yet.
-- `inventory-array-count-read` - Inventory array count read placeholder: Probe set is not implemented yet.
 - `inventory-element-da-read` - Inventory element data asset read placeholder: Probe set is not implemented yet and would require explicit deep-read review.
 - `inventoryinfo-scalar-read` - InventoryInfo scalar read placeholder: Probe set is not implemented yet and InventoryInfo remains disabled until this explicit phase.
 - `enhancements-read` - Enhancements read placeholder: Probe set is not implemented yet.
@@ -79,6 +79,7 @@
 - local PlayerState Crystals scalar read through CrabPC -> PlayerState -> CrabPS
 - local PlayerState candidate slot scalar reads through CrabPC -> PlayerState -> CrabPS
 - safe scalar watch over proven local scalar/property paths
+- direct max-safe play recorder over proven scalars plus capped perk DataAsset snapshots
 
 ## Identity And Roster Notes
 
@@ -165,6 +166,12 @@
 - No crash dump is associated with the imported userdata introspection evidence.
 - Any length operator result is metadata-only; it is not proof of count traversal or item synchronization.
 
+## Inventory Array Count Read
+
+- Summary: unresolved; no `inventory-array-count-read` evidence has been imported yet.
+- Purpose: prove whether the five local inventory userdata wrappers expose safe count metadata.
+- Count evidence is not traversal evidence, item sync evidence, item DataAsset evidence, InventoryInfo evidence, or Enhancements evidence.
+
 ## Local Crystals Read
 
 - Summary: crystals_read_confirmed
@@ -224,22 +231,22 @@
 
 ## Max Safe Play Recorder
 
-- Summary: partial-no-catalog
-- Max-safe play status: max_safe_play_no_catalog_entries
+- Summary: max_safe_play_observed_change
+- Max-safe play status: max_safe_play_observed_change
 - Scalar samples/logged rows: 2/2
-- First values: AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=DA_Weapon_Minigun nameSource=fullNameFallback, context=solo, lifecycleState=stable, playerStatePresent=true, role=solo-or-host
+- First values: AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/LightningScepter/DA_Weapon_LightningScepter.DA_Weapon_LightningScepter name=DA_Weapon_LightningScepter nameSource=fullNameFallback, context=solo, lifecycleState=stable, playerStatePresent=true, role=solo-or-host
 - Latest values: AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=DA_Weapon_Minigun nameSource=fullNameFallback, context=solo, lifecycleState=stable, playerStatePresent=true, role=solo-or-host
 - Min numeric values: BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
 - Max numeric values: BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
-- Changed fields: none
-- Change counts: none
+- Changed fields: WeaponDA
+- Change counts: WeaponDA=1
 - Perk catalog snapshots: 1
 - Perk DA candidate count: 64
-- Perk DA entry count: 0
+- Perk DA entry count: 64
 - Perk DA rejected candidate count: 0
 - Perk DA top rejection reasons: none
-- Perk-like class/name patterns: none
-- TastyOrange found as normal entry: no
+- Perk-like class/name patterns: identity:PerkDataAsset, name:path-or-da-perk
+- TastyOrange found as normal entry: yes
 - Collector found as normal entry: no
 - Nil/error counts: 0/0
 - Writes/RPCs/HUD/deep arrays: no
@@ -260,8 +267,8 @@
 - Local crystals are covered only by `crystals-read`; remote crystals remain covered separately by `multiplayer-resource-visibility-read` after imported resource visibility evidence exists.
 - Locked slots remain unresolved; no separate locked/max/total slot-capacity field is present in the tracked objectdump-derived notes, so locked slots may be UI-derived or stored elsewhere.
 - `NumWeaponModSlots`, `NumAbilityModSlots`, `NumMeleeModSlots`, and `NumPerkSlots` are only observed scalar slot counters / candidate unlocked slot counters. They are not proven total capacity or locked-slot state.
-- Local inventory array shallow/count visibility is covered by `local-inventory-array-shallow-read`; property-shape confirmation is covered by `local-inventory-array-shape-confirm`; userdata wrapper metadata is covered by `local-inventory-userdata-introspection`.
-- Item contents are still not proven; userdata metadata does not read item data asset fields or element contents.
+- Local inventory array shallow/count visibility is covered by `local-inventory-array-shallow-read`; property-shape confirmation is covered by `local-inventory-array-shape-confirm`; userdata wrapper metadata is covered by `local-inventory-userdata-introspection`; wrapper count metadata is covered by `inventory-array-count-read`.
+- Item contents are still not proven; userdata/count metadata does not read item data asset fields or element contents.
 - Perk DataAsset catalog evidence, when present, proves only curated read paths for future CrabModFramework / CrabTastyMod design; controlled write/edit APIs must be built separately.
 - `InventoryInfo` and enhancements remain placeholders until explicit probe sets are implemented.
 - Deep arrays and InventoryInfo gates remain off until their explicit reviewed phases.
@@ -281,4 +288,5 @@
 - `allowInventoryArrayShallowProbes` is enabled only for `local-inventory-array-shallow-read`.
 - `allowInventoryArrayShapeConfirmProbes` is enabled only for `local-inventory-array-shape-confirm`.
 - `allowInventoryUserdataIntrospectionProbes` is enabled only for `local-inventory-userdata-introspection`.
+- `allowInventoryArrayCountProbes` is enabled only for `inventory-array-count-read`.
 - `allowDeepArrayProbes` and `allowInventoryInfoProbes` are not enabled by implemented phases.

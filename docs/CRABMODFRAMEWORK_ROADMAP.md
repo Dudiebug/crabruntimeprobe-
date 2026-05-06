@@ -29,8 +29,8 @@ Passive event/function watcher track:
 
 Remaining inventory research track:
 
-- `inventory-array-shallow-read`: unresolved.
-- `inventory-array-count-read`: unresolved.
+- `inventory-array-shallow-read`: archival/cautious earlier local array visibility proof; count-read is the next smallest safe inventory step.
+- `inventory-array-count-read`: implemented next campaign phase. It attempts only local wrapper count metadata on `WeaponMods`, `AbilityMods`, `MeleeMods`, `Perks`, and `Relics`; it does not traverse arrays, dereference elements, read item DataAssets, read `InventoryInfo`, or read `Enhancements`.
 - `inventory-element-da-read`: unresolved.
 - `inventoryinfo-scalar-read`: blocked pending safety review.
 - `enhancements-read`: blocked pending safety review.
@@ -72,6 +72,10 @@ Future layers that may graduate into `max-safe-play-recorder` only after dedicat
 
 `Num*Slots` changed from startup/run defaults to effective in-run values. The locked/max/total slot model remains conservatively unresolved.
 
+Imported max-safe-play session `20260506T032658Z` also produced a 64-entry perk DataAsset catalog snapshot with `candidateCount = 64`, `entryCount = 64`, `rejectedCount = 0`, `knownEntryCount = 64`, `tastyOrangeFound = true`, and `collectorFound = false`. Canonical exports now live in `docs/data/perk_dataasset_catalog.latest.json`, `docs/data/perk_dataasset_catalog.latest.csv`, and `docs/PERK_DATAASSET_CATALOG.md`.
+
 No writes, RPCs, HUD hook, deep arrays, inventory traversal, InventoryInfo, or Enhancements were used. Crash suspicion was none.
 
 A later `safe-scalar-watch` collect produced only `Debug.StartupSmoke` and `Debug.WriterSelfTest`, did not run `SafeWatch.Scalar.Sample`, collected zero PlayerState-present samples, and ended failed. Treat that session as failed/no-sample diagnostic evidence only, not useful confirmed evidence.
+
+`inventory-array-count-read` is now the next dedicated inventory safety proof before any element read phase. Its possible successful outcomes are deliberately narrow: either count metadata is confirmed for at least one local wrapper, or all five local wrappers are visible but count metadata is cleanly unsupported. Either result is still not traversal evidence, item sync evidence, item DataAsset evidence, `InventoryInfo` evidence, or `Enhancements` evidence.

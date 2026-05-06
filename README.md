@@ -27,6 +27,8 @@ RuntimeProbe operation docs explain the research tool and workflow:
 Generated evidence docs remain the source for current runtime proof:
 [Runtime Evidence Index](docs/RUNTIME_EVIDENCE_INDEX.md),
 [Safe Access Matrix](docs/SAFE_ACCESS_MATRIX.md),
+[Perk DataAsset Catalog](docs/PERK_DATAASSET_CATALOG.md),
+[Perk Catalog JSON](docs/data/perk_dataasset_catalog.latest.json),
 [Probe Candidates](docs/PROBE_CANDIDATES.md),
 [Probe Results](docs/PROBE_RESULTS.md), and
 [Crash Phase Summary](docs/CRASH_PHASE_SUMMARY.md).
@@ -166,8 +168,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\import-latest-runtim
 ```
 
 This imports the latest game evidence into `evidence/runtime/`, regenerates the
-safe access docs, and stages generated wiki Markdown. Repo docs remain the source
-of truth; staged wiki files are derived output.
+safe access docs, regenerates the perk catalog JSON/CSV/Markdown exports, and
+stages generated wiki Markdown. Repo docs remain the source of truth; staged
+wiki files are derived output.
 
 After `equipment-property-read` passes, run the next read-only health baseline
 phase:

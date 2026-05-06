@@ -158,9 +158,16 @@ function runner.new(config, safe, writer, evidenceWriter)
       record.lenOperatorAttempted = meta.lenOperatorAttempted
       record.lenOperatorResults = meta.lenOperatorResults
       record.lenOperatorErrors = meta.lenOperatorErrors
+      record.countAttempted = meta.countAttempted
+      record.countMethods = meta.countMethods
+      record.countResults = meta.countResults
+      record.countErrors = meta.countErrors
+      record.countResultFields = meta.countResultFields
       record.noElementDereference = meta.noElementDereference
       record.noArrayCount = meta.noArrayCount
+      record.noInventoryTraversal = meta.noInventoryTraversal
       record.noArrayTraversal = meta.noArrayTraversal
+      record.noItemDataAssetRead = meta.noItemDataAssetRead
       record.noInventoryInfo = meta.noInventoryInfo
       record.noEnhancements = meta.noEnhancements
       record.noWrites = meta.noWrites
@@ -325,9 +332,16 @@ function runner.new(config, safe, writer, evidenceWriter)
       row.lenOperatorAttempted = meta.lenOperatorAttempted
       row.lenOperatorResults = meta.lenOperatorResults
       row.lenOperatorErrors = meta.lenOperatorErrors
+      row.countAttempted = meta.countAttempted
+      row.countMethods = meta.countMethods
+      row.countResults = meta.countResults
+      row.countErrors = meta.countErrors
+      row.countResultFields = meta.countResultFields
       row.noElementDereference = meta.noElementDereference
       row.noArrayCount = meta.noArrayCount
+      row.noInventoryTraversal = meta.noInventoryTraversal
       row.noArrayTraversal = meta.noArrayTraversal
+      row.noItemDataAssetRead = meta.noItemDataAssetRead
       row.noInventoryInfo = meta.noInventoryInfo
       row.noEnhancements = meta.noEnhancements
       row.noWrites = meta.noWrites
@@ -416,10 +430,11 @@ function runner.new(config, safe, writer, evidenceWriter)
     if probe.set == 'local-inventory-array-shallow-read' and not config.allowInventoryArrayShallowProbes then return false, 'unsafe_disabled' end
     if probe.set == 'local-inventory-array-shape-confirm' and not config.allowInventoryArrayShapeConfirmProbes then return false, 'unsafe_disabled' end
     if probe.set == 'local-inventory-userdata-introspection' and not config.allowInventoryUserdataIntrospectionProbes then return false, 'unsafe_disabled' end
+    if probe.set == 'inventory-array-count-read' and not config.allowInventoryArrayCountProbes then return false, 'unsafe_disabled' end
     if probe.set == 'rpc-dryrun' and not config.allowRpcProbes then return false, 'unsafe_disabled' end
     if probe.set == 'write' and not config.allowWriteProbes then return false, 'unsafe_disabled' end
-    if state.role == 'unknown' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'safe-scalar-watch' and probe.set ~= 'perk-da-catalog-read' and probe.set ~= 'max-safe-play-recorder' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
-    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'safe-scalar-watch' and probe.set ~= 'perk-da-catalog-read' and probe.set ~= 'max-safe-play-recorder' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
+    if state.role == 'unknown' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'safe-scalar-watch' and probe.set ~= 'perk-da-catalog-read' and probe.set ~= 'max-safe-play-recorder' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and probe.set ~= 'inventory-array-count-read' and not config.allowUnknownRoleProbes then return false, 'skipped_context' end
+    if state.role == 'joined-client' and probe.set ~= 'shallow-core' and probe.set ~= 'multiplayer-roster-read' and probe.set ~= 'multiplayer-resource-visibility-read' and probe.set ~= 'crystals-read' and probe.set ~= 'slots-read' and probe.set ~= 'safe-scalar-watch' and probe.set ~= 'perk-da-catalog-read' and probe.set ~= 'max-safe-play-recorder' and probe.set ~= 'local-inventory-array-shallow-read' and probe.set ~= 'local-inventory-array-shape-confirm' and probe.set ~= 'local-inventory-userdata-introspection' and probe.set ~= 'inventory-array-count-read' and not config.allowJoinedClientDeepProbes then return false, 'skipped_context' end
     if probe.set ~= config.probeSet and config.probeSet ~= 'all-readonly' then return false, 'skipped_by_config' end
     return true
   end

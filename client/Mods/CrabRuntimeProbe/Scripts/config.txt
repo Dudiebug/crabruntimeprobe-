@@ -33,6 +33,7 @@ allowMaxSafePlayRecorderProbes = false
 allowInventoryArrayShallowProbes = false
 allowInventoryArrayShapeConfirmProbes = false
 allowInventoryUserdataIntrospectionProbes = false
+allowInventoryArrayCountProbes = false
 allowWriteProbes = false
 allowRpcProbes = false
 

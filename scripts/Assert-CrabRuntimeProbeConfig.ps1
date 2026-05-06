@@ -44,6 +44,7 @@ $script:CrabRuntimeProbeRequiredConfigDefaults = [ordered]@{
   allowInventoryArrayShallowProbes = "false"
   allowInventoryArrayShapeConfirmProbes = "false"
   allowInventoryUserdataIntrospectionProbes = "false"
+  allowInventoryArrayCountProbes = "false"
   allowWriteProbes = "false"
   allowRpcProbes = "false"
   safeScalarWatchIntervalSeconds = "5"

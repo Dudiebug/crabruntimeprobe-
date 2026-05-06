@@ -613,7 +613,7 @@
       "riskTier": "cautious-read",
       "status": "pending",
       "humanInstructions": "Launch Crab Champions locally in a stable world/lobby. This phase performs only curated, capped, read-only perk DataAsset catalog discovery and field reads; do not force pickups, inventory changes, writes, RPCs, HUD hooks, live inventory arrays, InventoryInfo, Enhancements, DataAsset functions, DataAsset mutation, or deep arrays. Quit, then run scripts\\quick-campaign-collect.ps1.",
-      "nextPhase": "inventory-array-shallow-read"
+      "nextPhase": "inventory-array-count-read"
     },
     {
       "phaseId": "inventory-array-shallow-read",
@@ -644,13 +644,14 @@
     },
     {
       "phaseId": "inventory-array-count-read",
-      "label": "Inventory array count read placeholder",
+      "label": "Inventory array count read",
       "probeSet": "inventory-array-count-read",
       "tickDriver": "executeDelay",
       "mode": "active",
-      "implemented": false,
-      "blockedReason": "Probe set is not implemented yet.",
-      "requiredGates": {},
+      "implemented": true,
+      "requiredGates": {
+        "allowInventoryArrayCountProbes": true
+      },
       "forbiddenGates": [
         "allowHudTickHook",
         "allowUnknownRoleProbes",
@@ -658,15 +659,32 @@
         "allowDeepArrayProbes",
         "allowInventoryInfoProbes",
         "allowHealthProbes",
+        "allowIdentityProbes",
+        "allowRawIdentityEvidence",
+        "allowResourceVisibilityProbes",
+        "allowCrystalsReadProbes",
+        "allowSlotsReadProbes",
+        "allowSafeScalarWatchProbes",
+        "allowPerkDataAssetCatalogProbes",
+        "allowMaxSafePlayRecorderProbes",
+        "allowInventoryArrayShallowProbes",
+        "allowInventoryArrayShapeConfirmProbes",
+        "allowInventoryUserdataIntrospectionProbes",
         "allowWriteProbes",
         "allowRpcProbes"
       ],
       "expectedEvidenceSignals": [
-        "TBD inventory array count evidence"
+        "Inventory.LocalArrays.CountRead",
+        "noInventoryTraversal = true",
+        "noArrayTraversal = true",
+        "noElementDereference = true",
+        "noItemDataAssetRead = true",
+        "noInventoryInfo = true",
+        "noEnhancements = true"
       ],
       "riskTier": "cautious-read",
       "status": "pending",
-      "humanInstructions": "Do not run until the probe set exists and safety review is complete.",
+      "humanInstructions": "Launch Crab Champions locally in a stable world/lobby. This phase only attempts pcall(#value) count metadata on local PlayerState WeaponMods/AbilityMods/MeleeMods/Perks/Relics wrappers; do not force pickups, inventory changes, writes, RPCs, HUD hooks, traversal, element reads, item DataAsset reads, InventoryInfo, Enhancements, or deep arrays. Quit, then run scripts\\quick-campaign-collect.ps1.",
       "nextPhase": "inventory-element-da-read"
     },
     {
