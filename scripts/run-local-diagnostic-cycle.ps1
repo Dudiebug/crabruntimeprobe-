@@ -1303,15 +1303,21 @@ $perkCatalogAllRecords = @($perkCatalogRecords + @($accessEvidenceRecords | Wher
 $latestPerkCatalogRecord = if ($perkCatalogAllRecords.Count -gt 0) { $perkCatalogAllRecords[-1] } else { $null }
 $perkCatalogEntryCount = 0
 $perkCatalogCandidateCount = 0
+$perkCatalogRejectedCandidateCount = 0
 if ($null -ne $latestPerkCatalogRecord) {
   [void][int]::TryParse([string](Get-RecordValue -Record $latestPerkCatalogRecord -Names @("catalogEntryCount")), [ref]$perkCatalogEntryCount)
   [void][int]::TryParse([string](Get-RecordValue -Record $latestPerkCatalogRecord -Names @("catalogCandidateCount")), [ref]$perkCatalogCandidateCount)
+  [void][int]::TryParse([string](Get-RecordValue -Record $latestPerkCatalogRecord -Names @("catalogRejectedCandidateCount")), [ref]$perkCatalogRejectedCandidateCount)
 }
+$perkCatalogTopRejectionReasons = if ($null -ne $latestPerkCatalogRecord) { Get-RecordValue -Record $latestPerkCatalogRecord -Names @("catalogTopRejectionReasons") } else { "none" }
+if ([string]::IsNullOrWhiteSpace([string]$perkCatalogTopRejectionReasons) -or $perkCatalogTopRejectionReasons -eq "not found") { $perkCatalogTopRejectionReasons = "none" }
+$perkCatalogFoundPatterns = if ($null -ne $latestPerkCatalogRecord -and ($latestPerkCatalogRecord.PSObject.Properties.Name -contains "catalogFoundPatterns")) { (@($latestPerkCatalogRecord.catalogFoundPatterns) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }) -join ", " } else { "none" }
+if ([string]::IsNullOrWhiteSpace($perkCatalogFoundPatterns)) { $perkCatalogFoundPatterns = "none" }
 $perkCatalogDiscoveryAttempted = @($perkCatalogAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "discoveryAttempted") -and $_.discoveryAttempted -eq $true }).Count -gt 0
 $perkCatalogFound = @($perkCatalogAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "catalogFound") -and $_.catalogFound -eq $true }).Count -gt 0
 $perkCatalogSafetyViolation = @($perkCatalogAllRecords | Where-Object {
   $bad = $false
-  foreach ($flag in @("noWrites", "noRpcs", "noHud", "noDeepArrays", "noInventoryArrays", "noArrayCount", "noArrayTraversal", "noElementDereference", "noInventoryInfo", "noEnhancements", "noDataAssetMutation", "noFunctionCalls")) {
+  foreach ($flag in @("noWrites", "noRpcs", "noHud", "noDeepArrays", "noInventoryArrays", "noArrayCount", "noArrayTraversal", "noElementDereference", "noInventoryInfo", "noEnhancements", "noDataAssetMutation", "noFunctionCalls", "passiveOnly")) {
     if (-not ($_.PSObject.Properties.Name -contains $flag) -or $_.$flag -ne $true) { $bad = $true }
   }
   $bad
@@ -1334,9 +1340,11 @@ if ($perkCatalogSafetyViolation) {
 } elseif ($perkCatalogAllRecords.Count -gt 0 -and -not $perkCatalogDiscoveryAttempted) {
   $perkCatalogClassification = "no_evidence"
 } elseif ($crashAfterPrepare -and $perkCatalogAllRecords.Count -gt 0) {
-  $perkCatalogClassification = "crash_suspect_perk_da_catalog_read"
+  $perkCatalogClassification = "perk_da_catalog_crash_suspect"
 } elseif ($perkCatalogFound -or $perkCatalogEntryCount -gt 0) {
   $perkCatalogClassification = "perk_da_catalog_confirmed"
+} elseif ($perkCatalogAllRecords.Count -gt 0 -and $perkCatalogCandidateCount -gt 0 -and $perkCatalogRejectedCandidateCount -gt 0) {
+  $perkCatalogClassification = "perk_da_catalog_candidates_rejected"
 } elseif ($perkCatalogAllRecords.Count -gt 0) {
   $perkCatalogClassification = "perk_da_catalog_not_found"
 }
@@ -1363,10 +1371,16 @@ $maxSafePlayCatalogSnapshotCount = if ($null -ne $latestMaxSafePlayRecord) { Get
 $maxSafePlayCatalogKnownEntryCount = if ($null -ne $latestMaxSafePlayRecord) { Get-RecordValue -Record $latestMaxSafePlayRecord -Names @("maxSafePlayCatalogKnownEntryCount") } else { "0" }
 $maxSafePlayCatalogEntryCount = 0
 $maxSafePlayCatalogCandidateCount = 0
+$maxSafePlayCatalogRejectedCount = 0
 if ($null -ne $latestMaxSafePlayCatalogRecord) {
   [void][int]::TryParse([string](Get-RecordValue -Record $latestMaxSafePlayCatalogRecord -Names @("catalogEntryCount")), [ref]$maxSafePlayCatalogEntryCount)
   [void][int]::TryParse([string](Get-RecordValue -Record $latestMaxSafePlayCatalogRecord -Names @("catalogCandidateCount")), [ref]$maxSafePlayCatalogCandidateCount)
+  [void][int]::TryParse([string](Get-RecordValue -Record $latestMaxSafePlayCatalogRecord -Names @("catalogRejectedCandidateCount")), [ref]$maxSafePlayCatalogRejectedCount)
 }
+$maxSafePlayCatalogTopRejectionReasons = if ($null -ne $latestMaxSafePlayCatalogRecord) { Get-RecordValue -Record $latestMaxSafePlayCatalogRecord -Names @("catalogTopRejectionReasons", "maxSafePlayCatalogTopRejectionReasons") } else { "none" }
+if ([string]::IsNullOrWhiteSpace([string]$maxSafePlayCatalogTopRejectionReasons) -or $maxSafePlayCatalogTopRejectionReasons -eq "not found") { $maxSafePlayCatalogTopRejectionReasons = "none" }
+$maxSafePlayCatalogFoundPatterns = if ($null -ne $latestMaxSafePlayCatalogRecord -and ($latestMaxSafePlayCatalogRecord.PSObject.Properties.Name -contains "catalogFoundPatterns")) { (@($latestMaxSafePlayCatalogRecord.catalogFoundPatterns) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }) -join ", " } else { "none" }
+if ([string]::IsNullOrWhiteSpace($maxSafePlayCatalogFoundPatterns)) { $maxSafePlayCatalogFoundPatterns = "none" }
 $maxSafePlayTastyOrangeFound = @($maxSafePlayAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "tastyOrangeFound") -and $_.tastyOrangeFound -eq $true }).Count -gt 0
 $maxSafePlayCollectorFound = @($maxSafePlayAllRecords | Where-Object { ($_.PSObject.Properties.Name -contains "collectorFound") -and $_.collectorFound -eq $true }).Count -gt 0
 $maxSafePlayNilCount = if ($null -ne $latestMaxSafePlayRecord) { Get-RecordValue -Record $latestMaxSafePlayRecord -Names @("maxSafePlayNilCount") } else { "0" }
@@ -1411,6 +1425,8 @@ if ($maxSafePlaySafetyViolation) {
   $maxSafePlayClassification = "max_safe_play_no_playerstate_samples"
 } elseif ($maxSafePlayScalarRecords.Count -gt 0 -and $maxSafePlayUsableSamples -eq 0) {
   $maxSafePlayClassification = "max_safe_play_no_playerstate_samples"
+} elseif ($maxSafePlayScalarRecords.Count -gt 0 -and $maxSafePlayUsableSamples -gt 0 -and $parsedMaxSafePlayCatalogSnapshotCount -gt 0 -and $parsedMaxSafePlayCatalogKnownEntryCount -eq 0 -and $maxSafePlayCatalogRejectedCount -gt 0) {
+  $maxSafePlayClassification = "max_safe_play_catalog_candidates_rejected"
 } elseif ($maxSafePlayScalarRecords.Count -gt 0 -and $maxSafePlayUsableSamples -gt 0 -and $parsedMaxSafePlayCatalogSnapshotCount -gt 0 -and $parsedMaxSafePlayCatalogKnownEntryCount -eq 0) {
   $maxSafePlayClassification = "max_safe_play_no_catalog_entries"
 } elseif ($maxSafePlayChangedFields -ne "none" -or $maxSafePlayNewOrChangedCatalog) {
@@ -2114,6 +2130,9 @@ $summaryLines = @(
   "perk_da_catalog_discovery_attempted = $perkCatalogDiscoveryAttempted",
   "perk_da_catalog_entry_count = $perkCatalogEntryCount",
   "perk_da_catalog_candidate_count = $perkCatalogCandidateCount",
+  "perk_da_catalog_rejected_candidate_count = $perkCatalogRejectedCandidateCount",
+  "perk_da_catalog_top_rejection_reasons = $perkCatalogTopRejectionReasons",
+  "perk_da_catalog_found_patterns = $perkCatalogFoundPatterns",
   "perk_da_catalog_safety_violation = $perkCatalogSafetyViolation",
   "max_safe_play_probe_ran = $($maxSafePlayAllRecords.Count -gt 0)",
   "max_safe_play_classification = $maxSafePlayClassification",
@@ -2128,6 +2147,9 @@ $summaryLines = @(
   "max_safe_play_perk_catalog_snapshot_count = $maxSafePlayCatalogSnapshotCount",
   "max_safe_play_perk_da_candidate_count = $maxSafePlayCatalogCandidateCount",
   "max_safe_play_perk_da_entry_count = $maxSafePlayCatalogKnownEntryCount",
+  "max_safe_play_perk_da_rejected_candidate_count = $maxSafePlayCatalogRejectedCount",
+  "max_safe_play_perk_da_top_rejection_reasons = $maxSafePlayCatalogTopRejectionReasons",
+  "max_safe_play_perk_da_found_patterns = $maxSafePlayCatalogFoundPatterns",
   "max_safe_play_tasty_orange_found = $maxSafePlayTastyOrangeFound",
   "max_safe_play_collector_found = $maxSafePlayCollectorFound",
   "max_safe_play_nil_count = $maxSafePlayNilCount",

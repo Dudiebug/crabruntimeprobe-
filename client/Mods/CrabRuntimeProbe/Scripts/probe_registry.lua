@@ -1560,7 +1560,23 @@ function registry.build(safe)
   local PERK_DA_CLASS_CANDIDATES = {
     'CrabPerkDA',
     'CrabPerkDataAsset',
-    'PerkDataAsset'
+    'PerkDataAsset',
+    'CrabPerk'
+  }
+
+  local PERK_DA_SOURCE_REF_FIELDS = {
+    CrabPerk = 'PerkDA'
+  }
+
+  local CATALOG_REJECTION_REASON_ORDER = {
+    'invalid_uobject',
+    'class_filter_mismatch',
+    'name_filter_mismatch',
+    'class_and_name_filter_mismatch',
+    'no_dataasset_reference',
+    'field_read_errors',
+    'unsupported_value_types',
+    'duplicate_catalog_entry'
   }
 
   local PERK_DA_FIELD_ALLOWLIST = {
@@ -1617,7 +1633,7 @@ function registry.build(safe)
   local function perkCatalogSafetyMeta(extra)
     local meta = {
       sourceScope = 'perk_data_asset_catalog',
-      sourcePath = 'objectdump/docs-index curated class list -> FindAllOf(CrabPerkDA,CrabPerkDataAsset,PerkDataAsset)',
+      sourcePath = 'objectdump/docs-index curated class list -> FindAllOf(CrabPerkDA,CrabPerkDataAsset,PerkDataAsset,CrabPerk.PerkDA)',
       sourceClass = 'CrabPerkDA',
       candidateClasses = PERK_DA_CLASS_CANDIDATES,
       noWrites = true,
@@ -1632,6 +1648,7 @@ function registry.build(safe)
       noEnhancements = true,
       noDataAssetMutation = true,
       noFunctionCalls = true,
+      passiveOnly = true,
       crashAttributionMarker = 'perk-da-catalog-read',
       localNotes = 'Read-only curated FindAllOf class/name discovery for perk DataAssets; no live inventory arrays, InventoryInfo, Enhancements, DataAsset mutation, gameplay/RPC calls, or nested object walking'
     }
@@ -1639,15 +1656,40 @@ function registry.build(safe)
     return meta
   end
 
-  local function isPerkDataAssetIdentity(identity, className)
+  local function addCatalogPattern(patterns, seen, value)
+    local text = tostring(value or '')
+    if text == '' or seen[text] then return end
+    seen[text] = true
+    patterns[#patterns + 1] = text
+  end
+
+  local function perkDataAssetIdentitySignals(identity, className)
     local fullName = tostring((identity and identity.fullName) or '')
     local shortName = tostring((identity and identity.shortName) or '')
     local objectClass = tostring(className or (identity and identity.objectClass) or '')
     local combined = fullName .. ' ' .. shortName .. ' ' .. objectClass
-    if objectClass ~= '' and not objectClass:find('Perk') then return false end
-    if combined:find('CrabPerk') or combined:find('PerkDA') or combined:find('PerkDataAsset') then return true end
-    if fullName:find('/Perk') or fullName:find('/Perks') or shortName:find('DA_Perk') then return true end
-    return false
+    local patterns = {}
+    local seen = {}
+    local classMatch = false
+    local nameMatch = false
+    if objectClass:find('CrabPerk') or objectClass:find('PerkDA') or objectClass:find('PerkDataAsset') then
+      classMatch = true
+      addCatalogPattern(patterns, seen, 'class:' .. objectClass)
+    end
+    if combined:find('CrabPerk') or combined:find('PerkDA') or combined:find('PerkDataAsset') then
+      nameMatch = true
+      addCatalogPattern(patterns, seen, 'identity:PerkDataAsset')
+    end
+    if fullName:find('/Perk') or fullName:find('/Perks') or shortName:find('DA_Perk') or shortName:find('Perk') then
+      nameMatch = true
+      addCatalogPattern(patterns, seen, 'name:path-or-da-perk')
+    end
+    return (classMatch or nameMatch), classMatch, nameMatch, patterns
+  end
+
+  local function isPerkDataAssetIdentity(identity, className)
+    local accepted = perkDataAssetIdentitySignals(identity, className)
+    return accepted == true
   end
 
   local function summarizeCatalogObjectReference(value)
@@ -1713,9 +1755,86 @@ function registry.build(safe)
     return fields, fieldNames, statuses, valueKinds, objectRefs
   end
 
+  local function summarizePerkCatalogFieldResults(fields)
+    local summary = {
+      attempted = 0,
+      read = 0,
+      nilCount = 0,
+      errorCount = 0,
+      unsupportedValueTypeCount = 0
+    }
+    for _, field in ipairs(fields or {}) do
+      summary.attempted = summary.attempted + 1
+      if field.status == 'read' then summary.read = summary.read + 1 end
+      if field.status == 'nil' then summary.nilCount = summary.nilCount + 1 end
+      if field.status == 'error' then summary.errorCount = summary.errorCount + 1 end
+      local kind = tostring(field.valueKind or '')
+      if field.status == 'read' and kind ~= 'nil' and kind ~= 'bool' and kind ~= 'scalar' and kind ~= 'string' and kind ~= 'enum' and kind ~= 'object_ref' then
+        summary.unsupportedValueTypeCount = summary.unsupportedValueTypeCount + 1
+      end
+    end
+    return summary
+  end
+
+  local function perkCatalogReadStatus(fieldSummary)
+    if (fieldSummary.read or 0) > 0 and (fieldSummary.errorCount or 0) == 0 and (fieldSummary.unsupportedValueTypeCount or 0) == 0 then
+      return 'allowlisted_fields_readable'
+    end
+    if (fieldSummary.read or 0) > 0 and (fieldSummary.unsupportedValueTypeCount or 0) > 0 then
+      return 'allowlisted_fields_partially_readable_with_unsupported_value_types'
+    end
+    if (fieldSummary.read or 0) > 0 and (fieldSummary.errorCount or 0) > 0 then
+      return 'allowlisted_fields_partially_readable_with_errors'
+    end
+    if (fieldSummary.errorCount or 0) > 0 then
+      return 'identity_only_field_read_errors'
+    end
+    if (fieldSummary.unsupportedValueTypeCount or 0) > 0 then
+      return 'identity_only_unsupported_value_types'
+    end
+    return 'identity_only_no_allowlisted_fields_readable'
+  end
+
+  local function incrementCatalogReason(reasonCounts, reason)
+    local key = tostring(reason or 'unknown')
+    reasonCounts[key] = (reasonCounts[key] or 0) + 1
+  end
+
+  local function appendCatalogRejection(diagnostics, reasonCounts, diagnostic, cap)
+    incrementCatalogReason(reasonCounts, diagnostic.reason)
+    if #diagnostics < cap then
+      diagnostics[#diagnostics + 1] = diagnostic
+    end
+  end
+
+  local function formatCatalogReasonCounts(reasonCounts)
+    local parts = {}
+    local used = {}
+    for _, reason in ipairs(CATALOG_REJECTION_REASON_ORDER) do
+      local count = reasonCounts[reason]
+      if count and count > 0 then
+        parts[#parts + 1] = reason .. '=' .. tostring(count)
+        used[reason] = true
+      end
+    end
+    for reason, count in pairs(reasonCounts or {}) do
+      if not used[reason] and count and count > 0 then
+        parts[#parts + 1] = tostring(reason) .. '=' .. tostring(count)
+      end
+    end
+    return #parts > 0 and table.concat(parts, ',') or 'none'
+  end
+
+  local function addPerkCatalogPatterns(foundPatterns, foundPatternMap, patterns)
+    for _, pattern in ipairs(patterns or {}) do
+      addCatalogPattern(foundPatterns, foundPatternMap, pattern)
+    end
+  end
+
   local function collectPerkDataAssetCatalog(ctx)
     local candidateCap = clampCatalogLimit((ctx.config or {}).perkDataAssetCatalogMaxCandidates, 64, 128)
     local fieldCap = clampCatalogLimit((ctx.config or {}).perkDataAssetCatalogMaxFields, 32, #PERK_DA_FIELD_ALLOWLIST)
+    local rejectionCap = clampCatalogLimit((ctx.config or {}).perkDataAssetCatalogMaxRejectionDiagnostics, 16, 64)
     local available, availabilityResult, availabilityErr = findAllAvailability()
     if availabilityResult == 'lua_error' then
       return 'lua_error', nil, nil, availabilityErr, perkCatalogSafetyMeta({
@@ -1725,7 +1844,8 @@ function registry.build(safe)
         catalogEntryCount = 0,
         catalogCandidateCount = 0,
         catalogCandidateCap = candidateCap,
-        catalogFieldCap = fieldCap
+        catalogFieldCap = fieldCap,
+        catalogRejectionDiagnosticCap = rejectionCap
       })
     end
     if not available then
@@ -1737,6 +1857,7 @@ function registry.build(safe)
         catalogCandidateCount = 0,
         catalogCandidateCap = candidateCap,
         catalogFieldCap = fieldCap,
+        catalogRejectionDiagnosticCap = rejectionCap,
         notFoundClassification = 'perk_da_catalog_not_found'
       })
     end
@@ -1745,6 +1866,11 @@ function registry.build(safe)
     local seen = {}
     local attemptedClasses = {}
     local candidateCount = 0
+    local rejectedCount = 0
+    local rejectionDiagnostics = {}
+    local rejectionReasonCounts = {}
+    local foundPatterns = {}
+    local foundPatternMap = {}
     local latestFieldNames = {}
     local latestStatuses = {}
     local latestValueKinds = {}
@@ -1758,29 +1884,97 @@ function registry.build(safe)
           if candidateCount >= candidateCap then return end
           candidateCount = candidateCount + 1
           local obj = elem
-          if safe.isValidObject(obj) then
-            local _, identityErr, identity = safe.summarizeObjectIdentity(obj)
-            local objectClass, classErr = safe.getObjectClassName(obj)
-            if identityErr == nil and isPerkDataAssetIdentity(identity, classErr and '' or objectClass) then
-              local key = tostring(identity.fullName or tostring(obj))
-              if not seen[key] then
-                seen[key] = true
-                local fields, fieldNames, statuses, valueKinds, objectRefs = readPerkDataAssetFields(obj, fieldCap)
-                latestFieldNames = fieldNames
-                latestStatuses = statuses
-                latestValueKinds = valueKinds
-                latestObjectRefs = objectRefs
-                entries[#entries + 1] = {
-                  catalogIndex = #entries + 1,
-                  shortName = identity.shortName or '',
-                  fullName = identity.fullName or '',
-                  className = tostring(objectClass or identity.objectClass or className),
-                  isValid = true,
-                  fields = fields
-                }
-              end
-            end
+          local rawValid = safe.isValidObject(obj)
+          local rawSummary, rawIdentityErr, rawIdentity = safe.summarizeObjectIdentity(obj)
+          local rawObjectClass, rawClassErr = safe.getObjectClassName(obj)
+          local diagnosticBase = {
+            candidateIndex = candidateCount,
+            sourceClass = className,
+            shortName = sanitizeCatalogText((rawIdentity and rawIdentity.shortName) or ''),
+            fullName = sanitizeCatalogText((rawIdentity and rawIdentity.fullName) or ''),
+            className = sanitizeCatalogText(rawClassErr and '' or rawObjectClass or ''),
+            isValid = rawValid == true
+          }
+
+          if not rawValid then
+            rejectedCount = rejectedCount + 1
+            diagnosticBase.reason = 'invalid_uobject'
+            diagnosticBase.identityStatus = sanitizeCatalogText(rawSummary or rawIdentityErr or 'invalid')
+            appendCatalogRejection(rejectionDiagnostics, rejectionReasonCounts, diagnosticBase, rejectionCap)
+            return
           end
+
+          local catalogObj = obj
+          local sourceRefField = PERK_DA_SOURCE_REF_FIELDS[className]
+          local sourceShortName = diagnosticBase.shortName
+          local sourceFullName = diagnosticBase.fullName
+          if sourceRefField then
+            local refValue, refErr = safe.getProperty(obj, sourceRefField)
+            if refErr or refValue == nil or type(refValue) ~= 'userdata' or not safe.isValidObject(refValue) then
+              rejectedCount = rejectedCount + 1
+              diagnosticBase.reason = refErr and 'field_read_errors' or 'no_dataasset_reference'
+              diagnosticBase.fieldName = sourceRefField
+              diagnosticBase.fieldReadError = sanitizeCatalogText(refErr or '')
+              appendCatalogRejection(rejectionDiagnostics, rejectionReasonCounts, diagnosticBase, rejectionCap)
+              return
+            end
+            catalogObj = refValue
+          end
+
+          local _, identityErr, identity = safe.summarizeObjectIdentity(catalogObj)
+          local objectClass, classErr = safe.getObjectClassName(catalogObj)
+          local accepted, classMatch, nameMatch, patterns = perkDataAssetIdentitySignals(identity, classErr and '' or objectClass)
+          addPerkCatalogPatterns(foundPatterns, foundPatternMap, patterns)
+          if identityErr ~= nil then
+            diagnosticBase.identityError = sanitizeCatalogText(identityErr)
+          end
+          if not accepted then
+            rejectedCount = rejectedCount + 1
+            diagnosticBase.shortName = sanitizeCatalogText((identity and identity.shortName) or diagnosticBase.shortName)
+            diagnosticBase.fullName = sanitizeCatalogText((identity and identity.fullName) or diagnosticBase.fullName)
+            diagnosticBase.className = sanitizeCatalogText(classErr and '' or objectClass or '')
+            diagnosticBase.reason = (not classMatch and not nameMatch) and 'class_and_name_filter_mismatch' or ((not classMatch) and 'class_filter_mismatch' or 'name_filter_mismatch')
+            diagnosticBase.classMatched = classMatch == true
+            diagnosticBase.nameMatched = nameMatch == true
+            appendCatalogRejection(rejectionDiagnostics, rejectionReasonCounts, diagnosticBase, rejectionCap)
+            return
+          end
+
+          local key = tostring((identity and identity.fullName) or tostring(catalogObj))
+          if seen[key] then
+            rejectedCount = rejectedCount + 1
+            diagnosticBase.reason = 'duplicate_catalog_entry'
+            diagnosticBase.shortName = sanitizeCatalogText((identity and identity.shortName) or '')
+            diagnosticBase.fullName = sanitizeCatalogText((identity and identity.fullName) or '')
+            diagnosticBase.className = sanitizeCatalogText(classErr and '' or objectClass or '')
+            appendCatalogRejection(rejectionDiagnostics, rejectionReasonCounts, diagnosticBase, rejectionCap)
+            return
+          end
+          seen[key] = true
+
+          local fields, fieldNames, statuses, valueKinds, objectRefs = readPerkDataAssetFields(catalogObj, fieldCap)
+          local fieldSummary = summarizePerkCatalogFieldResults(fields)
+          latestFieldNames = fieldNames
+          latestStatuses = statuses
+          latestValueKinds = valueKinds
+          latestObjectRefs = objectRefs
+          if fieldSummary.errorCount > 0 then incrementCatalogReason(rejectionReasonCounts, 'field_read_errors') end
+          if fieldSummary.unsupportedValueTypeCount > 0 then incrementCatalogReason(rejectionReasonCounts, 'unsupported_value_types') end
+          if fieldSummary.read == 0 then incrementCatalogReason(rejectionReasonCounts, 'no_allowlisted_fields_readable') end
+          entries[#entries + 1] = {
+            catalogIndex = #entries + 1,
+            shortName = (identity and identity.shortName) or '',
+            fullName = (identity and identity.fullName) or '',
+            className = tostring(objectClass or (identity and identity.objectClass) or className),
+            isValid = true,
+            readStatus = perkCatalogReadStatus(fieldSummary),
+            fieldResults = fieldSummary,
+            fields = fields,
+            sourceClass = className,
+            sourceField = sourceRefField or '',
+            sourceShortName = sourceShortName,
+            sourceFullName = sourceFullName
+          }
         end)
       end
     end
@@ -1793,8 +1987,12 @@ function registry.build(safe)
     local found = #entries > 0
     local summary = 'category=perk-da-catalog-read discoveryAttempted=true found=' .. tostring(#entries)
       .. ' candidateCount=' .. tostring(candidateCount)
+      .. ' rejectedCount=' .. tostring(rejectedCount)
       .. ' candidateCap=' .. tostring(candidateCap)
       .. ' fieldCap=' .. tostring(fieldCap)
+      .. ' rejectionDiagnosticCap=' .. tostring(rejectionCap)
+      .. ' topRejectionReasons=' .. formatCatalogReasonCounts(rejectionReasonCounts)
+      .. ' foundPatterns=' .. (#foundPatterns > 0 and table.concat(foundPatterns, ',') or 'none')
       .. ' classes=' .. table.concat(attemptedClasses, ',')
       .. ' noWrites=true noRpcs=true noHud=true noDeepArrays=true noInventoryArrays=true noArrayCount=true noArrayTraversal=true noElementDereference=true noInventoryInfo=true noEnhancements=true noDataAssetMutation=true noFunctionCalls=true'
     local meta = perkCatalogSafetyMeta({
@@ -1804,14 +2002,20 @@ function registry.build(safe)
       catalogFound = found,
       catalogEntryCount = #entries,
       catalogCandidateCount = candidateCount,
+      catalogRejectedCandidateCount = rejectedCount,
       catalogCandidateCap = candidateCap,
       catalogFieldCap = fieldCap,
+      catalogRejectionDiagnosticCap = rejectionCap,
+      catalogRejectionDiagnostics = rejectionDiagnostics,
+      catalogRejectionReasons = rejectionReasonCounts,
+      catalogTopRejectionReasons = formatCatalogReasonCounts(rejectionReasonCounts),
+      catalogFoundPatterns = foundPatterns,
       catalogEntries = entries,
       catalogFieldNames = latestFieldNames,
       catalogReadStatuses = latestStatuses,
       catalogValueKinds = latestValueKinds,
       catalogObjectReferenceSummaries = latestObjectRefs,
-      notFoundClassification = found and '' or 'perk_da_catalog_not_found'
+      notFoundClassification = found and '' or (candidateCount > 0 and 'perk_da_catalog_candidates_rejected' or 'perk_da_catalog_not_found')
     })
     return found and 'ok' or 'nil', 'perk_da_catalog', summary, nil, meta
   end
@@ -1846,6 +2050,9 @@ function registry.build(safe)
           lastSnapshotAt = nil,
           nilCount = 0,
           errorCount = 0,
+          rejectedCount = 0,
+          topRejectionReasons = 'none',
+          foundPatterns = {},
           tastyOrangeFound = false,
           collectorFound = false
         },
@@ -1897,6 +2104,9 @@ function registry.build(safe)
     meta.maxSafePlayChangedSamples = recorderState.scalar.changedSamples
     meta.maxSafePlayCatalogSnapshotCount = recorderState.catalog.snapshotCount
     meta.maxSafePlayCatalogKnownEntryCount = recorderState.catalog.knownEntryCount
+    meta.maxSafePlayCatalogRejectedCount = recorderState.catalog.rejectedCount
+    meta.maxSafePlayCatalogTopRejectionReasons = recorderState.catalog.topRejectionReasons
+    meta.maxSafePlayCatalogFoundPatterns = recorderState.catalog.foundPatterns
     meta.maxSafePlayNilCount = recorderState.catalog.nilCount
     meta.maxSafePlayErrorCount = recorderState.catalog.errorCount
     meta.tastyOrangeFound = recorderState.catalog.tastyOrangeFound
@@ -2027,6 +2237,9 @@ function registry.build(safe)
     local nilCount, errorCount = countCatalogNilErrors(entries)
     catalogState.nilCount = catalogState.nilCount + nilCount
     catalogState.errorCount = catalogState.errorCount + errorCount
+    catalogState.rejectedCount = meta.catalogRejectedCandidateCount or catalogState.rejectedCount or 0
+    catalogState.topRejectionReasons = meta.catalogTopRejectionReasons or catalogState.topRejectionReasons or 'none'
+    catalogState.foundPatterns = meta.catalogFoundPatterns or catalogState.foundPatterns or {}
 
     local newEntries = {}
     local changedEntries = {}
@@ -2061,6 +2274,9 @@ function registry.build(safe)
     meta.maxSafePlayNewDataAssets = newEntries
     meta.maxSafePlayChangedCatalogEntries = changedEntries
     meta.maxSafePlayCatalogKnownEntryCount = catalogState.knownEntryCount
+    meta.maxSafePlayCatalogRejectedCount = catalogState.rejectedCount
+    meta.maxSafePlayCatalogTopRejectionReasons = catalogState.topRejectionReasons
+    meta.maxSafePlayCatalogFoundPatterns = catalogState.foundPatterns
     meta.maxSafePlayScalarSampleCount = recorderState.scalar.sampleCount
     meta.maxSafePlayScalarLoggedCount = recorderState.scalar.loggedCount
     meta.maxSafePlayNilCount = catalogState.nilCount
@@ -2077,7 +2293,10 @@ function registry.build(safe)
       .. ' reason=' .. reason
       .. ' entryCount=' .. tostring(meta.catalogEntryCount or 0)
       .. ' candidateCount=' .. tostring(meta.catalogCandidateCount or 0)
+      .. ' rejectedCount=' .. tostring(meta.catalogRejectedCandidateCount or 0)
       .. ' knownEntryCount=' .. tostring(catalogState.knownEntryCount)
+      .. ' topRejectionReasons=' .. tostring(meta.catalogTopRejectionReasons or 'none')
+      .. ' foundPatterns=' .. (#(meta.catalogFoundPatterns or {}) > 0 and table.concat(meta.catalogFoundPatterns, ',') or 'none')
       .. ' newDataAssets=' .. tostring(#newEntries)
       .. ' changedCatalogEntries=' .. tostring(#changedEntries)
       .. ' tastyOrangeFound=' .. tostring(catalogState.tastyOrangeFound)
@@ -2104,6 +2323,9 @@ function registry.build(safe)
       maxSafePlayCatalogSnapshotCount = recorderState.catalog.snapshotCount,
       maxSafePlayCatalogLoggedCount = recorderState.catalog.loggedCount,
       maxSafePlayCatalogKnownEntryCount = recorderState.catalog.knownEntryCount,
+      maxSafePlayCatalogRejectedCount = recorderState.catalog.rejectedCount,
+      maxSafePlayCatalogTopRejectionReasons = recorderState.catalog.topRejectionReasons,
+      maxSafePlayCatalogFoundPatterns = recorderState.catalog.foundPatterns,
       maxSafePlayNilCount = recorderState.catalog.nilCount,
       maxSafePlayErrorCount = recorderState.catalog.errorCount,
       tastyOrangeFound = recorderState.catalog.tastyOrangeFound,
@@ -2130,6 +2352,8 @@ function registry.build(safe)
       .. ' scalarLogged=' .. tostring(meta.maxSafePlayScalarLoggedCount)
       .. ' catalogSnapshots=' .. tostring(meta.maxSafePlayCatalogSnapshotCount)
       .. ' catalogKnownEntries=' .. tostring(meta.maxSafePlayCatalogKnownEntryCount)
+      .. ' catalogRejected=' .. tostring(meta.maxSafePlayCatalogRejectedCount)
+      .. ' catalogTopRejectionReasons=' .. tostring(meta.maxSafePlayCatalogTopRejectionReasons or 'none')
       .. ' changedFields=' .. (#(meta.maxSafePlayChangedFields or {}) > 0 and table.concat(meta.maxSafePlayChangedFields, ',') or 'none')
       .. ' passiveOnly=true'
     return 'ok', 'max_safe_play_session', summary, nil, meta
@@ -2152,6 +2376,8 @@ function registry.build(safe)
       .. ' scalarLogged=' .. tostring(meta.maxSafePlayScalarLoggedCount)
       .. ' catalogSnapshots=' .. tostring(meta.maxSafePlayCatalogSnapshotCount)
       .. ' catalogKnownEntries=' .. tostring(meta.maxSafePlayCatalogKnownEntryCount)
+      .. ' catalogRejected=' .. tostring(meta.maxSafePlayCatalogRejectedCount)
+      .. ' catalogTopRejectionReasons=' .. tostring(meta.maxSafePlayCatalogTopRejectionReasons or 'none')
       .. ' nilCount=' .. tostring(meta.maxSafePlayNilCount)
       .. ' errorCount=' .. tostring(meta.maxSafePlayErrorCount)
       .. ' passiveOnly=true'

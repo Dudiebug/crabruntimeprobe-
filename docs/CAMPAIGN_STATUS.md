@@ -1,11 +1,11 @@
 # Campaign Status
 
 - Campaign: `crabruntimeprobe-read-map`
-- Updated: 2026-05-06T02:08:02.759Z
+- Updated: 2026-05-06T02:25:25.474Z
 - Current phase: `perk-da-catalog-read`
 - Next recommended phase: `perk-da-catalog-read`
 - Latest session: 20260506T014608Z
-- Latest commit: 4be376038be3fbd60b3813e59447c70f0d1c5785
+- Latest commit: d6f85bef9733ca1a777c4a81154141172931019c
 - Latest summary: evidence/runtime/20260506T014608Z/diagnostic_summary.txt
 
 ## Completed Phases
@@ -224,9 +224,27 @@
 
 ## Max Safe Play Recorder
 
-- Summary: unresolved; no direct `max-safe-play-recorder` evidence has been imported yet.
-- Purpose: long normal play sessions that combine all currently proven-safe scalar state recording with capped perk DataAsset catalog snapshots.
-- Failed/no-sample runs are diagnostic failures and are not useful confirmed evidence.
+- Summary: partial-no-catalog
+- Max-safe play status: max_safe_play_no_catalog_entries
+- Scalar samples/logged rows: 2/2
+- First values: AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=DA_Weapon_Minigun nameSource=fullNameFallback, context=solo, lifecycleState=stable, playerStatePresent=true, role=solo-or-host
+- Latest values: AbilityDA=exists=true isValid=true fullName=CrabAbilityDA /Game/Blueprint/Ability/DA_Ability_BlackHole.DA_Ability_BlackHole name=DA_Ability_BlackHole nameSource=fullNameFallback, BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, MeleeDA=exists=true isValid=true fullName=CrabMeleeDA /Game/Blueprint/Melee/DA_Melee_Hammer.DA_Melee_Hammer name=DA_Melee_Hammer nameSource=fullNameFallback, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24, WeaponDA=exists=true isValid=true fullName=CrabWeaponDA /Game/Blueprint/Weapon/Minigun/DA_Weapon_Minigun.DA_Weapon_Minigun name=DA_Weapon_Minigun nameSource=fullNameFallback, context=solo, lifecycleState=stable, playerStatePresent=true, role=solo-or-host
+- Min numeric values: BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
+- Max numeric values: BaseMaxHealth=250, Crystals=0, CurrentHealth=250, CurrentMaxHealth=250, MaxHealthMultiplier=1, NumAbilityModSlots=12, NumMeleeModSlots=12, NumPerkSlots=24, NumWeaponModSlots=24
+- Changed fields: none
+- Change counts: none
+- Perk catalog snapshots: 1
+- Perk DA candidate count: 64
+- Perk DA entry count: 0
+- Perk DA rejected candidate count: 0
+- Perk DA top rejection reasons: none
+- Perk-like class/name patterns: none
+- TastyOrange found as normal entry: no
+- Collector found as normal entry: no
+- Nil/error counts: 0/0
+- Writes/RPCs/HUD/deep arrays: no
+- Inventory arrays/count/traversal/elements, InventoryInfo, Enhancements: no
+- DataAsset mutation/function calls/passive-only violation: no
 
 ## Confirmed Unsafe Paths
 

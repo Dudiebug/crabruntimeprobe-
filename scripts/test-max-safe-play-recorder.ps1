@@ -139,6 +139,9 @@ const catalog = {
   catalogFound: true,
   catalogEntryCount: 1,
   catalogCandidateCount: 1,
+  catalogRejectedCandidateCount: 0,
+  catalogTopRejectionReasons: 'none',
+  catalogFoundPatterns: ['name:path-or-da-perk'],
   catalogEntries: [{ shortName: 'DA_Perk_TastyOrange', fullName: '/Game/Perks/DA_Perk_TastyOrange' }],
   maxSafePlayCatalogSnapshotCount: 1,
   maxSafePlayCatalogKnownEntryCount: 1,
@@ -153,6 +156,9 @@ assert(result.status === 'max_safe_play_observed_change', `expected observed cha
 assert(result.tastyOrangeFound === true, 'TastyOrange should be summarized as a normal catalog entry');
 result = helpers.classifyMaxSafePlayEvidence([{ ...scalar, maxSafePlayScalarSampleCount: 2 }, { ...catalog, maxSafePlayNewDataAssets: [], catalogEntries: [], maxSafePlayCatalogKnownEntryCount: 1 }]);
 assert(result.status === 'max_safe_play_confirmed_no_change', `expected confirmed no change, got ${result.status}`);
+result = helpers.classifyMaxSafePlayEvidence([{ ...scalar, maxSafePlayScalarSampleCount: 2 }, { ...catalog, catalogFound: false, catalogEntryCount: 0, catalogCandidateCount: 64, catalogRejectedCandidateCount: 64, catalogEntries: [], maxSafePlayCatalogKnownEntryCount: 0, maxSafePlayNewDataAssets: [], catalogTopRejectionReasons: 'class_and_name_filter_mismatch=64' }]);
+assert(result.status === 'max_safe_play_catalog_candidates_rejected', `expected max-safe candidates rejected, got ${result.status}`);
+assert(result.catalogRejectedCandidateCount === 64, 'max-safe rejected candidate count should be preserved');
 result = helpers.classifyMaxSafePlayEvidence([{ ...scalar, playerStatePresent: false, maxSafePlayScalarSampleCount: 1 }]);
 assert(result.status === 'max_safe_play_no_playerstate_samples', `expected no playerstate samples, got ${result.status}`);
 result = helpers.classifyMaxSafePlayEvidence([{ ...scalar, noInventoryArrays: false }]);

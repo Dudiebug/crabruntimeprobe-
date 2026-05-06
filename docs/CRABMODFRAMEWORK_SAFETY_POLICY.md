@@ -17,7 +17,7 @@ RuntimeProbe phases must remain read-only unless a future task explicitly change
 - DataAsset function calls.
 - DataAsset mutation.
 
-The `perk-da-catalog-read` phase adds these required markers to probe/access rows: `noWrites`, `noRpcs`, `noHud`, `noDeepArrays`, `noInventoryArrays`, `noArrayCount`, `noArrayTraversal`, `noElementDereference`, `noInventoryInfo`, `noEnhancements`, `noDataAssetMutation`, and `noFunctionCalls`.
+The `perk-da-catalog-read` phase adds these required markers to probe/access rows: `noWrites`, `noRpcs`, `noHud`, `noDeepArrays`, `noInventoryArrays`, `noArrayCount`, `noArrayTraversal`, `noElementDereference`, `noInventoryInfo`, `noEnhancements`, `noDataAssetMutation`, `noFunctionCalls`, and `passiveOnly`.
 
 The direct `max-safe-play-recorder` profile is a recorder, not a new safety authorization. It may log only already proven-safe scalar paths and capped read-only perk DataAsset catalog snapshots. Its rows must mark `noWrites`, `noRpcs`, `noHud`, `noDeepArrays`, `noInventoryArrays`, `noArrayCount`, `noArrayTraversal`, `noElementDereference`, `noInventoryInfo`, `noEnhancements`, `noDataAssetMutation`, `noFunctionCalls`, and `passiveOnly` as true.
 

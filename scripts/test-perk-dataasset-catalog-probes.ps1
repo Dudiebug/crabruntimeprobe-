@@ -48,6 +48,9 @@ if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "perkDat
 if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "perkDataAssetCatalogMaxFields") -ne "32") {
   throw "default perkDataAssetCatalogMaxFields must remain 32."
 }
+if ((Get-CrabRuntimeProbeConfigValue -ConfigPath $SourceConfigPath -Key "perkDataAssetCatalogMaxRejectionDiagnostics") -ne "16") {
+  throw "default perkDataAssetCatalogMaxRejectionDiagnostics must remain 16."
+}
 
 $registry = Get-Content -Raw -LiteralPath $ProbeRegistryPath
 $runner = Get-Content -Raw -LiteralPath $ProbeRunnerPath
@@ -55,6 +58,8 @@ Assert-Contains -Text $runner -Expected "allowPerkDataAssetCatalogProbes" -Label
 Assert-Contains -Text $registry -Expected "DataAsset.Perks.CatalogRead" -Label "probe_registry.lua"
 Assert-Contains -Text $registry -Expected "PERK_DA_CLASS_CANDIDATES" -Label "probe_registry.lua"
 Assert-Contains -Text $registry -Expected "PERK_DA_FIELD_ALLOWLIST" -Label "probe_registry.lua"
+Assert-Contains -Text $registry -Expected "PERK_DA_SOURCE_REF_FIELDS" -Label "probe_registry.lua"
+Assert-Contains -Text $registry -Expected "CrabPerk.PerkDA" -Label "probe_registry.lua"
 Assert-Contains -Text $registry -Expected "FindAllOfCappedCuratedClasses" -Label "probe_registry.lua"
 Assert-Contains -Text $registry -Expected "noInventoryArrays = true" -Label "probe_registry.lua"
 Assert-Contains -Text $registry -Expected "noArrayCount = true" -Label "probe_registry.lua"
@@ -127,7 +132,11 @@ const baseRow = {
   catalogCandidateCount: 1,
   catalogCandidateCap: 64,
   catalogFieldCap: 32,
-  catalogEntries: [{ shortName: 'DA_Perk_Example', fullName: '/Game/Perks/DA_Perk_Example', className: 'CrabPerkDA', catalogIndex: 0, valid: true }],
+  catalogRejectedCandidateCount: 0,
+  catalogRejectionDiagnosticCap: 16,
+  catalogTopRejectionReasons: 'none',
+  catalogFoundPatterns: ['name:path-or-da-perk'],
+  catalogEntries: [{ shortName: 'DA_Perk_Example', fullName: '/Game/Perks/DA_Perk_Example', className: 'CrabPerkDA', catalogIndex: 0, isValid: true, readStatus: 'allowlisted_fields_readable', fieldResults: { attempted: 32, read: 1, nilCount: 31, errorCount: 0, unsupportedValueTypeCount: 0 } }],
   catalogReadStatuses: { DisplayName: 'read' },
   catalogValueKinds: { DisplayName: 'text' },
   noWrites: true,
@@ -142,6 +151,7 @@ const baseRow = {
   noEnhancements: true,
   noDataAssetMutation: true,
   noFunctionCalls: true,
+  passiveOnly: true,
   safetyGates: {
     allowPerkDataAssetCatalogProbes: true,
     allowHudTickHook: false,
@@ -167,12 +177,47 @@ const baseRow = {
 
 let result = helpers.classifyPerkDataAssetCatalogEvidence([baseRow]);
 assert(result.status === 'perk_da_catalog_confirmed', `expected confirmed, got ${result.status}`);
+assert(result.catalogRejectedCandidateCount === 0, 'confirmed catalog should report rejected count');
 assert(result.noWrites && result.noRpcs && result.noHud && result.noDeepArrays, 'basic read-only markers must be true');
 assert(result.noInventoryArrays && result.noArrayCount && result.noArrayTraversal && result.noElementDereference, 'array and inventory markers must be true');
-assert(result.noInventoryInfo && result.noEnhancements && result.noDataAssetMutation && result.noFunctionCalls, 'forbidden read/mutation markers must be true');
+assert(result.noInventoryInfo && result.noEnhancements && result.noDataAssetMutation && result.noFunctionCalls && result.passiveOnly, 'forbidden read/mutation markers must be true');
+
+const minimalRow = {
+  ...baseRow,
+  catalogEntryCount: 1,
+  catalogEntries: [{
+    shortName: 'DA_Perk_IdentityOnly',
+    fullName: '/Game/Blueprint/Perks/DA_Perk_IdentityOnly.DA_Perk_IdentityOnly',
+    className: 'BlueprintGeneratedClass',
+    catalogIndex: 1,
+    isValid: true,
+    readStatus: 'identity_only_no_allowlisted_fields_readable',
+    fieldResults: { attempted: 32, read: 0, nilCount: 32, errorCount: 0, unsupportedValueTypeCount: 0 },
+    fields: []
+  }],
+  catalogReadStatuses: {},
+  catalogValueKinds: {}
+};
+result = helpers.classifyPerkDataAssetCatalogEvidence([minimalRow]);
+assert(result.status === 'perk_da_catalog_confirmed', `minimal identity entry should confirm catalog, got ${result.status}`);
+assert(result.catalogEntries[0].readStatus === 'identity_only_no_allowlisted_fields_readable', 'minimal entry readStatus should explain identity-only acceptance');
 
 result = helpers.classifyPerkDataAssetCatalogEvidence([{ ...baseRow, result: 'nil', catalogFound: false, catalogEntryCount: 0, catalogEntries: [] }]);
 assert(result.status === 'perk_da_catalog_not_found', `expected not-found, got ${result.status}`);
+
+result = helpers.classifyPerkDataAssetCatalogEvidence([{
+  ...baseRow,
+  result: 'nil',
+  catalogFound: false,
+  catalogEntryCount: 0,
+  catalogCandidateCount: 64,
+  catalogRejectedCandidateCount: 64,
+  catalogEntries: [],
+  catalogTopRejectionReasons: 'class_and_name_filter_mismatch=64',
+  catalogRejectionDiagnostics: [{ candidateIndex: 1, reason: 'class_and_name_filter_mismatch', shortName: 'NotAPerk' }]
+}]);
+assert(result.status === 'perk_da_catalog_candidates_rejected', `expected candidates rejected, got ${result.status}`);
+assert(result.catalogTopRejectionReasons === 'class_and_name_filter_mismatch=64', 'top rejection reasons should be preserved');
 
 result = helpers.classifyPerkDataAssetCatalogEvidence([{ ...baseRow, noDataAssetMutation: false }]);
 assert(result.status === 'failed', 'missing/false safety markers must fail');

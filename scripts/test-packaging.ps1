@@ -348,6 +348,7 @@ Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxSafePlayMaxSamples"
 Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxSafePlayPerkCatalogIntervalSeconds" -Expected "60"
 Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxSafePlayMaxPerkCatalogSnapshots" -Expected "60"
 Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "maxSafePlayLogUnchangedHeartbeat" -Expected "true"
+Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "perkDataAssetCatalogMaxRejectionDiagnostics" -Expected "16"
 Assert-ConfigValue -ConfigPath $InstalledConfigPath -Key "allowMaxSafePlayRecorderProbes" -Expected "true"
 foreach ($key in @(
   "allowHudTickHook",
@@ -444,6 +445,8 @@ foreach ($required in @(
   "MaxSafePlay.Scalar.Sample",
   "MaxSafePlay.PerkDataAsset.CatalogSnapshot",
   "max-safe-play-recorder",
+  "catalogRejectionDiagnostics",
+  "PERK_DA_SOURCE_REF_FIELDS",
   "health-hc-discovery-read"
 )) {
   if ($probeRegistry -notmatch [regex]::Escape($required)) {

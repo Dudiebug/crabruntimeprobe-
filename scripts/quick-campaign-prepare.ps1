@@ -49,7 +49,7 @@ function Select-NextCampaignPhase {
   $completed = @(Get-CampaignPhaseIds -Entries @($State.completedPhases))
   $failed = @(Get-CampaignPhaseIds -Entries @($State.failedPhases))
   $blocked = @(Get-CampaignPhaseIds -Entries @($State.blockedPhases))
-  $advanceablePartial = @($State.partialPhases | Where-Object { $_.status -eq "remote_resources_partial" -or $_.status -eq "crash_suspect_local_inventory_shape_visible" -or $_.status -eq "perk_da_catalog_not_found" } | ForEach-Object { [string]$_.phaseId })
+  $advanceablePartial = @($State.partialPhases | Where-Object { $_.status -eq "remote_resources_partial" -or $_.status -eq "crash_suspect_local_inventory_shape_visible" -or $_.status -eq "perk_da_catalog_not_found" -or $_.status -eq "perk_da_catalog_candidates_rejected" } | ForEach-Object { [string]$_.phaseId })
 
   foreach ($phase in @($Plan.phases)) {
     if ($completed -contains $phase.phaseId) { continue }

@@ -50,6 +50,7 @@ local DEFAULT_CONFIG = {
   maxSafePlayLogUnchangedHeartbeat = true,
   perkDataAssetCatalogMaxCandidates = 64,
   perkDataAssetCatalogMaxFields = 32,
+  perkDataAssetCatalogMaxRejectionDiagnostics = 16,
   probeSet = 'shallow-core'
 }
 

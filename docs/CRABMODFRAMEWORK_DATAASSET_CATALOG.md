@@ -6,9 +6,13 @@ Catalog evidence is not permission to mutate DataAssets. RuntimeProbe proves rea
 
 ## Implemented Phase
 
-`perk-da-catalog-read` discovers perk DataAsset-like objects through curated class/name patterns and capped `FindAllOf` usage. It reads only curated fields, class/name identity, validity, and object reference summaries without recursion.
+`perk-da-catalog-read` discovers perk DataAsset-like objects through curated class/name patterns and capped `FindAllOf` usage. It reads only curated fields, class/name identity, validity, and object reference summaries without recursion. Candidate count is not the same thing as accepted catalog entries: every candidate must pass capped class/name/identity checks before it becomes a catalog entry.
 
-`max-safe-play-recorder` reuses this capped perk catalog logic during long normal play sessions. It records the first full snapshot, newly discovered perk DataAssets, changed readable fields, and compact heartbeat summaries. It does not special-case TastyOrange or Collector; either may appear only as a normal catalog entry if safely found.
+Rejected candidates are summarized with capped diagnostics: candidate index, safe short/full name summaries when available, safe class summary when available, and rejection reason. Reasons include class/name filter mismatch, invalid UObject, missing objectdump-derived DataAsset reference, field read errors, unsupported value types, and duplicate catalog entries.
+
+A safely identified perk-like DataAsset may emit a minimal identity entry even when no allowlisted tuning fields are readable. Those entries are still useful evidence because they prove safe identity/path/class visibility; their `readStatus` and `fieldResults` explain that tuning fields were nil, errored, or unsupported.
+
+`max-safe-play-recorder` reuses this capped perk catalog logic during long normal play sessions. It records the first full snapshot, newly discovered perk DataAssets, changed readable fields, candidate/rejection counts, top rejection reasons, and compact heartbeat summaries. It does not special-case TastyOrange or Collector; either may appear only as a normal catalog entry if safely found.
 
 TastyOrange is not special-cased by RuntimeProbe. It appears only as a normal perk catalog entry if safely found.
 
@@ -31,7 +35,7 @@ Each field read records the field name, read status, value kind, and value summa
 
 ## Safety Contract
 
-Required markers are `noWrites`, `noRpcs`, `noHud`, `noDeepArrays`, `noInventoryArrays`, `noArrayCount`, `noArrayTraversal`, `noElementDereference`, `noInventoryInfo`, `noEnhancements`, `noDataAssetMutation`, and `noFunctionCalls`.
+Required markers are `noWrites`, `noRpcs`, `noHud`, `noDeepArrays`, `noInventoryArrays`, `noArrayCount`, `noArrayTraversal`, `noElementDereference`, `noInventoryInfo`, `noEnhancements`, `noDataAssetMutation`, `noFunctionCalls`, and `passiveOnly`.
 
 The narrow gate is `allowPerkDataAssetCatalogProbes`. The phase must keep unrelated gates disabled, including safe scalar watch, slots, crystals, health, identity, raw identity, inventory array, InventoryInfo, deep array, write, RPC, HUD, and unknown-role gates.
 

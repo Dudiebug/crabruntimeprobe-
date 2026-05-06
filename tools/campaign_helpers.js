@@ -437,6 +437,7 @@ function isSafeScalarWatchRow(row) {
 function arrayFromValue(value) {
   if (Array.isArray(value)) return value;
   if (value === null || value === undefined) return [];
+  if (typeof value === 'object' && Object.keys(value).length === 0) return [];
   return [value];
 }
 
@@ -537,6 +538,7 @@ function classifyPerkDataAssetCatalogEvidence(rows, options = {}) {
   const latest = catalogRows.length ? catalogRows[catalogRows.length - 1] : {};
   const catalogEntryCount = Math.max(0, ...catalogRows.map((row) => rowNumber(row, 'catalogEntryCount')));
   const catalogCandidateCount = Math.max(0, ...catalogRows.map((row) => rowNumber(row, 'catalogCandidateCount')));
+  const catalogRejectedCandidateCount = Math.max(0, ...catalogRows.map((row) => rowNumber(row, 'catalogRejectedCandidateCount')));
   const discoveryAttempted = catalogRows.some((row) => row.discoveryAttempted === true);
   const catalogFound = catalogRows.some((row) => row.catalogFound === true || rowNumber(row, 'catalogEntryCount') > 0);
   const forbiddenGateNames = [
@@ -560,9 +562,12 @@ function classifyPerkDataAssetCatalogEvidence(rows, options = {}) {
     'allowRpcProbes'
   ];
   const safetyViolation = catalogRows.some((row) => {
-    const gates = row && row.safetyGates ? row.safetyGates : {};
-    return forbiddenGateNames.some((gate) => gates[gate] === true) ||
-      gates.allowPerkDataAssetCatalogProbes !== true ||
+    const hasGates = row && row.safetyGates && typeof row.safetyGates === 'object';
+    const gates = hasGates ? row.safetyGates : {};
+    return (hasGates && (
+      forbiddenGateNames.some((gate) => gates[gate] === true) ||
+      gates.allowPerkDataAssetCatalogProbes !== true
+    )) ||
       row.noWrites !== true ||
       row.noRpcs !== true ||
       row.noHud !== true ||
@@ -574,7 +579,8 @@ function classifyPerkDataAssetCatalogEvidence(rows, options = {}) {
       row.noInventoryInfo !== true ||
       row.noEnhancements !== true ||
       row.noDataAssetMutation !== true ||
-      row.noFunctionCalls !== true;
+      row.noFunctionCalls !== true ||
+      row.passiveOnly !== true;
   });
   let status = 'no_evidence';
   let classification = 'unresolved';
@@ -582,11 +588,14 @@ function classifyPerkDataAssetCatalogEvidence(rows, options = {}) {
     status = 'failed';
     classification = 'failed';
   } else if (catalogRows.length > 0 && discoveryAttempted && options.crashSuspect) {
-    status = 'crash_suspect_perk_da_catalog_read';
+    status = 'perk_da_catalog_crash_suspect';
     classification = 'perk_da_catalog_crash_suspect';
   } else if (catalogRows.length > 0 && discoveryAttempted && catalogFound) {
     status = 'perk_da_catalog_confirmed';
     classification = 'perk_da_catalog_confirmed';
+  } else if (catalogRows.length > 0 && discoveryAttempted && catalogCandidateCount > 0 && catalogRejectedCandidateCount > 0) {
+    status = 'perk_da_catalog_candidates_rejected';
+    classification = 'perk_da_catalog_candidates_rejected';
   } else if (catalogRows.length > 0 && discoveryAttempted) {
     status = 'perk_da_catalog_not_found';
     classification = 'perk_da_catalog_not_found';
@@ -597,8 +606,14 @@ function classifyPerkDataAssetCatalogEvidence(rows, options = {}) {
     catalogFound,
     catalogEntryCount,
     catalogCandidateCount,
+    catalogRejectedCandidateCount,
     catalogCandidateCap: latest.catalogCandidateCap || 0,
     catalogFieldCap: latest.catalogFieldCap || 0,
+    catalogRejectionDiagnosticCap: latest.catalogRejectionDiagnosticCap || 0,
+    catalogRejectionDiagnostics: latest.catalogRejectionDiagnostics || [],
+    catalogRejectionReasons: latest.catalogRejectionReasons || {},
+    catalogTopRejectionReasons: latest.catalogTopRejectionReasons || 'none',
+    catalogFoundPatterns: latest.catalogFoundPatterns || [],
     catalogEntries: latest.catalogEntries || [],
     catalogFieldNames: latest.catalogFieldNames || [],
     catalogReadStatuses: latest.catalogReadStatuses || {},
@@ -615,6 +630,7 @@ function classifyPerkDataAssetCatalogEvidence(rows, options = {}) {
     noEnhancements: catalogRows.length > 0 && catalogRows.every((row) => row.noEnhancements === true),
     noDataAssetMutation: catalogRows.length > 0 && catalogRows.every((row) => row.noDataAssetMutation === true),
     noFunctionCalls: catalogRows.length > 0 && catalogRows.every((row) => row.noFunctionCalls === true),
+    passiveOnly: catalogRows.length > 0 && catalogRows.every((row) => row.passiveOnly === true),
     safetyViolation,
     crashSuspect: options.crashSuspect === true,
     classification,
@@ -659,6 +675,10 @@ function classifyMaxSafePlayEvidence(rows, options = {}) {
   const changedFields = arrayFromValue(latest.maxSafePlayChangedFields || latestScalar.maxSafePlayChangedFields).filter((item) => String(item || '').trim() !== '');
   const catalogSnapshotCount = Number(latest.maxSafePlayCatalogSnapshotCount || latestCatalog.maxSafePlayCatalogSnapshotCount || catalogRows.length || 0);
   const catalogCandidateCount = Math.max(0, ...catalogRows.map((row) => rowNumber(row, 'catalogCandidateCount')));
+  const catalogRejectedCandidateCount = Math.max(
+    Number(latest.maxSafePlayCatalogRejectedCount || latestCatalog.maxSafePlayCatalogRejectedCount || 0),
+    ...catalogRows.map((row) => rowNumber(row, 'catalogRejectedCandidateCount'))
+  );
   const catalogEntryCount = Math.max(
     Number(latest.maxSafePlayCatalogKnownEntryCount || latestCatalog.maxSafePlayCatalogKnownEntryCount || 0),
     ...catalogRows.map((row) => rowNumber(row, 'catalogEntryCount'))
@@ -688,9 +708,12 @@ function classifyMaxSafePlayEvidence(rows, options = {}) {
     'allowRpcProbes'
   ];
   const safetyViolation = recorderRows.some((row) => {
-    const gates = row && row.safetyGates ? row.safetyGates : {};
-    return forbiddenGateNames.some((gate) => gates[gate] === true) ||
-      gates.allowMaxSafePlayRecorderProbes !== true ||
+    const hasGates = row && row.safetyGates && typeof row.safetyGates === 'object';
+    const gates = hasGates ? row.safetyGates : {};
+    return (hasGates && (
+      forbiddenGateNames.some((gate) => gates[gate] === true) ||
+      gates.allowMaxSafePlayRecorderProbes !== true
+    )) ||
       row.noWrites !== true ||
       row.noRpcs !== true ||
       row.noHud !== true ||
@@ -716,6 +739,9 @@ function classifyMaxSafePlayEvidence(rows, options = {}) {
   } else if (scalarRows.length > 0 && usableScalarSamples === 0) {
     status = 'max_safe_play_no_playerstate_samples';
     classification = 'failed-no-sample';
+  } else if (scalarRows.length > 0 && usableScalarSamples > 0 && catalogSnapshotCount > 0 && catalogEntryCount === 0 && catalogRejectedCandidateCount > 0) {
+    status = 'max_safe_play_catalog_candidates_rejected';
+    classification = 'partial-catalog-candidates-rejected';
   } else if (scalarRows.length > 0 && usableScalarSamples > 0 && catalogSnapshotCount > 0 && catalogEntryCount === 0) {
     status = 'max_safe_play_no_catalog_entries';
     classification = 'partial-no-catalog';
@@ -739,6 +765,9 @@ function classifyMaxSafePlayEvidence(rows, options = {}) {
     changeCounts: latest.maxSafePlayChangeCounts || latestScalar.maxSafePlayChangeCounts || {},
     catalogSnapshotCount,
     catalogCandidateCount,
+    catalogRejectedCandidateCount,
+    catalogTopRejectionReasons: latest.maxSafePlayCatalogTopRejectionReasons || latestCatalog.catalogTopRejectionReasons || latestCatalog.maxSafePlayCatalogTopRejectionReasons || 'none',
+    catalogFoundPatterns: latest.maxSafePlayCatalogFoundPatterns || latestCatalog.catalogFoundPatterns || latestCatalog.maxSafePlayCatalogFoundPatterns || [],
     catalogEntryCount,
     tastyOrangeFound: containsNamedCatalogEntry(recorderRows, 'TastyOrange'),
     collectorFound: containsNamedCatalogEntry(recorderRows, 'Collector'),
@@ -1444,9 +1473,11 @@ function seedCompletionsFromEvidence(plan, repoRoot = process.cwd()) {
       status: perkCatalog.status,
       updatedAt: nowIso(),
       source: 'imported-evidence',
-      reason: perkCatalog.status === 'crash_suspect_perk_da_catalog_read'
+      reason: perkCatalog.status === 'perk_da_catalog_crash_suspect'
         ? 'Perk DataAsset catalog discovery ran, but a crash dump exists after this run.'
-        : 'Perk DataAsset catalog discovery ran safely but found no perk DataAssets.',
+        : (perkCatalog.status === 'perk_da_catalog_candidates_rejected'
+          ? 'Perk DataAsset catalog discovery ran safely, but candidates were rejected by capped class/name/identity filters.'
+          : 'Perk DataAsset catalog discovery ran safely but found no perk DataAssets.'),
       latestSessionId: perkCatalogSessionId || facts.latestSessionId || '',
       latestCommit: facts.latestCommit || '',
       latestSummaryPath: facts.latestSummaryPath || ''
@@ -1470,7 +1501,7 @@ function blockedPhaseIds(state) {
 
 function advanceablePartialPhaseIds(state) {
   return new Set((state.partialPhases || [])
-    .filter((entry) => entry.status === 'remote_resources_partial' || entry.status === 'crash_suspect_local_inventory_shape_visible' || entry.status === 'perk_da_catalog_not_found')
+    .filter((entry) => entry.status === 'remote_resources_partial' || entry.status === 'crash_suspect_local_inventory_shape_visible' || entry.status === 'perk_da_catalog_not_found' || entry.status === 'perk_da_catalog_candidates_rejected')
     .map((entry) => entry.phaseId || entry));
 }
 
@@ -1810,7 +1841,8 @@ function markCollected(plan, state, phaseId, result) {
     });
   } else if (phaseId === 'perk-da-catalog-read' && (
     result.status === 'perk_da_catalog_not_found' ||
-    result.status === 'crash_suspect_perk_da_catalog_read' ||
+    result.status === 'perk_da_catalog_candidates_rejected' ||
+    result.status === 'perk_da_catalog_crash_suspect' ||
     result.status === 'no_evidence'
   )) {
     out.partialPhases.push({
@@ -1818,9 +1850,11 @@ function markCollected(plan, state, phaseId, result) {
       status: result.status,
       updatedAt: nowIso(),
       source: 'campaign-collect',
-      reason: result.reason || (result.status === 'crash_suspect_perk_da_catalog_read'
+      reason: result.reason || (result.status === 'perk_da_catalog_crash_suspect'
         ? 'Perk DataAsset catalog discovery ran, but crash evidence exists after this run.'
-        : 'Perk DataAsset catalog discovery ran safely but found no catalogable perk DataAssets.'),
+        : (result.status === 'perk_da_catalog_candidates_rejected'
+          ? 'Perk DataAsset catalog discovery ran safely, but all candidates were rejected; inspect rejection diagnostics before treating candidate count as entries.'
+          : 'Perk DataAsset catalog discovery ran safely but found no catalogable perk DataAssets.')),
       latestSessionId: out.latestSessionId,
       latestCommit: out.latestCommit,
       latestSummaryPath: out.latestSummaryPath
@@ -1872,7 +1906,7 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
   out += '## Completed Phases\n\n';
   out += renderList(listByStatus(plan, state, 'complete'));
   out += '\n## Partial Phases\n\n';
-  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$|^local_inventory_unresolved$|^crash_suspect_local_inventory_shape_visible$|^crash_suspect_local_inventory_shape_confirmed$|^crash_suspect_crystals_read$|^crash_suspect_safe_scalar_watch$|^perk_da_catalog_not_found$|^crash_suspect_perk_da_catalog_read$|^no_evidence$/.test(phaseStatus(state, phase.phaseId)));
+  const partial = plan.phases.filter((phase) => /^partial$|^local_identity_confirmed$|^roster_source_unresolved$|^needs_multiplayer$|^local_only_evidence$|^remote_resources_unresolved$|^remote_resources_partial$|^local_inventory_unresolved$|^crash_suspect_local_inventory_shape_visible$|^crash_suspect_local_inventory_shape_confirmed$|^crash_suspect_crystals_read$|^crash_suspect_safe_scalar_watch$|^perk_da_catalog_not_found$|^perk_da_catalog_candidates_rejected$|^perk_da_catalog_crash_suspect$|^no_evidence$/.test(phaseStatus(state, phase.phaseId)));
   if (!partial.length) {
     out += '- None.\n';
   } else {
@@ -2172,10 +2206,13 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     out += `- Discovery attempted: ${perkCatalog.discoveryAttempted ? 'yes' : 'no'}\n`;
     out += `- Catalog entries: ${perkCatalog.catalogEntryCount}\n`;
     out += `- Candidate count/cap: ${perkCatalog.catalogCandidateCount}/${perkCatalog.catalogCandidateCap || 'unknown'}\n`;
+    out += `- Rejected candidate count/cap: ${perkCatalog.catalogRejectedCandidateCount}/${perkCatalog.catalogRejectionDiagnosticCap || 'unknown'}\n`;
+    out += `- Top rejection reasons: ${perkCatalog.catalogTopRejectionReasons || 'none'}\n`;
+    out += `- Perk-like class/name patterns: ${(perkCatalog.catalogFoundPatterns || []).length ? perkCatalog.catalogFoundPatterns.join(', ') : 'none'}\n`;
     out += `- Field cap: ${perkCatalog.catalogFieldCap || 'unknown'}\n`;
     out += `- Writes/RPCs/HUD/deep arrays: ${perkCatalog.noWrites && perkCatalog.noRpcs && perkCatalog.noHud && perkCatalog.noDeepArrays ? 'no' : 'yes'}\n`;
     out += `- Inventory arrays/count/traversal/elements, InventoryInfo, Enhancements: ${perkCatalog.noInventoryArrays && perkCatalog.noArrayCount && perkCatalog.noArrayTraversal && perkCatalog.noElementDereference && perkCatalog.noInventoryInfo && perkCatalog.noEnhancements ? 'no' : 'yes'}\n`;
-    out += `- DataAsset mutation/function calls: ${perkCatalog.noDataAssetMutation && perkCatalog.noFunctionCalls ? 'no' : 'yes'}\n`;
+    out += `- DataAsset mutation/function calls/passive-only violation: ${perkCatalog.noDataAssetMutation && perkCatalog.noFunctionCalls && perkCatalog.passiveOnly ? 'no' : 'yes'}\n`;
     out += perkCatalog.crashSuspect
       ? '- A crash dump exists after this run, so this catalog evidence remains crash-suspect pending a repeat.\n'
       : '- No crash dump is associated with the imported perk catalog evidence.\n';
@@ -2203,6 +2240,9 @@ function generateCampaignStatusMarkdown(plan, state, repoRoot = process.cwd()) {
     out += `- Perk catalog snapshots: ${maxSafePlay.catalogSnapshotCount}\n`;
     out += `- Perk DA candidate count: ${maxSafePlay.catalogCandidateCount}\n`;
     out += `- Perk DA entry count: ${maxSafePlay.catalogEntryCount}\n`;
+    out += `- Perk DA rejected candidate count: ${maxSafePlay.catalogRejectedCandidateCount}\n`;
+    out += `- Perk DA top rejection reasons: ${maxSafePlay.catalogTopRejectionReasons || 'none'}\n`;
+    out += `- Perk-like class/name patterns: ${(maxSafePlay.catalogFoundPatterns || []).length ? maxSafePlay.catalogFoundPatterns.join(', ') : 'none'}\n`;
     out += `- TastyOrange found as normal entry: ${maxSafePlay.tastyOrangeFound ? 'yes' : 'no'}\n`;
     out += `- Collector found as normal entry: ${maxSafePlay.collectorFound ? 'yes' : 'no'}\n`;
     out += `- Nil/error counts: ${maxSafePlay.nilCount}/${maxSafePlay.errorCount}\n`;

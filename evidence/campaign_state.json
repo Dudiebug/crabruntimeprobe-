@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-06T02:08:02.759Z",
+  "updatedAt": "2026-05-06T02:25:25.474Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -292,7 +292,7 @@
   "currentPhase": "perk-da-catalog-read",
   "nextRecommendedPhase": "perk-da-catalog-read",
   "latestSessionId": "20260506T014608Z",
-  "latestCommit": "4be376038be3fbd60b3813e59447c70f0d1c5785",
+  "latestCommit": "d6f85bef9733ca1a777c4a81154141172931019c",
   "latestSummaryPath": "evidence/runtime/20260506T014608Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {

@@ -849,6 +849,8 @@ if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "pe
   $discoveryAttempted = $false
   $catalogFound = $false
   $catalogEntryCount = 0
+  $catalogCandidateCount = 0
+  $catalogRejectedCandidateCount = 0
   $safetyViolation = $false
   foreach ($row in $catalogRows) {
     if (($row.PSObject.Properties.Name -contains "discoveryAttempted") -and $row.discoveryAttempted -eq $true) {
@@ -861,7 +863,15 @@ if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "pe
       $n = 0
       if ([int]::TryParse([string]$row.catalogEntryCount, [ref]$n) -and $n -gt $catalogEntryCount) { $catalogEntryCount = $n }
     }
-    foreach ($flag in @("noWrites", "noRpcs", "noHud", "noDeepArrays", "noInventoryArrays", "noArrayCount", "noArrayTraversal", "noElementDereference", "noInventoryInfo", "noEnhancements", "noDataAssetMutation", "noFunctionCalls")) {
+    if (($row.PSObject.Properties.Name -contains "catalogCandidateCount")) {
+      $n = 0
+      if ([int]::TryParse([string]$row.catalogCandidateCount, [ref]$n) -and $n -gt $catalogCandidateCount) { $catalogCandidateCount = $n }
+    }
+    if (($row.PSObject.Properties.Name -contains "catalogRejectedCandidateCount")) {
+      $n = 0
+      if ([int]::TryParse([string]$row.catalogRejectedCandidateCount, [ref]$n) -and $n -gt $catalogRejectedCandidateCount) { $catalogRejectedCandidateCount = $n }
+    }
+    foreach ($flag in @("noWrites", "noRpcs", "noHud", "noDeepArrays", "noInventoryArrays", "noArrayCount", "noArrayTraversal", "noElementDereference", "noInventoryInfo", "noEnhancements", "noDataAssetMutation", "noFunctionCalls", "passiveOnly")) {
       if (-not ($row.PSObject.Properties.Name -contains $flag) -or $row.$flag -ne $true) {
         $safetyViolation = $true
       }
@@ -888,10 +898,13 @@ if (($status -eq "passed" -or $status -eq "crashed") -and $phase.phaseId -eq "pe
     $status = "no_evidence"
     $reason = "Perk DataAsset catalog evidence did not attempt curated discovery."
   } elseif ($crashAfterPrepare) {
-    $status = "crash_suspect_perk_da_catalog_read"
+    $status = "perk_da_catalog_crash_suspect"
     $reason = "Perk DataAsset catalog discovery ran read-only, but a crash dump/folder was updated after campaign prepare/run."
   } elseif ($catalogFound -or $catalogEntryCount -gt 0) {
     $status = "perk_da_catalog_confirmed"
+  } elseif ($catalogCandidateCount -gt 0 -and $catalogRejectedCandidateCount -gt 0) {
+    $status = "perk_da_catalog_candidates_rejected"
+    $reason = "Perk DataAsset catalog discovery ran safely, but candidates were rejected by capped class/name/identity filters."
   } else {
     $status = "perk_da_catalog_not_found"
     $reason = "Perk DataAsset catalog discovery ran safely but found no matching perk DataAssets."
@@ -929,6 +942,6 @@ Write-Host "phaseResult = $status"
 Write-Host "phaseId = $($phase.phaseId)"
 Write-Host "nextRecommendedPhase = $($updatedState.nextRecommendedPhase)"
 
-if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved" -and $status -ne "crash_suspect_local_inventory_shape_visible" -and $status -ne "local_inventory_shape_confirmed" -and $status -ne "crash_suspect_local_inventory_shape_confirmed" -and $status -ne "local_inventory_userdata_introspection_confirmed" -and $status -ne "crash_suspect_local_inventory_userdata_introspection" -and $status -ne "crystals_read_confirmed" -and $status -ne "crash_suspect_crystals_read" -and $status -ne "slots_read_confirmed" -and $status -ne "crash_suspect_slots_read" -and $status -ne "safe_scalar_watch_confirmed_no_change" -and $status -ne "safe_scalar_watch_observed_change" -and $status -ne "crash_suspect_safe_scalar_watch" -and $status -ne "perk_da_catalog_confirmed" -and $status -ne "perk_da_catalog_not_found" -and $status -ne "crash_suspect_perk_da_catalog_read" -and -not ($phase.phaseId -eq "local-inventory-array-shape-confirm" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "local-inventory-userdata-introspection" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "crystals-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "slots-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "safe-scalar-watch" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "perk-da-catalog-read" -and $status -eq "no_evidence")) {
+if ($status -ne "passed" -and $status -ne "local_identity_confirmed" -and $status -ne "roster_source_unresolved" -and $status -ne "needs_multiplayer" -and $status -ne "local_only_evidence" -and $status -ne "remote_resources_unresolved" -and $status -ne "remote_resources_partial" -and $status -ne "local_inventory_unresolved" -and $status -ne "crash_suspect_local_inventory_shape_visible" -and $status -ne "local_inventory_shape_confirmed" -and $status -ne "crash_suspect_local_inventory_shape_confirmed" -and $status -ne "local_inventory_userdata_introspection_confirmed" -and $status -ne "crash_suspect_local_inventory_userdata_introspection" -and $status -ne "crystals_read_confirmed" -and $status -ne "crash_suspect_crystals_read" -and $status -ne "slots_read_confirmed" -and $status -ne "crash_suspect_slots_read" -and $status -ne "safe_scalar_watch_confirmed_no_change" -and $status -ne "safe_scalar_watch_observed_change" -and $status -ne "crash_suspect_safe_scalar_watch" -and $status -ne "perk_da_catalog_confirmed" -and $status -ne "perk_da_catalog_not_found" -and $status -ne "perk_da_catalog_candidates_rejected" -and $status -ne "perk_da_catalog_crash_suspect" -and -not ($phase.phaseId -eq "local-inventory-array-shape-confirm" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "local-inventory-userdata-introspection" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "crystals-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "slots-read" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "safe-scalar-watch" -and $status -eq "no_evidence") -and -not ($phase.phaseId -eq "perk-da-catalog-read" -and $status -eq "no_evidence")) {
   exit 1
 }
