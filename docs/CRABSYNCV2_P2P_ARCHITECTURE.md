@@ -46,7 +46,7 @@ CrabSyncV2 planning currently targets this progression:
 1. Derive state from visible replicated `PlayerState` surfaces when possible.
 2. Use deterministic local client math for categories where every client can observe sufficient shared state.
 3. Consider host-authoritative behavior only where evidence shows host visibility is sufficient and safer than symmetric peer convergence.
-4. Consider a custom `CrabSyncBlock` carrier only if future research proves a safe replicated carrier path.
+4. Consider a custom `CrabSyncBlock` carrier only through [CrabSyncV2 P2P Carrier Research Plan](CRABSYNCV2_P2P_CARRIER_RESEARCH_PLAN.md), and only if future evidence proves a safe replicated carrier path.
 
 ## Category Feasibility (Current Evidence-Aware Planning)
 
@@ -78,3 +78,4 @@ This feasibility list is a planning status snapshot, not proof of end-to-end syn
 - RuntimeProbe remains read-only evidence collection.
 - CrabModFramework remains the future safe access layer for any eventual implementation.
 - CrabSyncV2 does not exist yet; this document defines architecture intent, not runtime behavior proof.
+- No `CrabSyncBlock` carrier exists today; carrier work is research-only until proven by the carrier plan.

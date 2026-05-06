@@ -140,6 +140,8 @@ v1 item payload modeling is useful because it avoids name-only item comparison. 
 
 v1 transport is discarded entirely for CrabSyncV2. No PowerShell bridge, Node relay, room password, relay dashboard, push/recv JSON IPC, or server-side merge authority is part of the v2 baseline.
 
+[CrabSyncV2 P2P Carrier Research Plan](CRABSYNCV2_P2P_CARRIER_RESEARCH_PLAN.md) is v2-specific research for a possible game-native `CrabSyncBlock` carrier. It is not a copy of the v1 bridge/relay transport and does not assume a carrier exists.
+
 ## 9. Acceptance Rule For v2 Code
 
 No CrabSyncV2 code starts until design docs and evidence gates are complete.
