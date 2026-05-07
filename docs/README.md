@@ -46,14 +46,30 @@
 - [CrabSyncV2 Crash Safety](CRABSYNCV2_CRASH_SAFETY.md)
 - [CrabSyncV2 Implementation Blueprint](CRABSYNCV2_IMPLEMENTATION_BLUEPRINT.md)
 - [CrabSyncV2 P2P Architecture](CRABSYNCV2_P2P_ARCHITECTURE.md)
+- [CrabSyncV2 Health P2P Model](CRABSYNCV2_HEALTH_P2P_MODEL.md)
+- [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md)
+- [CrabSyncV2 Inventory Item Proof Plan](CRABSYNCV2_INVENTORY_ITEM_PROOF_PLAN.md)
 - [CrabSyncV2 P2P Carrier Research Plan](CRABSYNCV2_P2P_CARRIER_RESEARCH_PLAN.md)
 - [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md)
 - [CrabSyncV2 v1 Migration Doctrine](CRABSYNCV2_V1_MIGRATION_DOCTRINE.md)
 - [CrabSyncV2 Research Roadmap](CRABSYNCV2_RESEARCH_ROADMAP.md)
+- [CrabSyncV2 Readiness Checklist](CRABSYNCV2_READINESS_CHECKLIST.md)
+- [CrabSyncV2 Docs Audit](CRABSYNCV2_DOCS_AUDIT.md)
+- [Phase Handoff Template](PHASE_HANDOFF_TEMPLATE.md)
 - [CrabSyncV2 Glossary](CRABSYNCV2_GLOSSARY.md)
+
+## CrabModFramework Planning Docs
+
+- [CrabModFramework API Plan](CRABMODFRAMEWORK_API.md)
+- [CrabModFramework Roadmap](CRABMODFRAMEWORK_ROADMAP.md)
+- [CrabModFramework Safety Policy](CRABMODFRAMEWORK_SAFETY_POLICY.md)
+- [CrabModFramework Modding Guide](CRABMODFRAMEWORK_MODDING_GUIDE.md)
+- [CrabModFramework API Contract](CRABMODFRAMEWORK_API_CONTRACT.md)
+- [CrabModFramework Capability Model](CRABMODFRAMEWORK_CAPABILITY_MODEL.md)
 
 ## Write Path Research Templates
 
+- [Write Path Evidence Mapping](WRITE_PATH_EVIDENCE_MAPPING.md)
 - [Write Path Ledger](WRITE_PATH_LEDGER.md)
 - [Write Path Unsafe Paths](WRITE_PATH_UNSAFE_PATHS.md)
 - [Write Path Observed Natural Calls](WRITE_PATH_OBSERVED_NATURAL_CALLS.md)

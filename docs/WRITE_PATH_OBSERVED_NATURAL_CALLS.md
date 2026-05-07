@@ -2,6 +2,8 @@
 
 This is a future status document for passive observation of natural game calls, events, and property changes. RuntimeProbe must not make calls, force RPCs, write properties, or synthesize values. Observation is evidence input, not write approval.
 
+[Write Path Evidence Mapping](WRITE_PATH_EVIDENCE_MAPPING.md) defines how future passive natural-call rows map into this document and onward into planning/status docs.
+
 ## 1. Purpose
 
 The purpose of this document is to record how Crab Champions naturally mutates state so future CrabSyncV2 planning can prefer official game paths over raw writes.

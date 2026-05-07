@@ -2,6 +2,10 @@
 
 `docs/` is the source of truth for this plan. Wiki output may exist when generated automatically by the existing docs pipeline, but no separate wiki workflow is planned.
 
+CrabModFramework is future architecture, not runtime code today. Future mod author guidance, API contract shape, and capability resolution are documented in [CrabModFramework Modding Guide](CRABMODFRAMEWORK_MODDING_GUIDE.md), [CrabModFramework API Contract](CRABMODFRAMEWORK_API_CONTRACT.md), and [CrabModFramework Capability Model](CRABMODFRAMEWORK_CAPABILITY_MODEL.md).
+
+Each CrabModFramework planning or future implementation phase should use [Phase Handoff Template](PHASE_HANDOFF_TEMPLATE.md).
+
 ## RuntimeProbe Evidence Tracks
 
 Direct long-play recorder:
@@ -67,6 +71,8 @@ Future layers that may graduate into `max-safe-play-recorder` only after dedicat
 - `capability-declarations`: require mods to declare safe and experimental capabilities.
 - `direct-ue4ss-call-linting`: flag unsafe raw UE4SS calls outside wrappers.
 - `experimental-write-api`: future-only framework work, never a RuntimeProbe phase.
+
+Framework API and capability work must remain wrapper-first and evidence-gated. Unsupported capabilities should return safe status/skip results rather than encouraging raw UE4SS fallback.
 
 ## Current Evidence Baseline
 

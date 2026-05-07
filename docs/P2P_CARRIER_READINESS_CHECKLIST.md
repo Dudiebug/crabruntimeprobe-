@@ -2,6 +2,8 @@
 
 This is a future decision checklist for CrabSyncV2 P2P carrier research. It does not prove a carrier exists today, does not authorize writes or write-smoke, and does not implement RuntimeProbe collectors, gates, probes, imports, generated docs, or CrabSyncV2 code.
 
+This checklist is carrier-specific. It feeds the master [CrabSyncV2 Readiness Checklist](CRABSYNCV2_READINESS_CHECKLIST.md), but it does not replace read, inventory, write/apply, CrabModFramework, or production readiness gates.
+
 ## 1. Purpose
 
 This checklist defines how future carrier evidence will be evaluated before any CrabSyncV2 design decision depends on a carrier.
@@ -11,6 +13,8 @@ Carrier readiness is only one part of CrabSyncV2 readiness. Transport readiness 
 RuntimeProbe remains read-only. Read evidence never equals write evidence.
 
 Carrier readiness does not satisfy write/apply readiness; future write behavior must separately follow [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md).
+
+Health, equipment, crystals, and slots may proceed with read-only convergence planning without a carrier if visible replicated state is sufficient. That path is category derivation, not transport readiness and not apply approval.
 
 Use [Write Path Ledger](WRITE_PATH_LEDGER.md), [Write Path Unsafe Paths](WRITE_PATH_UNSAFE_PATHS.md), [Write Path Observed Natural Calls](WRITE_PATH_OBSERVED_NATURAL_CALLS.md), and [Write Path Sandbox Smoke Plan](WRITE_PATH_SANDBOX_SMOKE_PLAN.md) to keep carrier transport readiness separate from write/apply readiness.
 
@@ -115,6 +119,8 @@ Rejected-as-carrier status does not erase safe read evidence. A path may remain 
 
 **Inventory items:** a carrier may be needed if remote item metadata is not visible. A carrier does not replace local item identity, `InventoryInfo`, `Enhancements`, duplicate semantics, or apply proof. A carrier only solves transport.
 
+Item sync also requires [CrabSyncV2 Inventory Item Proof Plan](CRABSYNCV2_INVENTORY_ITEM_PROOF_PLAN.md). Carrier readiness cannot promote inventory proof rungs or convert unknown metadata into observed metadata.
+
 ## 8. Carrier Readiness Does Not Unblock These By Itself
 
 - Inventory item sync.
@@ -165,6 +171,9 @@ These are fictional non-evidence examples. They do not prove a carrier exists.
 
 This checklist depends on:
 
+- [CrabSyncV2 Health P2P Model](CRABSYNCV2_HEALTH_P2P_MODEL.md).
+- [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md).
+- [CrabSyncV2 Inventory Item Proof Plan](CRABSYNCV2_INVENTORY_ITEM_PROOF_PLAN.md).
 - [CrabSyncV2 P2P Carrier Research Plan](CRABSYNCV2_P2P_CARRIER_RESEARCH_PLAN.md).
 - [P2P Carrier Candidates](P2P_CARRIER_CANDIDATES.md).
 - [P2P Carrier Visibility Matrix](P2P_CARRIER_VISIBILITY_MATRIX.md).

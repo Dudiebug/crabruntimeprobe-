@@ -2,6 +2,8 @@
 
 CrabModFramework must be evidence-led. RuntimeProbe evidence can prove that a read path worked under a documented context and gate set. It does not prove that writes, DataAsset mutation, RPC calls, event invocation, or deeper traversal are safe.
 
+Future mod authors should follow [CrabModFramework Modding Guide](CRABMODFRAMEWORK_MODDING_GUIDE.md). Future wrapper contracts and capability declarations are defined in [CrabModFramework API Contract](CRABMODFRAMEWORK_API_CONTRACT.md) and [CrabModFramework Capability Model](CRABMODFRAMEWORK_CAPABILITY_MODEL.md). These docs are planning contracts, not implementation.
+
 ## RuntimeProbe Boundaries
 
 RuntimeProbe phases must remain read-only unless a future task explicitly changes the project charter. Current forbidden actions are:
@@ -37,6 +39,8 @@ Element DA evidence is not full inventory sync evidence, InventoryInfo evidence,
 CrabModFramework should prefer high-level Crab Champions APIs backed by RuntimeProbe evidence. Raw UE4SS calls should be wrapped, reviewed, and eventually linted or validated.
 
 Any future write/edit API must be separate from RuntimeProbe, capability-gated, and documented as experimental until dedicated evidence and review exists. DataAsset catalog evidence is read evidence only; it is not permission to mutate DataAssets.
+
+Unsupported, unavailable, unsafe, stale, and crash-suspect wrapper results must produce skip/suspend behavior. They must not fall back to broad object crawling, direct inventory metadata access, mutating RPCs, or raw writes.
 
 Future InventoryInfo, Enhancements, event watchers, and additional DataAsset catalog families may enter the max-safe recorder only after their own dedicated campaign phases prove safety. Inventory wrapper count metadata and inventory element identity reads can enter later only after their phases produce clean evidence and the recorder is explicitly updated.
 

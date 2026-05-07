@@ -4,6 +4,8 @@ This is a future status ledger for CrabSyncV2 write/apply candidate paths. No pa
 
 RuntimeProbe remains read-only.
 
+[Write Path Evidence Mapping](WRITE_PATH_EVIDENCE_MAPPING.md) defines how future passive evidence rows may create or update ledger rows. Mapping evidence into this ledger does not approve a write.
+
 ## 1. Purpose
 
 The ledger records candidate write/apply paths after passive observation and later CrabSyncV2-only sandbox evidence. It separates static symbol presence, passive natural observation, sandbox smoke, and production readiness.
@@ -48,9 +50,13 @@ Future slot write/apply candidate rows belong here.
 
 Future inventory item write/apply candidate rows belong here.
 
+Inventory item read proof is documented separately in [CrabSyncV2 Inventory Item Proof Plan](CRABSYNCV2_INVENTORY_ITEM_PROOF_PLAN.md). Read proof does not approve inventory write/apply readiness.
+
 ### Inventory Metadata
 
 Future `InventoryInfo`, level, buff, and related metadata candidate rows belong here.
+
+Unknown metadata must not be written as defaults. Metadata writes remain blocked until separate write-path evidence and future sandbox review exist.
 
 ### Enhancements
 
@@ -60,9 +66,13 @@ Future nested enhancement candidate rows belong here.
 
 Future crystal change observations belong here. `Crystals` must not be used as a custom payload carrier.
 
+Read/convergence planning for crystals and slots is documented in [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md). That model is separate from this write-path ledger and does not approve writes.
+
 ### Health
 
 Future health write/apply candidate rows belong here. Health visibility does not authorize mutation.
+
+Read/convergence planning for health is documented in [CrabSyncV2 Health P2P Model](CRABSYNCV2_HEALTH_P2P_MODEL.md). That model is separate from this write-path ledger and does not approve health apply.
 
 ### Armor
 

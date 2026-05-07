@@ -10,7 +10,7 @@ Current generated evidence confirms `CrabPC.PlayerState` through `GetPropertyVal
 
 Slot scalar visibility is confirmed for fields such as `NumWeaponModSlots`, with related slot fields visible in resource evidence. These are scalar reads only.
 
-`CrabPS.Crystals` is confirmed visible through `GetPropertyValue`; resource evidence also mentions keys visibility, but keys policy remains unresolved.
+`CrabPS.Crystals` is confirmed visible through `GetPropertyValue`; resource evidence also mentions keys visibility, but keys are excluded from CrabSyncV2 unless explicitly re-approved.
 
 `CrabPC -> PlayerState -> CrabPS -> HealthInfo` is the currently confirmed player health path. Evidence includes `CurrentHealth`, `CurrentMaxHealth`, `BaseMaxHealth`, and `MaxHealthMultiplier` in player-state-scoped health phases.
 
@@ -19,6 +19,8 @@ PlayerState identity/fingerprint visibility is confirmed with redaction/fingerpr
 Visible roster source status is currently supported by imported identity evidence: the evidence index reports local identity visible, max visible player count of 2, and roster source resolved. Treat this as identity/roster visibility, not inventory sync proof.
 
 Local inventory array property shape is visible as userdata for `WeaponMods`, `AbilityMods`, `MeleeMods`, `Perks`, and `Relics`. Current safe evidence is strictly shape/userdata metadata. It does not prove count strategy, traversal, element dereference, DA identity, `InventoryInfo`, or `Enhancements`.
+
+[CrabSyncV2 Inventory Item Proof Plan](CRABSYNCV2_INVENTORY_ITEM_PROOF_PLAN.md) defines the planning ladder from shape/count metadata toward item identity, metadata, duplicate semantics, remote visibility, carrier fallback, and write/apply separation. It does not change current evidence facts.
 
 ## B. Confirmed Unsafe Or Ambiguous Paths
 
@@ -41,7 +43,7 @@ The local inventory shallow shape/count phase has crash-suspect history. Later s
 - Joined-client apply/write behavior.
 - Official RPC/OnRep call strategy.
 - Armor plate sync.
-- Keys sync.
+- Keys sync; keys are excluded unless explicitly re-approved.
 - Player-owned `CrabHC` discovery.
 
 ## D. CrabSyncV2 Design Implication

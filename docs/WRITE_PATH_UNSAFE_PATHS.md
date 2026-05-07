@@ -4,6 +4,8 @@ This is a future status document for write paths that are unsafe, forbidden, or 
 
 RuntimeProbe remains read-only. This document does not authorize writes, RPC calls, or CrabSyncV2 implementation.
 
+[Write Path Evidence Mapping](WRITE_PATH_EVIDENCE_MAPPING.md) defines how future passive evidence and rejection rows map into this unsafe-path list. Unsafe write status does not erase confirmed safe read evidence.
+
 ## 1. Purpose
 
 The purpose of this document is to keep rejected write/apply paths visible so they are not accidentally promoted from read evidence, objectdump symbols, or v1 prototype behavior.

@@ -12,6 +12,8 @@ RuntimeProbe can only perform read-only discovery and visibility watch work. Any
 
 A carrier is not assumed. It must be proven through evidence, and unsupported is an acceptable result.
 
+Carrier readiness is subordinate to [CrabSyncV2 Readiness Checklist](CRABSYNCV2_READINESS_CHECKLIST.md). Future carrier phases should close with [Phase Handoff Template](PHASE_HANDOFF_TEMPLATE.md), including the carrier gate reached and the gates that remain separate.
+
 ## 2. Carrier Definition
 
 A valid `CrabSyncBlock` carrier must be:

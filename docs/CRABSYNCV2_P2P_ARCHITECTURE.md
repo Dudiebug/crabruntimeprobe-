@@ -13,6 +13,10 @@ CrabSyncV2 is **P2P/game-native first**:
 
 The intended model is to derive what can be synchronized from the game's own replicated runtime state first, then add narrowly scoped extensions only when evidence proves they are safe.
 
+CrabSyncV2 should consume future [CrabModFramework API Contract](CRABMODFRAMEWORK_API_CONTRACT.md) wrappers and [CrabModFramework Capability Model](CRABMODFRAMEWORK_CAPABILITY_MODEL.md) statuses rather than direct raw UE4SS calls where possible.
+
+Before any future CrabSyncV2 behavior starts, use [CrabSyncV2 Readiness Checklist](CRABSYNCV2_READINESS_CHECKLIST.md). Close future docs, evidence, carrier, write-path, sandbox, or implementation phases with [Phase Handoff Template](PHASE_HANDOFF_TEMPLATE.md).
+
 ## Why CrabInvSync v1 Transport Is Not Copied
 
 CrabInvSync v1 proved useful as a prototype, but its transport model is intentionally not carried forward as the CrabSyncV2 baseline.
@@ -50,11 +54,11 @@ CrabSyncV2 planning currently targets this progression:
 
 ## Category Feasibility (Current Evidence-Aware Planning)
 
-- **Health**: likely P2P candidate based on remote `HealthInfo` visibility evidence; apply/pooling behavior remains design-gated.
-- **Equipment**: likely P2P candidate based on remote equipment DA visibility evidence.
-- **Crystals**: likely P2P candidate based on remote `Crystals` visibility evidence.
-- **Slots**: plausible candidate; slot model and policy remain unresolved.
-- **Inventory items**: blocked until item identity/metadata and remote visibility (or a proven safe carrier) are demonstrated.
+- **Health**: likely P2P candidate based on remote `HealthInfo` visibility evidence; apply/pooling behavior remains design-gated by [CrabSyncV2 Health P2P Model](CRABSYNCV2_HEALTH_P2P_MODEL.md).
+- **Equipment**: likely P2P candidate based on remote equipment DA visibility evidence; apply remains blocked by [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md).
+- **Crystals**: likely P2P candidate based on remote `Crystals` visibility evidence; keys are excluded and crystal apply remains blocked by [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md).
+- **Slots**: plausible candidate; slot model and policy remain unresolved in [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md).
+- **Inventory items**: blocked until the proof ladder in [CrabSyncV2 Inventory Item Proof Plan](CRABSYNCV2_INVENTORY_ITEM_PROOF_PLAN.md) proves item identity, metadata, duplicate semantics, joined-client safety, and remote visibility or a reviewed carrier decision.
 
 This feasibility list is a planning status snapshot, not proof of end-to-end sync safety.
 
