@@ -222,6 +222,6 @@ These are fictional non-evidence examples. They do not prove a carrier exists.
 
 This mapping supports future P2P carrier docs if carrier-discovery phases are implemented and run. It does not unblock CrabSyncV2 implementation by itself.
 
-It does not solve inventory item sync unless a carrier is proven and item read/apply gates are separately satisfied.
+It does not solve inventory item sync unless future evidence proves a carrier safe and item read/apply gates are separately satisfied.
 
 Future docs/import tooling should use this mapping only after read-only carrier-discovery phases exist. Until then, carrier candidate, visibility, unsafe-path, and write-smoke docs remain templates/status docs rather than proof.

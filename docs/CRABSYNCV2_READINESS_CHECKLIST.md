@@ -164,7 +164,7 @@ Experimental writes are unavailable until future evidence, explicit approval, an
 
 ## 11. Hard Blockers
 
-- No server/bridge/relay architecture copied into v2.
+- No server, bridge, or relay architecture copied into v2.
 - No keys sync.
 - No item sync before item metadata proof.
 - No carrier use before carrier readiness.

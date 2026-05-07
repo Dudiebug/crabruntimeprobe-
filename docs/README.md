@@ -42,6 +42,7 @@
 - [CrabSyncV2 v1 Migration Doctrine](CRABSYNCV2_V1_MIGRATION_DOCTRINE.md)
 - [CrabSyncV2 Research Roadmap](CRABSYNCV2_RESEARCH_ROADMAP.md)
 - [CrabSyncV2 Readiness Checklist](CRABSYNCV2_READINESS_CHECKLIST.md)
+- [CrabSyncV2 Docs Audit](CRABSYNCV2_DOCS_AUDIT.md)
 - [Phase Handoff Template](PHASE_HANDOFF_TEMPLATE.md)
 - [CrabSyncV2 Glossary](CRABSYNCV2_GLOSSARY.md)
 

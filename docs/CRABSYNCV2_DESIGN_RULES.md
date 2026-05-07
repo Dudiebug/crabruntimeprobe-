@@ -45,7 +45,7 @@ CrabSyncV2 should use future CrabModFramework capability-gated wrappers where po
 
 ## P2P Merge
 
-- CrabSyncV2 v2 baseline is P2P/game-native first.
+- CrabSyncV2 baseline is P2P/game-native first.
 - No bridge/server/JSON IPC transport for v2 baseline.
 - Do not emit values outside objectdump-backed property ranges.
 - Do not let stale peer-visible state overwrite safer local runtime state.

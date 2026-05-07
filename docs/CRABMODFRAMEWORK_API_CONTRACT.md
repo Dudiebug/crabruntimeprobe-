@@ -8,6 +8,8 @@ Define the contract style future CrabModFramework APIs should follow so consumin
 
 APIs described here are proposed contracts for future work. They name wrapper responsibilities, result shapes, and safety boundaries only.
 
+Future CrabModFramework phases should use [Phase Handoff Template](PHASE_HANDOFF_TEMPLATE.md). CrabSyncV2 consumers remain gated by [CrabSyncV2 Readiness Checklist](CRABSYNCV2_READINESS_CHECKLIST.md).
+
 ## 2. Contract Principles
 
 - Every function returns status, value, and source proof.

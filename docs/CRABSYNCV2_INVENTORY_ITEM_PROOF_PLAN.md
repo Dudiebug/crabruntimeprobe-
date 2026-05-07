@@ -16,6 +16,8 @@ Future CrabModFramework inventory wrappers must follow this proof ladder through
 
 Inventory item sync readiness is also gated by [CrabSyncV2 Readiness Checklist](CRABSYNCV2_READINESS_CHECKLIST.md). This proof plan is necessary for inventory readiness, but it is not sufficient for apply/write readiness by itself.
 
+Each future proof rung should close with [Phase Handoff Template](PHASE_HANDOFF_TEMPLATE.md), including what was proven, what remains unsupported, and which no-cross boundaries still apply.
+
 ## 2. Current Evidence Baseline
 
 Local array properties are visible:

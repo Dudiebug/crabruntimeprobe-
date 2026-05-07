@@ -12,6 +12,8 @@ CrabSyncV2 may later test candidate write/RPC paths only in explicitly gated man
 
 Read safety is not write safety. Function presence is not call safety. Natural game behavior is evidence, not automatic permission.
 
+Write/apply readiness remains gated by [CrabSyncV2 Readiness Checklist](CRABSYNCV2_READINESS_CHECKLIST.md). Future write-path observation, sandbox, or implementation phases should close with [Phase Handoff Template](PHASE_HANDOFF_TEMPLATE.md).
+
 ## 2. Evidence Ladder
 
 | Status | Meaning | What it permits | What it does not permit | Next evidence needed |

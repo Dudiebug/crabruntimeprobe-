@@ -167,7 +167,7 @@ The carrier readiness checklist applies before any design can depend on `CrabSyn
 Each category keeps separate gates:
 
 - Read/convergence gate: category-specific visible-state rows are stable, source-scoped, clamped, generation-aware, and deterministic.
-- Transport gate if needed: a future carrier is proven safe for transport without using gameplay-critical fields.
+- Transport gate if needed: future evidence proves a carrier safe for transport without using gameplay-critical fields.
 - Write-path gate: passive observation and write-path ledger evidence identify a candidate path without RuntimeProbe mutation.
 - Sandbox smoke gate: future CrabSyncV2-only, disposable, explicitly approved, and not RuntimeProbe.
 - Production gate: future only, requiring repeated stability, lifecycle coverage, rollback/abort policy, UI/persistence proof, and explicit capability gates.

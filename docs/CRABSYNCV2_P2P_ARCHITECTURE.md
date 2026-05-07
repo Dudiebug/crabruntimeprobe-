@@ -15,6 +15,8 @@ The intended model is to derive what can be synchronized from the game's own rep
 
 CrabSyncV2 should consume future [CrabModFramework API Contract](CRABMODFRAMEWORK_API_CONTRACT.md) wrappers and [CrabModFramework Capability Model](CRABMODFRAMEWORK_CAPABILITY_MODEL.md) statuses rather than direct raw UE4SS calls where possible.
 
+Before any future CrabSyncV2 behavior starts, use [CrabSyncV2 Readiness Checklist](CRABSYNCV2_READINESS_CHECKLIST.md). Close future docs, evidence, carrier, write-path, sandbox, or implementation phases with [Phase Handoff Template](PHASE_HANDOFF_TEMPLATE.md).
+
 ## Why CrabInvSync v1 Transport Is Not Copied
 
 CrabInvSync v1 proved useful as a prototype, but its transport model is intentionally not carried forward as the CrabSyncV2 baseline.
