@@ -13,6 +13,8 @@ CrabSyncV2 is **P2P/game-native first**:
 
 The intended model is to derive what can be synchronized from the game's own replicated runtime state first, then add narrowly scoped extensions only when evidence proves they are safe.
 
+CrabSyncV2 should consume future [CrabModFramework API Contract](CRABMODFRAMEWORK_API_CONTRACT.md) wrappers and [CrabModFramework Capability Model](CRABMODFRAMEWORK_CAPABILITY_MODEL.md) statuses rather than direct raw UE4SS calls where possible.
+
 ## Why CrabInvSync v1 Transport Is Not Copied
 
 CrabInvSync v1 proved useful as a prototype, but its transport model is intentionally not carried forward as the CrabSyncV2 baseline.

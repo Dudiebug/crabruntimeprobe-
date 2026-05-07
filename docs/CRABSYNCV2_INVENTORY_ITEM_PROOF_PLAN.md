@@ -12,6 +12,8 @@ Transport, read correctness, metadata preservation, duplicate semantics, and wri
 
 Unsupported is a valid safe result. A phase that cleanly proves "not available through this path" is better than widening scope into unsafe traversal.
 
+Future CrabModFramework inventory wrappers must follow this proof ladder through capability declarations. Unsupported or unavailable inventory capabilities must skip rather than falling back to raw UE4SS traversal.
+
 ## 2. Current Evidence Baseline
 
 Local array properties are visible:
@@ -155,6 +157,8 @@ Carrier must not use inventory arrays, `InventoryInfo`, or `Enhancements` as cus
 Carrier cannot authorize live apply.
 
 Carrier data must be ignored for item categories whose read/apply evidence gates are not met.
+
+Future capability names for these gates are tracked in [CrabModFramework Capability Model](CRABMODFRAMEWORK_CAPABILITY_MODEL.md).
 
 ## 9. Interaction With Write-Path Docs
 

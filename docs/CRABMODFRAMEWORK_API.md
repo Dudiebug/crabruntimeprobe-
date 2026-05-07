@@ -4,6 +4,8 @@ CrabModFramework is planned as a Crab Champions-specific safety layer on top of 
 
 RuntimeProbe remains the read-only evidence engine. Evidence collected here proves read paths, contexts, gates, and failure modes. It does not grant permission to write, call RPCs, mutate DataAssets, traverse live inventory arrays, or call gameplay functions.
 
+The proposed future API contract is detailed in [CrabModFramework API Contract](CRABMODFRAMEWORK_API_CONTRACT.md). Capability declarations and status resolution are detailed in [CrabModFramework Capability Model](CRABMODFRAMEWORK_CAPABILITY_MODEL.md). Mod author usage guidance is in [CrabModFramework Modding Guide](CRABMODFRAMEWORK_MODDING_GUIDE.md).
+
 ## Planned Surfaces
 
 - `framework-skeleton`: package layout, lifecycle hooks, versioning, and shared diagnostics.

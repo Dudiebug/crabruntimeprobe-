@@ -43,6 +43,15 @@
 - [CrabSyncV2 Research Roadmap](CRABSYNCV2_RESEARCH_ROADMAP.md)
 - [CrabSyncV2 Glossary](CRABSYNCV2_GLOSSARY.md)
 
+## CrabModFramework Planning Docs
+
+- [CrabModFramework API Plan](CRABMODFRAMEWORK_API.md)
+- [CrabModFramework Roadmap](CRABMODFRAMEWORK_ROADMAP.md)
+- [CrabModFramework Safety Policy](CRABMODFRAMEWORK_SAFETY_POLICY.md)
+- [CrabModFramework Modding Guide](CRABMODFRAMEWORK_MODDING_GUIDE.md)
+- [CrabModFramework API Contract](CRABMODFRAMEWORK_API_CONTRACT.md)
+- [CrabModFramework Capability Model](CRABMODFRAMEWORK_CAPABILITY_MODEL.md)
+
 ## Write Path Research Templates
 
 - [Write Path Evidence Mapping](WRITE_PATH_EVIDENCE_MAPPING.md)
