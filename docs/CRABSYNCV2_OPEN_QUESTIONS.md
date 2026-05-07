@@ -2,6 +2,8 @@
 
 This is a living research backlog for CrabSyncV2 planning. Status values reflect current imported RuntimeProbe evidence, not hopes.
 
+[CrabSyncV2 Readiness Checklist](CRABSYNCV2_READINESS_CHECKLIST.md) records the maturity gates these questions block. Use [Phase Handoff Template](PHASE_HANDOFF_TEMPLATE.md) after each docs, evidence, carrier, write-path, sandbox, or future implementation phase.
+
 | Question | Why it matters | Current evidence status | Safest next RuntimeProbe phase | Blocked CrabSyncV2 decision | Risk level |
 |---|---|---|---|---|---|
 | Can visible replicated `PlayerState` data alone support P2P sync for each category? | Determines how much of v2 can be fully game-native without extra carriers. | Partial support shown for health/equipment/crystals/slots; inventory remains unresolved. | `p2p-visibility-baseline`. | P2P baseline scope. | High |

@@ -41,6 +41,8 @@
 - [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md)
 - [CrabSyncV2 v1 Migration Doctrine](CRABSYNCV2_V1_MIGRATION_DOCTRINE.md)
 - [CrabSyncV2 Research Roadmap](CRABSYNCV2_RESEARCH_ROADMAP.md)
+- [CrabSyncV2 Readiness Checklist](CRABSYNCV2_READINESS_CHECKLIST.md)
+- [Phase Handoff Template](PHASE_HANDOFF_TEMPLATE.md)
 - [CrabSyncV2 Glossary](CRABSYNCV2_GLOSSARY.md)
 
 ## CrabModFramework Planning Docs

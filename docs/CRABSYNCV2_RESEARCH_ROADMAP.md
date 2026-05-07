@@ -2,6 +2,8 @@
 
 These are RuntimeProbe research phases in recommended planning order. Each RuntimeProbe phase is read-only unless explicitly marked as a future CrabSyncV2-only sandbox. Stop after any crash, stale artifact warning, unexpected gate, or evidence contradicting the phase contract.
 
+Use [CrabSyncV2 Readiness Checklist](CRABSYNCV2_READINESS_CHECKLIST.md) to decide which CrabSyncV2 maturity level a phase can support. Every phase should end with a [Phase Handoff Template](PHASE_HANDOFF_TEMPLATE.md) handoff.
+
 ## P2P Baseline Track
 
 | Phase | Goal | Required config gates | Allowed | Forbidden | Expected evidence file | Success criteria | Crash stop condition | CrabSyncV2 decision unlocked |

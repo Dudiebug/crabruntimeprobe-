@@ -4,6 +4,8 @@ This is a future architecture plan, not an implementation request. RuntimeProbe 
 
 CrabSyncV2 should consume future CrabModFramework wrappers and capabilities rather than raw UE4SS access where possible. [CrabModFramework API Contract](CRABMODFRAMEWORK_API_CONTRACT.md) and [CrabModFramework Capability Model](CRABMODFRAMEWORK_CAPABILITY_MODEL.md) are prerequisites for turning these planning modules into runtime-facing APIs.
 
+No implementation phase should start until [CrabSyncV2 Readiness Checklist](CRABSYNCV2_READINESS_CHECKLIST.md) permits the selected readiness level. Every phase should produce a [Phase Handoff Template](PHASE_HANDOFF_TEMPLATE.md) handoff.
+
 ## High-Level Modules
 
 - Lifecycle detector: detects startup, menu, lobby, loading, travel, respawn, join, disconnect, role changes, and local player stability.

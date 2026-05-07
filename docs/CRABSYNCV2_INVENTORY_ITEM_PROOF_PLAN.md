@@ -14,6 +14,8 @@ Unsupported is a valid safe result. A phase that cleanly proves "not available t
 
 Future CrabModFramework inventory wrappers must follow this proof ladder through capability declarations. Unsupported or unavailable inventory capabilities must skip rather than falling back to raw UE4SS traversal.
 
+Inventory item sync readiness is also gated by [CrabSyncV2 Readiness Checklist](CRABSYNCV2_READINESS_CHECKLIST.md). This proof plan is necessary for inventory readiness, but it is not sufficient for apply/write readiness by itself.
+
 ## 2. Current Evidence Baseline
 
 Local array properties are visible:

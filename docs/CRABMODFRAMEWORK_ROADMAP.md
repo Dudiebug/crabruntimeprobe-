@@ -4,6 +4,8 @@
 
 CrabModFramework is future architecture, not runtime code today. Future mod author guidance, API contract shape, and capability resolution are documented in [CrabModFramework Modding Guide](CRABMODFRAMEWORK_MODDING_GUIDE.md), [CrabModFramework API Contract](CRABMODFRAMEWORK_API_CONTRACT.md), and [CrabModFramework Capability Model](CRABMODFRAMEWORK_CAPABILITY_MODEL.md).
 
+Each CrabModFramework planning or future implementation phase should use [Phase Handoff Template](PHASE_HANDOFF_TEMPLATE.md).
+
 ## RuntimeProbe Evidence Tracks
 
 Direct long-play recorder:

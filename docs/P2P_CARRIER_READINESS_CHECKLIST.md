@@ -2,6 +2,8 @@
 
 This is a future decision checklist for CrabSyncV2 P2P carrier research. It does not prove a carrier exists today, does not authorize writes or write-smoke, and does not implement RuntimeProbe collectors, gates, probes, imports, generated docs, or CrabSyncV2 code.
 
+This checklist is carrier-specific. It feeds the master [CrabSyncV2 Readiness Checklist](CRABSYNCV2_READINESS_CHECKLIST.md), but it does not replace read, inventory, write/apply, CrabModFramework, or production readiness gates.
+
 ## 1. Purpose
 
 This checklist defines how future carrier evidence will be evaluated before any CrabSyncV2 design decision depends on a carrier.

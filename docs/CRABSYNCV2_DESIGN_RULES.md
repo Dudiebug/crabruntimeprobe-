@@ -4,6 +4,8 @@ These are future CrabSyncV2 constraints. They do not authorize RuntimeProbe writ
 
 CrabSyncV2 should use future CrabModFramework capability-gated wrappers where possible. See [CrabModFramework API Contract](CRABMODFRAMEWORK_API_CONTRACT.md) and [CrabModFramework Capability Model](CRABMODFRAMEWORK_CAPABILITY_MODEL.md).
 
+[CrabSyncV2 Readiness Checklist](CRABSYNCV2_READINESS_CHECKLIST.md) is the gate for starting any v2 behavior at a selected maturity level. A [Phase Handoff Template](PHASE_HANDOFF_TEMPLATE.md) handoff should close every future phase.
+
 ## Runtime/Lifecycle
 
 - No apply/write during unknown role, startup, loading, travel, respawn, join, disconnect, or unstable local player state.
