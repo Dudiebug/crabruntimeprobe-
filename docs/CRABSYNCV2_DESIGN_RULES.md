@@ -16,6 +16,7 @@ These are future CrabSyncV2 constraints. They do not authorize RuntimeProbe writ
 - Pooled/shared health is a CrabSyncV2 design concept, not a vanilla RuntimeProbe fact.
 - Multiplayer max-health math remains evidence-gated.
 - Armor policy remains unresolved until documented evidence exists.
+- Health P2P planning must follow [CrabSyncV2 Health P2P Model](CRABSYNCV2_HEALTH_P2P_MODEL.md): read-only convergence first, no `HealthInfo` carrier use, and no health apply until every apply gate is satisfied.
 
 ## Inventory
 
@@ -32,7 +33,8 @@ These are future CrabSyncV2 constraints. They do not authorize RuntimeProbe writ
 
 - Slot fields are byte range and must clamp to `0..255`.
 - Crystals are UInt32 range and must clamp to `0..4294967295`.
-- Keys policy is unresolved.
+- Keys must not sync unless explicitly re-approved.
+- Resource/equipment P2P planning must follow [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md): visible-state derivation first, no crystals/slots/equipment/keys carrier use, and no apply until separate write-path gates are satisfied.
 
 ## P2P Merge
 

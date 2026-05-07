@@ -34,6 +34,8 @@
 - [CrabSyncV2 Crash Safety](CRABSYNCV2_CRASH_SAFETY.md)
 - [CrabSyncV2 Implementation Blueprint](CRABSYNCV2_IMPLEMENTATION_BLUEPRINT.md)
 - [CrabSyncV2 P2P Architecture](CRABSYNCV2_P2P_ARCHITECTURE.md)
+- [CrabSyncV2 Health P2P Model](CRABSYNCV2_HEALTH_P2P_MODEL.md)
+- [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md)
 - [CrabSyncV2 P2P Carrier Research Plan](CRABSYNCV2_P2P_CARRIER_RESEARCH_PLAN.md)
 - [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md)
 - [CrabSyncV2 v1 Migration Doctrine](CRABSYNCV2_V1_MIGRATION_DOCTRINE.md)

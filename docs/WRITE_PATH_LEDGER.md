@@ -62,9 +62,13 @@ Future nested enhancement candidate rows belong here.
 
 Future crystal change observations belong here. `Crystals` must not be used as a custom payload carrier.
 
+Read/convergence planning for crystals and slots is documented in [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md). That model is separate from this write-path ledger and does not approve writes.
+
 ### Health
 
 Future health write/apply candidate rows belong here. Health visibility does not authorize mutation.
+
+Read/convergence planning for health is documented in [CrabSyncV2 Health P2P Model](CRABSYNCV2_HEALTH_P2P_MODEL.md). That model is separate from this write-path ledger and does not approve health apply.
 
 ### Armor
 

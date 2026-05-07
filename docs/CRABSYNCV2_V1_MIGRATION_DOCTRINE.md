@@ -122,19 +122,19 @@ The doctrine intentionally avoids reintroducing v1 external transport as a fallb
 
 ### Equipment
 
-v1 shows that equipment identity sync is a useful category. CrabSyncV2 must use P2P-visible DA identity when evidence proves the visibility is stable, then separately prove any write/apply path outside RuntimeProbe.
+v1 shows that equipment identity sync is a useful category. CrabSyncV2 must use P2P-visible DA identity under [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md) when evidence proves the visibility is stable, then separately prove any write/apply path outside RuntimeProbe.
 
 ### Crystals
 
-v1 sum/merge thinking is useful for planning resource convergence. CrabSyncV2 must derive crystals from visible state or a future proven carrier; it must not use `Crystals` as a custom carrier.
+v1 sum/merge thinking is useful for planning resource convergence. CrabSyncV2 must derive crystals from visible state under [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md); it must not use `Crystals` as a custom carrier, and keys remain excluded unless explicitly re-approved.
 
 ### Slots
 
-v1 range clamping is useful because slot-like fields are byte-range values. CrabSyncV2 still needs evidence for locked, maximum, total, and category-specific slot semantics before planning apply behavior.
+v1 range clamping is useful because slot-like fields are byte-range values. CrabSyncV2 still needs the slot-model evidence listed in [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md) before planning apply behavior.
 
 ### Health
 
-v1 experimental health pool behavior can inform design questions, but pooled health is not a vanilla fact. CrabSyncV2 starts with read-only convergence planning from PlayerState-scoped health evidence.
+v1 experimental health pool behavior can inform design questions, but pooled health is not a vanilla fact. CrabSyncV2 starts with read-only convergence planning from PlayerState-scoped health evidence under [CrabSyncV2 Health P2P Model](CRABSYNCV2_HEALTH_P2P_MODEL.md).
 
 ### Inventory
 

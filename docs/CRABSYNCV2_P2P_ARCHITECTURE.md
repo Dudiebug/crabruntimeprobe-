@@ -50,10 +50,10 @@ CrabSyncV2 planning currently targets this progression:
 
 ## Category Feasibility (Current Evidence-Aware Planning)
 
-- **Health**: likely P2P candidate based on remote `HealthInfo` visibility evidence; apply/pooling behavior remains design-gated.
-- **Equipment**: likely P2P candidate based on remote equipment DA visibility evidence.
-- **Crystals**: likely P2P candidate based on remote `Crystals` visibility evidence.
-- **Slots**: plausible candidate; slot model and policy remain unresolved.
+- **Health**: likely P2P candidate based on remote `HealthInfo` visibility evidence; apply/pooling behavior remains design-gated by [CrabSyncV2 Health P2P Model](CRABSYNCV2_HEALTH_P2P_MODEL.md).
+- **Equipment**: likely P2P candidate based on remote equipment DA visibility evidence; apply remains blocked by [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md).
+- **Crystals**: likely P2P candidate based on remote `Crystals` visibility evidence; keys are excluded and crystal apply remains blocked by [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md).
+- **Slots**: plausible candidate; slot model and policy remain unresolved in [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md).
 - **Inventory items**: blocked until item identity/metadata and remote visibility (or a proven safe carrier) are demonstrated.
 
 This feasibility list is a planning status snapshot, not proof of end-to-end sync safety.

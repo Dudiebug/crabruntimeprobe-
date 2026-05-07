@@ -10,7 +10,7 @@ Current generated evidence confirms `CrabPC.PlayerState` through `GetPropertyVal
 
 Slot scalar visibility is confirmed for fields such as `NumWeaponModSlots`, with related slot fields visible in resource evidence. These are scalar reads only.
 
-`CrabPS.Crystals` is confirmed visible through `GetPropertyValue`; resource evidence also mentions keys visibility, but keys policy remains unresolved.
+`CrabPS.Crystals` is confirmed visible through `GetPropertyValue`; resource evidence also mentions keys visibility, but keys are excluded from CrabSyncV2 unless explicitly re-approved.
 
 `CrabPC -> PlayerState -> CrabPS -> HealthInfo` is the currently confirmed player health path. Evidence includes `CurrentHealth`, `CurrentMaxHealth`, `BaseMaxHealth`, and `MaxHealthMultiplier` in player-state-scoped health phases.
 
@@ -41,7 +41,7 @@ The local inventory shallow shape/count phase has crash-suspect history. Later s
 - Joined-client apply/write behavior.
 - Official RPC/OnRep call strategy.
 - Armor plate sync.
-- Keys sync.
+- Keys sync; keys are excluded unless explicitly re-approved.
 - Player-owned `CrabHC` discovery.
 
 ## D. CrabSyncV2 Design Implication

@@ -8,13 +8,13 @@ This is a future architecture plan, not an implementation request. RuntimeProbe 
 - Safe local reader: reads only currently proven local PlayerState paths.
 - Visible peer-state reader: samples only evidence-proven replicated data from local and remote PlayerStates.
 - Evidence-gated inventory reader: progresses from shape to count to wrapper to element to metadata only when evidence permits.
-- Health reader: starts at `CrabPC -> PlayerState -> CrabPS -> HealthInfo`.
-- Resource reader: reads crystals, slots, equipment, and other scalar resources only from proven paths.
+- Health reader: starts at `CrabPC -> PlayerState -> CrabPS -> HealthInfo` and follows the read-only [CrabSyncV2 Health P2P Model](CRABSYNCV2_HEALTH_P2P_MODEL.md).
+- Resource reader: reads crystals, slots, equipment, and other scalar resources only from proven paths and follows the read-only [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md).
 - Identity/session mapper: maps local/remote players using fingerprinted identity and session context.
-- P2P merge engine: combines game-native peer-visible state using role/generation/timestamp guards and without blind stale overwrites.
+- P2P merge engine: combines game-native peer-visible state using role/generation/timestamp guards and without blind stale overwrites; health/resource merge planning uses the health and resource P2P models as convergence specs, not apply approval.
 - Deterministic convergence planner: computes category-specific reconciliation math where peer visibility is sufficient.
 - P2P carrier layer (provisional, disabled): future module that may read/write `CrabSyncBlock` only through a proven safe replicated carrier.
-- Apply planner: computes a plan before any write and marks skips with reasons.
+- Apply planner: computes a plan before any write and marks skips with reasons; health/resource read convergence from the P2P models never makes apply safe by itself.
 - Apply executor: future gated write/RPC layer, separate from RuntimeProbe, and blocked until [CrabSyncV2 Safe Write Path Discovery](CRABSYNCV2_SAFE_WRITE_PATH_DISCOVERY.md) evidence, [Write Path Ledger](WRITE_PATH_LEDGER.md) status, and sandbox criteria exist.
 - Rollback/skip safety layer: aborts applies on instability and keeps local state safe.
 - Diagnostics/evidence logger: records reads, planned writes, skipped applies, and safety gate reasons.
@@ -48,7 +48,7 @@ Each snapshot row should include:
 
 - Player identity fingerprint.
 - Equipment: weapon, ability, melee DA identity.
-- Resources: crystals and unresolved resource fields such as keys.
+- Resources: crystals and explicitly scoped scalar resources; keys may be visible but are excluded unless explicitly re-approved.
 - Slots: weapon/ability/melee/perk slot scalars.
 - Health snapshot: current, max, base max, multiplier, source path, timestamp.
 - Inventory items with full metadata: DA short name, preferred full DA identity/path, `Level`, `AccumulatedBuff`, `Enhancements`, category, index, and source proof.
@@ -73,6 +73,8 @@ Each snapshot row should include:
 - Do not blindly overwrite safer local runtime state with stale peer state.
 - Separate local-only, shared, host-authoritative-candidate, and unresolved fields.
 - Use generation/timestamp/role-aware merge policy over blind last-write-wins.
+- Health convergence policy is detailed in [CrabSyncV2 Health P2P Model](CRABSYNCV2_HEALTH_P2P_MODEL.md).
+- Resource/equipment convergence policy is detailed in [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md).
 
 ## No Transport Until Proven
 
