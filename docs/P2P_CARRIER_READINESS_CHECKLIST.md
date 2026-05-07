@@ -117,6 +117,8 @@ Rejected-as-carrier status does not erase safe read evidence. A path may remain 
 
 **Inventory items:** a carrier may be needed if remote item metadata is not visible. A carrier does not replace local item identity, `InventoryInfo`, `Enhancements`, duplicate semantics, or apply proof. A carrier only solves transport.
 
+Item sync also requires [CrabSyncV2 Inventory Item Proof Plan](CRABSYNCV2_INVENTORY_ITEM_PROOF_PLAN.md). Carrier readiness cannot promote inventory proof rungs or convert unknown metadata into observed metadata.
+
 ## 8. Carrier Readiness Does Not Unblock These By Itself
 
 - Inventory item sync.
@@ -169,6 +171,7 @@ This checklist depends on:
 
 - [CrabSyncV2 Health P2P Model](CRABSYNCV2_HEALTH_P2P_MODEL.md).
 - [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md).
+- [CrabSyncV2 Inventory Item Proof Plan](CRABSYNCV2_INVENTORY_ITEM_PROOF_PLAN.md).
 - [CrabSyncV2 P2P Carrier Research Plan](CRABSYNCV2_P2P_CARRIER_RESEARCH_PLAN.md).
 - [P2P Carrier Candidates](P2P_CARRIER_CANDIDATES.md).
 - [P2P Carrier Visibility Matrix](P2P_CARRIER_VISIBILITY_MATRIX.md).

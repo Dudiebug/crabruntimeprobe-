@@ -20,6 +20,7 @@ These are future CrabSyncV2 constraints. They do not authorize RuntimeProbe writ
 
 ## Inventory
 
+- Inventory item planning must follow [CrabSyncV2 Inventory Item Proof Plan](CRABSYNCV2_INVENTORY_ITEM_PROOF_PLAN.md).
 - Do not compare inventory arrays by DA name only.
 - Do not rebuild item arrays unless full `InventoryInfo` can be preserved.
 - Item identity must eventually include DA short name, preferably full DA identity/path if safe, `Level`, `AccumulatedBuff`, and `Enhancements`.
@@ -28,6 +29,8 @@ These are future CrabSyncV2 constraints. They do not authorize RuntimeProbe writ
 - `AccumulatedBuff` must be finite and should not be assumed non-negative unless evidence proves it.
 - Duplicate same-name items must not be collapsed unless the game representation proves same-DA entries are stack-only.
 - Reordering alone should not trigger destructive apply.
+- Count metadata and first-element identity proof do not authorize full traversal or item sync.
+- Unknown `Level`, `AccumulatedBuff`, or `Enhancements` must stay unknown rather than being treated as observed defaults.
 
 ## Resources
 

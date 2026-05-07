@@ -50,9 +50,13 @@ Future slot write/apply candidate rows belong here.
 
 Future inventory item write/apply candidate rows belong here.
 
+Inventory item read proof is documented separately in [CrabSyncV2 Inventory Item Proof Plan](CRABSYNCV2_INVENTORY_ITEM_PROOF_PLAN.md). Read proof does not approve inventory write/apply readiness.
+
 ### Inventory Metadata
 
 Future `InventoryInfo`, level, buff, and related metadata candidate rows belong here.
+
+Unknown metadata must not be written as defaults. Metadata writes remain blocked until separate write-path evidence and future sandbox review exist.
 
 ### Enhancements
 

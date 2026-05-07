@@ -20,6 +20,8 @@ Visible roster source status is currently supported by imported identity evidenc
 
 Local inventory array property shape is visible as userdata for `WeaponMods`, `AbilityMods`, `MeleeMods`, `Perks`, and `Relics`. Current safe evidence is strictly shape/userdata metadata. It does not prove count strategy, traversal, element dereference, DA identity, `InventoryInfo`, or `Enhancements`.
 
+[CrabSyncV2 Inventory Item Proof Plan](CRABSYNCV2_INVENTORY_ITEM_PROOF_PLAN.md) defines the planning ladder from shape/count metadata toward item identity, metadata, duplicate semantics, remote visibility, carrier fallback, and write/apply separation. It does not change current evidence facts.
+
 ## B. Confirmed Unsafe Or Ambiguous Paths
 
 Unscoped `FindFirstOf(CrabHC)` is ambiguous and has resolved to a non-player health component: `BP_Destructible_ChaoticBarrel10.HC`. Do not use it as the player health source.

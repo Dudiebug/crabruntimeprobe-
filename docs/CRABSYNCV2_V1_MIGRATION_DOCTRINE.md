@@ -138,7 +138,7 @@ v1 experimental health pool behavior can inform design questions, but pooled hea
 
 ### Inventory
 
-v1 item payload modeling is useful because it avoids name-only item comparison. CrabSyncV2 still requires RuntimeProbe proof for traversal, item identity, `InventoryInfo`, `Enhancements`, and either remote visibility or a proven safe carrier before full inventory sync can be planned.
+v1 item payload modeling is useful because it avoids name-only item comparison. CrabSyncV2 still requires the proof ladder in [CrabSyncV2 Inventory Item Proof Plan](CRABSYNCV2_INVENTORY_ITEM_PROOF_PLAN.md) for traversal, item identity, `InventoryInfo`, `Enhancements`, duplicate semantics, joined-client replay, and either remote visibility or a reviewed safe carrier decision before full inventory sync can be planned.
 
 ### Transport
 

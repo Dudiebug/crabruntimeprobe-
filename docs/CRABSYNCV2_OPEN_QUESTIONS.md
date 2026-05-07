@@ -19,7 +19,7 @@ This is a living research backlog for CrabSyncV2 planning. Status values reflect
 | Can any carrier candidate satisfy capacity, cadence, lifecycle, clear/reset, and diagnosis requirements? | A visible field is not enough; it must be small-payload-safe and operationally bounded. | Not proven; no candidate is approved. | `p2p-carrier-capacity-read` after discovery and visibility proof. | Whether `CrabSyncBlock` remains viable. | High |
 | Can candidate carrier values be observed without exposing raw private identity or crawling arbitrary objects? | Discovery must remain read-only, scoped, and privacy-safe. | Not proven; must be designed per candidate. | `p2p-carrier-discovery-read`. | Carrier discovery safety envelope. | High |
 | Which carrier candidates are rejected before write-smoke consideration? | Unsafe-path status prevents gameplay, save, identity, or inventory hijacking. | Template exists; no evidence rows yet. | Future `P2P_CARRIER_UNSAFE_PATHS.md` updates after read-only discovery. | Carrier rejection policy. | High |
-| Is P2P impossible for inventory without a carrier? | Reframes old relay/server question into evidence-driven architecture choice. | Unknown. | Complete remote inventory visibility research + carrier discovery read phases. | Inventory transport architecture. | High |
+| Is P2P impossible for inventory without a carrier? | Reframes old external-transport assumptions into an evidence-driven architecture choice. | Unknown. | Complete remote inventory visibility research + carrier discovery read phases. | Inventory transport architecture. | High |
 | Can a custom payload be carried without corrupting gameplay/saves/identity? | Prevents abusing authoritative gameplay fields and data corruption. | Not proven and currently prohibited. | Carrier discovery/read only; future gated write-smoke outside RuntimeProbe default. | Carrier safety policy. | Critical |
 | Can equipment be synced using official setters/RPCs? | Official paths may be safer than raw writes. | Function presence is objectdump/candidate only; calls untested. | CrabSyncV2-only RPC/write sandbox design. | Equipment apply executor. | Critical |
 | Can slots use `ServerIncrementNumInventorySlots`? | Slot sync may need official mutation. | Objectdump/candidate only; mutating call untested. | CrabSyncV2-only RPC sandbox. | Slot apply strategy. | Critical |
@@ -35,6 +35,10 @@ This is a living research backlog for CrabSyncV2 planning. Status values reflect
 | Does `StartingWeaponMod` cause duplicate weapon mod application? | Avoid duplicate grants on apply. | Not proven in RuntimeProbe evidence. | Future item/apply sandbox, not RuntimeProbe default. | Weapon mod apply policy. | Medium |
 | Do raw inventory writes stale `InventoryCooldowns`? | Raw writes may desync hidden state/UI. | Unknown and write-unsafe. | CrabSyncV2-only write sandbox after reads. | Raw write fallback viability. | Critical |
 | What exact state resets are needed after join/travel/respawn? | Prevent stale client/apply state. | General lifecycle risk known; exact reset set not proven. | Lifecycle transition observe/read-only diagnostics. | State machine reset policy. | High |
+
+Inventory proof reference:
+
+- [CrabSyncV2 Inventory Item Proof Plan](CRABSYNCV2_INVENTORY_ITEM_PROOF_PLAN.md) is the contract for item identity, metadata, duplicate semantics, remote visibility, carrier fallback, and write/apply separation.
 
 Health/resource model references:
 

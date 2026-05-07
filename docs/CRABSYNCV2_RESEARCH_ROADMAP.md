@@ -40,6 +40,8 @@ Future write sandbox work also requires the write-path template/status docs: [Wr
 
 ## Inventory Proof Track
 
+The inventory proof track follows [CrabSyncV2 Inventory Item Proof Plan](CRABSYNCV2_INVENTORY_ITEM_PROOF_PLAN.md). Count metadata, first-element proof, carrier readiness, and write-path evidence are separate gates.
+
 | Phase | Goal | Required config gates | Allowed | Forbidden | Expected evidence file | Success criteria | Crash stop condition | CrabSyncV2 decision unlocked |
 |---|---|---|---|---|---|---|---|---|
 | `inventory-element-da-read` | Prove safe local item element + DA identity read path. | Deep inventory read gate(s) explicitly enabled; write/RPC false. | Capped wrapper/element/DA read sequence on proven parent. | Bulk traversal, writes, mutating RPCs. | `access_evidence_<session>.jsonl`. | First-item DA identity read succeeds or fails safely with clear markers. | Crash or invalid/stale object signal. | Item identity schema feasibility. |

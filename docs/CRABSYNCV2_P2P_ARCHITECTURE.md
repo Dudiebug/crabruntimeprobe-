@@ -54,7 +54,7 @@ CrabSyncV2 planning currently targets this progression:
 - **Equipment**: likely P2P candidate based on remote equipment DA visibility evidence; apply remains blocked by [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md).
 - **Crystals**: likely P2P candidate based on remote `Crystals` visibility evidence; keys are excluded and crystal apply remains blocked by [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md).
 - **Slots**: plausible candidate; slot model and policy remain unresolved in [CrabSyncV2 Resource P2P Model](CRABSYNCV2_RESOURCE_P2P_MODEL.md).
-- **Inventory items**: blocked until item identity/metadata and remote visibility (or a proven safe carrier) are demonstrated.
+- **Inventory items**: blocked until the proof ladder in [CrabSyncV2 Inventory Item Proof Plan](CRABSYNCV2_INVENTORY_ITEM_PROOF_PLAN.md) proves item identity, metadata, duplicate semantics, joined-client safety, and remote visibility or a reviewed carrier decision.
 
 This feasibility list is a planning status snapshot, not proof of end-to-end sync safety.
 
