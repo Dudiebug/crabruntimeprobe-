@@ -3,7 +3,7 @@
   "campaign": "crabruntimeprobe-read-map",
   "planPath": "campaign/campaign_plan.crabruntimeprobe-read-map.json",
   "createdAt": "2026-05-05T03:43:18.030Z",
-  "updatedAt": "2026-05-06T05:52:58.652Z",
+  "updatedAt": "2026-05-06T23:56:33.301Z",
   "completedPhases": [
     {
       "phaseId": "smoke-startup",
@@ -209,6 +209,11 @@
       "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."
     },
     {
+      "phaseId": "relic-da-catalog-read",
+      "status": "blocked",
+      "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."
+    },
+    {
       "phaseId": "weapon-da-catalog-read",
       "status": "blocked",
       "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."
@@ -302,7 +307,7 @@
   "currentPhase": "inventory-element-da-read",
   "nextRecommendedPhase": "inventory-element-da-read",
   "latestSessionId": "20260506T052733Z",
-  "latestCommit": "75dcf3d82dd83677f0489158261de351c9770216",
+  "latestCommit": "4c868e95e87d53e6c510f56f6af560c890fcdc97",
   "latestSummaryPath": "evidence/runtime/20260506T052733Z/diagnostic_summary.txt",
   "phaseStatuses": {
     "smoke-startup": {
@@ -478,6 +483,14 @@
       "status": "blocked",
       "riskTier": "cautious-read",
       "probeSet": "meleemod-da-catalog-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."
+    },
+    "relic-da-catalog-read": {
+      "status": "blocked",
+      "riskTier": "cautious-read",
+      "probeSet": "relic-da-catalog-read",
       "tickDriver": "executeDelay",
       "mode": "active",
       "reason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review."

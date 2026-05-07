@@ -64,7 +64,7 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 - Supports future P2P resource merge design: partial
 - CrabInvSync v2 implication: P2P-style merge is plausible for crystals, slots, equipment, and possibly health inputs.
 - Inventory item sync still needs separate research; current shallow count-only inventory array visibility is unresolved and does not expose item metadata.
-- Inventory may remain unsupported unless array/item metadata visibility or a safe game-native carrier is proven; external relay/server fallback is out of scope for CrabSyncV2 unless explicitly re-approved.
+- An external relay/server may still be needed for inventory until array/item metadata visibility or another safe carrier is proven.
 - Raw identity values are not emitted by this summary; PlayerName and UniqueId evidence remains fingerprint-only.
 - No writes/RPCs/HUD hooks/deep array element reads/InventoryInfo/Enhancements are part of this phase.
 
@@ -140,6 +140,12 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 - Enhancements read: no
 - Count results, if present, are metadata-only and do not authorize traversal, element dereference, item DataAsset reads, InventoryInfo reads, Enhancements reads, or item sync.
 
+## Inventory Element DA Read Summary
+
+- Summary: unresolved; no `inventory-element-da-read` evidence has been imported yet.
+- Element DA read will use only count metadata to consider at most one first element per non-empty local array.
+- It is not full inventory sync, full traversal, InventoryInfo evidence, Enhancement evidence, Level evidence, or AccumulatedBuff evidence.
+
 ## Local Crystals Read Summary
 
 - Summary: crystals_read_confirmed
@@ -184,11 +190,14 @@ Objectdump discovery means a symbol exists in static dump data. It does not mean
 
 ## Perk DataAsset Catalog Summary
 
-- Summary: unresolved; no `perk-da-catalog-read` evidence has been imported yet.
-- Perk catalog evidence will be read-only and is not permission to mutate DataAssets.
-- RuntimeProbe will prove read paths only; future CrabModFramework / CrabTastyMod write/edit APIs must be designed separately.
-- TastyOrange is not special-cased by RuntimeProbe. It will be cataloged as a normal perk if found.
-- Collector is not special-cased by RuntimeProbe. It will be cataloged as a normal perk if found.
+- Summary: perk_da_catalog_confirmed
+- Perk DataAsset catalog status: perk_da_catalog_confirmed
+- Catalog entries: 64
+- Candidate count/cap: 64/64
+- No writes/RPCs/HUD/deep arrays/live inventory arrays/counts/InventoryInfo/Enhancements/DataAsset mutation/function calls: yes
+- RuntimeProbe proves read paths only. Future CrabModFramework / CrabTastyMod work must build controlled write/edit APIs separately.
+- TastyOrange is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.
+- Collector is not special-cased by RuntimeProbe. It is cataloged as a normal perk if found.
 
 ## Confirmed SAFE Access Rows
 

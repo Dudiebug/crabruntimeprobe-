@@ -838,6 +838,22 @@
       "riskTier": "cautious-read",
       "status": "pending",
       "humanInstructions": "Do not run until the probe set exists and safety review is complete.",
+      "nextPhase": "relic-da-catalog-read"
+    },
+    {
+      "phaseId": "relic-da-catalog-read",
+      "label": "Relic DataAsset catalog placeholder",
+      "probeSet": "relic-da-catalog-read",
+      "tickDriver": "executeDelay",
+      "mode": "active",
+      "implemented": false,
+      "blockedReason": "Future DataAsset catalog phase; implement after perk catalog evidence and safety review.",
+      "requiredGates": {},
+      "forbiddenGates": ["allowHudTickHook", "allowDeepArrayProbes", "allowInventoryInfoProbes", "allowWriteProbes", "allowRpcProbes"],
+      "expectedEvidenceSignals": ["TBD read-only relic DataAsset catalog evidence"],
+      "riskTier": "cautious-read",
+      "status": "pending",
+      "humanInstructions": "Do not run until the probe set exists and safety review is complete.",
       "nextPhase": "weapon-da-catalog-read"
     },
     {
