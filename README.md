@@ -7,15 +7,6 @@ It helps reverse engineer **safe runtime access rules** by combining object dump
 
 UE4SS object dumps show what symbols exist, but not when/where access is safe. This project captures runtime facts with paced, breadcrumbed probing.
 
-## Safety and non-goals
-
-- NOT CrabInvSync.
-- No inventory sync/shared inventory.
-- No gameplay state writes.
-- No mutating RPC calls.
-- No deep inventory probes in the default foundation.
-- No packaged UE4SS or game binaries.
-
 ## Documentation and CrabSyncV2 planning
 
 The deep documentation index starts at [docs/README.md](docs/README.md).
